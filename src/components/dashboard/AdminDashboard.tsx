@@ -3,21 +3,21 @@
 import { UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  Users, 
-  FileCheck, 
-  AlertCircle, 
+import {
+  Users,
+  FileCheck,
+  AlertCircle,
   BarChart,
   Filter,
   Plus
 } from 'lucide-react';
-import { 
-  BarChart as RechartsBarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart as RechartsBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   Cell
 } from 'recharts';
@@ -28,7 +28,7 @@ interface AdminDashboardProps {
 
 const programmeData = [
   { name: 'Incubation', value: 45 },
-  { name: 'GrowthPod', value: 28 },
+  { name: 'GrowthPad', value: 28 },
   { name: 'Need-Based', value: 15 },
   { name: 'Nivesh', value: 12 },
 ];

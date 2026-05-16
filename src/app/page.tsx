@@ -164,13 +164,11 @@ export default function LandingPage() {
       {/* Navigation */}
       <header className="px-6 lg:px-12 h-20 flex items-center justify-between sticky top-0 glass z-50">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
-            <Rocket className="text-white h-5 w-5" />
-          </div>
-          <div className="flex flex-col leading-none">
-            <span className="text-lg font-black tracking-tighter text-slate-900">PIERC</span>
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Parul University</span>
-          </div>
+          <img 
+            src="https://www.pierc.org/_next/static/media/PIERC.959ad75d.svg" 
+            alt="PIERC Logo" 
+            className="h-10 w-auto"
+          />
         </div>
         <nav className="hidden lg:flex gap-8 text-sm font-bold text-slate-600">
           <Link href="#about" className="hover:text-primary transition-all">About Us</Link>
@@ -202,8 +200,8 @@ export default function LandingPage() {
         {/* Hero Section */}
         <section className="relative pt-24 pb-16 px-6 lg:px-12 text-center space-y-8 max-w-6xl mx-auto overflow-hidden">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 opacity-40">
-             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] animate-pulse" />
-             <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-rose-200/20 rounded-full blur-[150px] animate-pulse delay-700" />
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-rose-200/20 rounded-full blur-[150px] animate-pulse delay-700" />
           </div>
 
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
@@ -213,13 +211,13 @@ export default function LandingPage() {
             </span>
             Ideate • Innovate • Incubate
           </div>
-          
+
           <h1 className="text-5xl md:text-8xl font-black tracking-tight text-slate-900 leading-[0.95]">
             Parul Innovation & <br />
             <span className="text-gradient-red">Entrepreneurship</span> <br />
             Research Centre
           </h1>
-          
+
           <p className="text-lg md:text-xl text-slate-500 max-w-3xl mx-auto leading-relaxed font-medium">
             Empowering the next generation of job creators through a world-class startup support system at Parul University.
           </p>
@@ -288,9 +286,9 @@ export default function LandingPage() {
               <div className="absolute -inset-4 bg-gradient-to-tr from-primary/20 to-rose-200/20 rounded-[2rem] blur-2xl opacity-50 group-hover:opacity-80 transition-all" />
               <div className="relative aspect-square rounded-[2rem] overflow-hidden shadow-2xl border-8 border-white">
                 <div className="absolute inset-0 bg-slate-200 animate-pulse" />
-                <img 
-                  src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1000" 
-                  alt="Team PIERC" 
+                <img
+                  src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1000"
+                  alt="Team PIERC"
                   className="absolute inset-0 w-full h-full object-cover"
                 />
               </div>
@@ -346,8 +344,8 @@ export default function LandingPage() {
               ].map((event, i) => (
                 <div key={i} className="group relative rounded-[2rem] overflow-hidden aspect-[4/5] glass-card border-none shadow-2xl hover:scale-[1.02] transition-all duration-500">
                   <div className="absolute inset-0 bg-slate-900/40 group-hover:bg-slate-900/20 transition-all z-10" />
-                  <img 
-                    src={`https://images.unsplash.com/photo-1540575861501-7ce0e220beff?auto=format&fit=crop&q=80&w=600`} 
+                  <img
+                    src={`https://images.unsplash.com/photo-1540575861501-7ce0e220beff?auto=format&fit=crop&q=80&w=600`}
                     alt={event.name}
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
@@ -374,8 +372,8 @@ export default function LandingPage() {
                 <div key={member.id} className="group glass-card p-4 hover:border-primary/30 transition-all duration-500 hover:-translate-y-2">
                   <div className="relative aspect-[4/5] rounded-2xl overflow-hidden mb-6">
                     <div className="absolute inset-0 bg-primary/10 group-hover:bg-transparent transition-colors duration-500" />
-                    <img 
-                      src={member.image} 
+                    <img
+                      src={member.image}
                       alt={member.name}
                       className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
                     />
@@ -396,7 +394,7 @@ export default function LandingPage() {
                   </div>
                   <div className="space-y-1 text-center">
                     <h4 className="text-lg font-black text-slate-900 group-hover:text-primary transition-colors">{member.name}</h4>
-                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{member.position}</p>
+                    <p className="text-xs text-slate-500 font-bold">{member.position}</p>
                   </div>
                 </div>
               ))}
@@ -427,7 +425,7 @@ export default function LandingPage() {
               </p>
             </div>
           </div>
-          
+
           <div className="space-y-6">
             <h4 className="text-lg font-black text-slate-900">Useful Links</h4>
             <ul className="space-y-3 text-sm font-bold text-slate-500">

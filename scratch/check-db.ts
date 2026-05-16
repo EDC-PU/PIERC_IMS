@@ -1,4 +1,4 @@
-import { db } from './src/lib/firebase';
+import { db } from '../src/lib/firebase';
 import { ref, get } from 'firebase/database';
 
 async function checkUsers() {
