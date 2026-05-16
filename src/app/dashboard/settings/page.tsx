@@ -36,10 +36,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { ref, update } from 'firebase/database';
+import { ref, update, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { institutes } from '@/lib/constants';
+import { programmeDefaults } from '@/lib/programmes';
 import { 
   User, 
   Mail, 
@@ -73,6 +74,9 @@ export default function SettingsPage() {
     messages: true,
     marketing: false,
   });
+  const [programmes, setProgrammes] = useState<{ id: string; name: string; isApplicationOpen: boolean }[]>([]);
+  const [programmeLoading, setProgrammeLoading] = useState(false);
+  const [pendingProgrammeIds, setPendingProgrammeIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (user?.notifications) {
@@ -151,6 +155,61 @@ export default function SettingsPage() {
     }
   }
 
+  useEffect(() => {
+    if (user?.role !== 'super_admin') {
+      setProgrammes([]);
+      return;
+    }
+
+    setProgrammeLoading(true);
+    const programmesRef = ref(db, 'programmes');
+    const unsubscribe = onValue(programmesRef, (snapshot) => {
+      const data = snapshot.val();
+      const programmeList = programmeDefaults.map((defaultProgramme) => {
+        const programmeData = data?.[defaultProgramme.id] as any;
+        return {
+          id: defaultProgramme.id,
+          name: programmeData?.title || programmeData?.name || defaultProgramme.title,
+          isApplicationOpen: programmeData?.isApplicationOpen ?? defaultProgramme.active,
+        };
+      });
+
+      setProgrammes(programmeList);
+      setProgrammeLoading(false);
+    }, (error) => {
+      console.error('Programme load error:', error);
+      toast.error('Unable to load programme settings.');
+      setProgrammes(programmeDefaults.map((defaultProgramme) => ({
+        id: defaultProgramme.id,
+        name: defaultProgramme.title,
+        isApplicationOpen: defaultProgramme.active,
+      })));
+      setProgrammeLoading(false);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user?.role]);
+
+  const toggleProgrammeStatus = async (programmeId: string, currentStatus: boolean) => {
+    if (!user) return;
+
+    const newStatus = !currentStatus;
+    setPendingProgrammeIds((prev) => [...prev, programmeId]);
+    setProgrammes((prev) => prev.map((prog) => prog.id === programmeId ? { ...prog, isApplicationOpen: newStatus } : prog));
+
+    try {
+      await update(ref(db, `programmes/${programmeId}`), { isApplicationOpen: newStatus });
+      toast.success(`Programme ${newStatus ? 'opened' : 'closed'} successfully`);
+    } catch (error) {
+      setProgrammes((prev) => prev.map((prog) => prog.id === programmeId ? { ...prog, isApplicationOpen: currentStatus } : prog));
+      toast.error('Failed to update programme status');
+    } finally {
+      setPendingProgrammeIds((prev) => prev.filter((id) => id !== programmeId));
+    }
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
       <div className="flex justify-between items-end">
@@ -164,6 +223,9 @@ export default function SettingsPage() {
         <TabsList className="bg-slate-100 p-1 rounded-xl h-12 w-full sm:w-auto grid grid-cols-2 sm:flex">
           <TabsTrigger value="profile" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm px-8">Profile</TabsTrigger>
           <TabsTrigger value="account" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm px-8">Account</TabsTrigger>
+          {user?.role === 'super_admin' && (
+            <TabsTrigger value="programme" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm px-8">Programme Control</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6 outline-none">
@@ -418,6 +480,54 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {user?.role === 'super_admin' && (
+          <TabsContent value="programme" className="space-y-6 outline-none">
+            <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden">
+              <CardHeader className="bg-slate-50/50 border-b pb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl">Programme Application Control</CardTitle>
+                    <CardDescription>Open or close programme applications for each track.</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-8 space-y-6">
+                {programmeLoading ? (
+                  <p className="text-slate-500">Loading programme controls...</p>
+                ) : programmes.length === 0 ? (
+                  <p className="text-slate-500">No programme configuration found. Please add programmes to the database.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {programmes.map((programme) => (
+                      <div key={programme.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-900">{programme.name}</h3>
+                          <p className={`text-sm font-medium ${programme.isApplicationOpen ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            Applications are currently <span className="font-semibold">{programme.isApplicationOpen ? 'OPEN' : 'CLOSED'}</span>
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant={programme.isApplicationOpen ? 'destructive' : 'secondary'}
+                          size="lg"
+                          disabled={pendingProgrammeIds.includes(programme.id)}
+                          onClick={() => toggleProgrammeStatus(programme.id, programme.isApplicationOpen)}
+                        >
+                          {pendingProgrammeIds.includes(programme.id)
+                            ? 'Saving...'
+                            : programme.isApplicationOpen
+                              ? 'Close Applications'
+                              : 'Open Applications'}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

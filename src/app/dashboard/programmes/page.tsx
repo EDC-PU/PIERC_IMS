@@ -1,65 +1,62 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { ref, onValue } from 'firebase/database';
+import { db } from '@/lib/firebase';
 import { Programme } from '@/types';
+import { programmeDefaults } from '@/lib/programmes';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Rocket, Target, Users, Zap } from 'lucide-react';
 import Link from 'next/link';
 
-const initialProgrammes: Programme[] = [
-  {
-    id: 'incubation',
-    title: 'Incubation Programme',
-    description: 'Nurturing early-stage startups with mentorship, infrastructure, and seed funding support.',
-    eligibility: 'Student/Faculty/Early-stage founders with a validated prototype.',
-    timeline: '6 - 12 Months',
-    active: true,
-    applicationCount: 45
-  },
-  {
-    id: 'growthpad',
-    title: 'GrowthPad Programme',
-    description: 'Accelerating revenue-making startups to scale their operations and reach new markets.',
-    eligibility: 'Startups with traction and consistent monthly revenue.',
-    timeline: '3 - 6 Months',
-    active: true,
-    applicationCount: 28
-  },
-  {
-    id: 'need-based',
-    title: 'Need-Based Support',
-    description: 'Specific technical, legal, or market access support for innovative projects.',
-    eligibility: 'Innovative ideas requiring specialized intervention.',
-    timeline: 'On-demand',
-    active: true,
-    applicationCount: 15
-  },
-  {
-    id: 'startup-nivesh',
-    title: 'Startup Nivesh',
-    description: 'Direct investment platform connecting PIERC startups with angel investors and VCs.',
-    eligibility: 'Investment-ready startups with pitch deck and financial projections.',
-    timeline: 'Ongoing',
-    active: true,
-    applicationCount: 12
-  }
-];
-
 export default function ProgrammesPage() {
+  const [programmes, setProgrammes] = useState<Programme[]>(programmeDefaults);
+
+  useEffect(() => {
+    const programmesRef = ref(db, 'programmes');
+    const unsubscribe = onValue(programmesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data) {
+        return;
+      }
+
+      const loadedProgrammes = Object.entries(data).map(([id, value]) => {
+        const programme = value as any;
+        const defaultProgramme = programmeDefaults.find((p) => p.id === id);
+        return {
+          id,
+          title: programme.title || programme.name || defaultProgramme?.title || id.replace(/-/g, ' ').replace(/\b\w/g, (chr) => chr.toUpperCase()),
+          description: programme.description || defaultProgramme?.description || '',
+          eligibility: programme.eligibility || defaultProgramme?.eligibility || '',
+          timeline: programme.timeline || defaultProgramme?.timeline || '',
+          active: programme.isApplicationOpen ?? defaultProgramme?.active ?? false,
+          applicationCount: programme.applicationCount ?? defaultProgramme?.applicationCount ?? 0,
+        };
+      });
+
+      setProgrammes(loadedProgrammes);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   return (
     <div className="space-y-12">
       <div className="relative">
         <div className="absolute -top-10 -left-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl -z-10" />
         <h2 className="text-sm font-black text-primary uppercase tracking-[0.3em] mb-2">Opportunities</h2>
-        <h1 className="text-4xl font-black tracking-tight text-slate-900">Incubation Programmes</h1>
+        <h1 className="text-4xl font-black tracking-tight text-slate-900">Our Programmes</h1>
         <p className="text-slate-500 mt-2 max-w-xl font-medium text-lg">
           Select a specialized track designed to propel your startup through the PIERC ecosystem.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {initialProgrammes.map((prog) => (
+        {programmes.map((prog) => (
           <div
             key={prog.id}
             className="group relative flex flex-col glass-card border-white/50 p-1 hover:border-primary/20 transition-all duration-500 hover:scale-[1.01]"
