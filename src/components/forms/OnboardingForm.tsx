@@ -23,7 +23,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ref, update } from 'firebase/database';
+import { ref, update, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';

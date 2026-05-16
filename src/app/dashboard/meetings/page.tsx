@@ -133,8 +133,7 @@ export default function MeetingsPage() {
   const getAppMeetingCount = (appId: string) => meetings.filter(m => m.applicationId === appId).length;
 
   const phase1Apps = applications.filter(app =>
-    (app.status === 'Submitted' || app.status === 'Revision Submitted' || app.status === 'Phase 1 Evaluation' || app.status === 'Revision Needed' || app.status === 'Shortlisted') &&
-    app.status !== 'Draft'
+    (app.status === 'Submitted' || app.status === 'Revision Submitted' || app.status === 'Phase 1 Evaluation' || app.status === 'Revision Needed' || app.status === 'Shortlisted')
   );
 
   const phase2Apps = applications.filter(app =>
@@ -389,7 +388,7 @@ export default function MeetingsPage() {
                       </div>
                       <div className="space-y-1">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evaluator / Panelist</Label>
-                        <Select onValueChange={setSelectedEvaluator} value={selectedEvaluator}>
+                        <Select onValueChange={(val) => setSelectedEvaluator(val || '')} value={selectedEvaluator}>
                           <SelectTrigger className="rounded-xl h-11">
                             <SelectValue>
                               {selectedEvaluator ? allUsers[selectedEvaluator]?.displayName : "Choose an evaluator"}

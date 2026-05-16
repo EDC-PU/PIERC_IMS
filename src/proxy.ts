@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/request';
+import { NextResponse, type NextRequest } from 'next/server';
 
 // This is a simplified middleware. 
 // In a real production app, you would use firebase-admin to verify the session cookie.

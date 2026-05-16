@@ -18,8 +18,8 @@ const initialProgrammes: Programme[] = [
     applicationCount: 45
   },
   {
-    id: 'growthpod',
-    title: 'GrowthPod Programme',
+    id: 'growthpad',
+    title: 'GrowthPad Programme',
     description: 'Accelerating revenue-making startups to scale their operations and reach new markets.',
     eligibility: 'Startups with traction and consistent monthly revenue.',
     timeline: '3 - 6 Months',
@@ -60,8 +60,8 @@ export default function ProgrammesPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {initialProgrammes.map((prog) => (
-          <div 
-            key={prog.id} 
+          <div
+            key={prog.id}
             className="group relative flex flex-col glass-card border-white/50 p-1 hover:border-primary/20 transition-all duration-500 hover:scale-[1.01]"
           >
             {/* Card Content Interior */}
@@ -70,12 +70,12 @@ export default function ProgrammesPage() {
                 <div className={cn(
                   "p-4 rounded-2xl shadow-lg transition-transform group-hover:scale-110 duration-500",
                   prog.id === 'incubation' ? "bg-gradient-to-br from-orange-400 to-rose-500 text-white" :
-                  prog.id === 'growthpod' ? "bg-gradient-to-br from-blue-400 to-indigo-600 text-white" :
-                  prog.id === 'need-based' ? "bg-gradient-to-br from-emerald-400 to-teal-600 text-white" :
-                  "bg-gradient-to-br from-purple-400 to-fuchsia-600 text-white"
+                    prog.id === 'growthpad' ? "bg-gradient-to-br from-blue-400 to-indigo-600 text-white" :
+                      prog.id === 'need-based' ? "bg-gradient-to-br from-emerald-400 to-teal-600 text-white" :
+                        "bg-gradient-to-br from-purple-400 to-fuchsia-600 text-white"
                 )}>
                   {prog.id === 'incubation' && <Rocket className="h-8 w-8" />}
-                  {prog.id === 'growthpod' && <Zap className="h-8 w-8" />}
+                  {prog.id === 'growthpad' && <Zap className="h-8 w-8" />}
                   {prog.id === 'need-based' && <Target className="h-8 w-8" />}
                   {prog.id === 'startup-nivesh' && <Users className="h-8 w-8" />}
                 </div>
@@ -90,7 +90,7 @@ export default function ProgrammesPage() {
               <div className="space-y-4 mb-8 flex-1">
                 <h3 className="text-2xl font-black text-slate-900 group-hover:text-primary transition-colors">{prog.title}</h3>
                 <p className="text-slate-500 font-medium leading-relaxed">{prog.description}</p>
-                
+
                 <div className="grid grid-cols-2 gap-4 pt-4">
                   <div className="space-y-1">
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Eligibility</span>
@@ -103,8 +103,8 @@ export default function ProgrammesPage() {
                 </div>
               </div>
 
-              <Button 
-                asChild 
+              <Button
+                asChild
                 className={cn(
                   "w-full h-14 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all duration-300",
                   prog.active ? "bg-slate-900 hover:bg-primary shadow-slate-200" : "bg-slate-100 text-slate-400 pointer-events-none"

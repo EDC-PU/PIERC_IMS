@@ -16,6 +16,12 @@ export interface UserProfile {
   website?: string;
   linkedin?: string;
   bio?: string;
+  notifications?: {
+    applications: boolean;
+    meetings: boolean;
+    messages: boolean;
+    marketing: boolean;
+  };
   onboardingCompleted: boolean;
   createdAt: number;
 }
@@ -50,17 +56,27 @@ export type ApplicationStatus =
 export interface Application {
   id: string;
   userId: string;
+  userName?: string;
+  userEmail?: string;
+  userContact?: string;
+  userCategory?: string;
+  userInstitute?: string;
+  userEnrollment?: string;
   programmeId: string;
   programmeTitle: string;
-  status: ApplicationStatus;
+  status: ApplicationStatus | string;
   submittedAt: number;
   updatedAt: number;
+  timeline?: any[];
+  revisionRemarks?: string;
+  meetings?: Record<string, any>;
   data: Record<string, any>;
   documents: {
     pitchDeck?: string;
     businessPlan?: string;
     incorporationCert?: string;
     panGst?: string;
+    phase2PPT?: string;
     other?: string[];
   };
   evaluations?: {

@@ -10,7 +10,7 @@ export default function ApplyPage() {
   // Map ID to human-readable title
   const programmeTitles: Record<string, string> = {
     'incubation': 'Incubation Programme',
-    'growthpod': 'GrowthPod Programme',
+    'growthpad': 'GrowthPad Programme',
     'need-based': 'Need-Based Support',
     'startup-nivesh': 'Startup Nivesh',
   };
