@@ -7,6 +7,11 @@ export interface UserProfile {
   photoURL?: string;
   role: UserRole;
   phoneNumber?: string;
+  contactNumber?: string;
+  enrollmentNumber?: string;
+  institute?: string;
+  category?: string;
+  othersSpecify?: string;
   startupName?: string;
   website?: string;
   linkedin?: string;
@@ -28,6 +33,8 @@ export interface Programme {
 
 export type ApplicationStatus = 
   | 'Submitted' 
+  | 'Revision Needed'
+  | 'Revision Submitted'
   | 'Under Review' 
   | 'Phase 1 Evaluation' 
   | 'Phase 1 Selected' 

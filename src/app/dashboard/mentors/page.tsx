@@ -12,25 +12,42 @@ import {
   Search, 
   Plus, 
   Mail, 
-  Linkedin, 
   MoreVertical,
-  ExternalLink
+  ExternalLink,
+  UserPlus,
+  Check
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { update } from 'firebase/database';
+import { toast } from 'sonner';
+import { useAuthStore } from '@/store/authStore';
 
 export default function MentorsPage() {
+  const { user: currentUser } = useAuthStore();
   const [mentors, setMentors] = useState<UserProfile[]>([]);
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [userSearch, setUserSearch] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const usersRef = ref(db, 'users');
     const unsubscribe = onValue(usersRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const mentorList = Object.values(data).filter(
-          (user: any) => user.role === 'mentor'
-        ) as UserProfile[];
+        const userList = Object.values(data) as UserProfile[];
+        setAllUsers(userList);
+        const mentorList = userList.filter((user: any) => user.role === 'mentor');
         setMentors(mentorList);
       }
       setLoading(false);
@@ -38,6 +55,25 @@ export default function MentorsPage() {
 
     return () => unsubscribe();
   }, []);
+
+  const assignAsMentor = async (uid: string) => {
+    try {
+      await update(ref(db, `users/${uid}`), {
+        role: 'mentor',
+        updatedAt: Date.now()
+      });
+      toast.success('User promoted to Mentor successfully');
+      setIsOpen(false);
+    } catch (error) {
+      toast.error('Failed to promote user');
+    }
+  };
+
+  const potentialMentors = allUsers.filter(u => 
+    u.role !== 'mentor' && 
+    (u.displayName.toLowerCase().includes(userSearch.toLowerCase()) || 
+     u.email.toLowerCase().includes(userSearch.toLowerCase()))
+  );
 
   const filteredMentors = mentors.filter(m => 
     m.displayName.toLowerCase().includes(search.toLowerCase()) ||
@@ -51,7 +87,60 @@ export default function MentorsPage() {
           <h1 className="text-2xl font-bold">PIERC Mentors</h1>
           <p className="text-slate-500">Manage and assign expert mentors to startups.</p>
         </div>
-        <Button><Plus className="mr-2 h-4 w-4" /> Add New Mentor</Button>
+        
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus className="mr-2 h-4 w-4" /> Add New Mentor</Button>
+          </DialogTrigger>
+          <DialogContent className="rounded-[2rem] border-none shadow-2xl max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black text-slate-900">Assign New Mentor</DialogTitle>
+              <DialogDescription className="text-slate-500 font-medium">
+                Search for an existing user to promote them to the Mentor role.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Input 
+                  placeholder="Search by name or email..." 
+                  className="pl-10 rounded-xl"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                />
+              </div>
+              <ScrollArea className="h-[300px] rounded-xl border border-slate-100 p-2">
+                {potentialMentors.length === 0 ? (
+                  <p className="text-center py-10 text-xs text-slate-400 font-bold uppercase tracking-widest">No users found</p>
+                ) : (
+                  <div className="space-y-2">
+                    {potentialMentors.map((u) => (
+                      <div 
+                        key={u.uid} 
+                        className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
+                        onClick={() => assignAsMentor(u.uid)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={u.photoURL} />
+                            <AvatarFallback className="bg-primary text-white font-bold">{u.displayName.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">{u.displayName}</p>
+                            <p className="text-[10px] text-slate-400 font-medium">{u.email}</p>
+                          </div>
+                        </div>
+                        <Button size="sm" variant="ghost" className="rounded-lg h-8 w-8 p-0">
+                          <Plus className="h-4 w-4 text-slate-400 group-hover:text-primary" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="relative max-w-sm">
@@ -104,7 +193,7 @@ export default function MentorsPage() {
                     <Mail className="mr-2 h-4 w-4" /> Contact
                   </Button>
                   <Button variant="outline" size="sm" className="px-3">
-                    <Linkedin className="h-4 w-4 text-blue-600" />
+                    <ExternalLink className="h-4 w-4 text-blue-600" />
                   </Button>
                 </div>
               </CardContent>

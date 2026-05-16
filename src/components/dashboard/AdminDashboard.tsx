@@ -103,7 +103,7 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
             <CardDescription>Distribution across current offerings</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px] w-full">
+            <div className="h-[300px] min-h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <RechartsBarChart data={programmeData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />

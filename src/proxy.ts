@@ -6,7 +6,7 @@ import type { NextRequest } from 'next/request';
 // Since we are using client-side Firebase Auth, we mostly rely on client-side protection,
 // but we can do basic path checking here.
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protect dashboard routes

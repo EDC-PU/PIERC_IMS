@@ -48,50 +48,79 @@ const initialProgrammes: Programme[] = [
 
 export default function ProgrammesPage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Incubation Programmes</h1>
-        <p className="text-slate-500">Select a programme that fits your startup stage.</p>
+    <div className="space-y-12">
+      <div className="relative">
+        <div className="absolute -top-10 -left-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl -z-10" />
+        <h2 className="text-sm font-black text-primary uppercase tracking-[0.3em] mb-2">Opportunities</h2>
+        <h1 className="text-4xl font-black tracking-tight text-slate-900">Incubation Programmes</h1>
+        <p className="text-slate-500 mt-2 max-w-xl font-medium text-lg">
+          Select a specialized track designed to propel your startup through the PIERC ecosystem.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {initialProgrammes.map((prog) => (
-          <Card key={prog.id} className="flex flex-col">
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  {prog.id === 'incubation' && <Rocket className="h-6 w-6 text-primary" />}
-                  {prog.id === 'growthpod' && <Zap className="h-6 w-6 text-primary" />}
-                  {prog.id === 'need-based' && <Target className="h-6 w-6 text-primary" />}
-                  {prog.id === 'startup-nivesh' && <Users className="h-6 w-6 text-primary" />}
+          <div 
+            key={prog.id} 
+            className="group relative flex flex-col glass-card border-white/50 p-1 hover:border-primary/20 transition-all duration-500 hover:scale-[1.01]"
+          >
+            {/* Card Content Interior */}
+            <div className="bg-white/40 rounded-[1.4rem] p-8 flex-1 flex flex-col h-full">
+              <div className="flex justify-between items-start mb-8">
+                <div className={cn(
+                  "p-4 rounded-2xl shadow-lg transition-transform group-hover:scale-110 duration-500",
+                  prog.id === 'incubation' ? "bg-gradient-to-br from-orange-400 to-rose-500 text-white" :
+                  prog.id === 'growthpod' ? "bg-gradient-to-br from-blue-400 to-indigo-600 text-white" :
+                  prog.id === 'need-based' ? "bg-gradient-to-br from-emerald-400 to-teal-600 text-white" :
+                  "bg-gradient-to-br from-purple-400 to-fuchsia-600 text-white"
+                )}>
+                  {prog.id === 'incubation' && <Rocket className="h-8 w-8" />}
+                  {prog.id === 'growthpod' && <Zap className="h-8 w-8" />}
+                  {prog.id === 'need-based' && <Target className="h-8 w-8" />}
+                  {prog.id === 'startup-nivesh' && <Users className="h-8 w-8" />}
                 </div>
-                <Badge variant={prog.active ? "default" : "secondary"}>
-                  {prog.active ? "Open" : "Closed"}
+                <Badge className={cn(
+                  "px-4 py-1.5 rounded-full font-black tracking-widest text-[10px] uppercase shadow-sm border-none",
+                  prog.active ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"
+                )}>
+                  {prog.active ? "Applications Open" : "Closed"}
                 </Badge>
               </div>
-              <CardTitle className="mt-4 text-xl">{prog.title}</CardTitle>
-              <CardDescription>{prog.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 space-y-4">
-              <div>
-                <h4 className="text-sm font-semibold text-slate-700">Eligibility</h4>
-                <p className="text-sm text-slate-500">{prog.eligibility}</p>
+
+              <div className="space-y-4 mb-8 flex-1">
+                <h3 className="text-2xl font-black text-slate-900 group-hover:text-primary transition-colors">{prog.title}</h3>
+                <p className="text-slate-500 font-medium leading-relaxed">{prog.description}</p>
+                
+                <div className="grid grid-cols-2 gap-4 pt-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Eligibility</span>
+                    <p className="text-xs font-bold text-slate-700 leading-tight">{prog.eligibility}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Timeline</span>
+                    <p className="text-xs font-bold text-slate-700 leading-tight">{prog.timeline}</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-semibold text-slate-700">Timeline</h4>
-                <p className="text-sm text-slate-500">{prog.timeline}</p>
-              </div>
-            </CardContent>
-            <CardFooter className="border-t pt-4">
-              <Button asChild className="w-full" disabled={!prog.active}>
-                <Link href={`/dashboard/programmes/${prog.id}/apply`}>
-                  Apply Now
+
+              <Button 
+                asChild 
+                className={cn(
+                  "w-full h-14 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all duration-300",
+                  prog.active ? "bg-slate-900 hover:bg-primary shadow-slate-200" : "bg-slate-100 text-slate-400 pointer-events-none"
+                )}
+                disabled={!prog.active}
+              >
+                <Link href={`/dashboard/programmes/${prog.id}/apply`} className="flex items-center justify-center gap-2">
+                  Apply Now <Rocket className="h-4 w-4" />
                 </Link>
               </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
     </div>
   );
 }
+
+import { cn } from '@/lib/utils';

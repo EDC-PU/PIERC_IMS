@@ -10,40 +10,67 @@ import { UserProfile } from '@/types';
 const AuthContext = createContext({});
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const { setUser, setLoading } = useAuthStore();
+  const { setAuth, setLoading } = useAuthStore();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    // Safety timeout to prevent permanent loading state
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
+    let unsubscribeOnValue: (() => void) | undefined;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Clean up previous onValue listener if it exists
+      if (unsubscribeOnValue) {
+        unsubscribeOnValue();
+        unsubscribeOnValue = undefined;
+      }
+
       if (firebaseUser) {
-        // Fetch user profile from RTDB
         const userRef = ref(db, `users/${firebaseUser.uid}`);
-        onValue(userRef, (snapshot) => {
+        
+        // Use onValue with cleanup and error handling
+        unsubscribeOnValue = onValue(userRef, (snapshot) => {
           const profile = snapshot.val() as UserProfile;
           if (profile) {
-            setUser(profile);
+            setAuth(profile, false);
           } else {
-            // If profile doesn't exist yet, we might need to create it (onboarding)
-            // For now just set the basic info
-            setUser({
+            // If profile doesn't exist yet, set basic info but don't hang
+            setAuth({
               uid: firebaseUser.uid,
               email: firebaseUser.email || '',
               displayName: firebaseUser.displayName || '',
               photoURL: firebaseUser.photoURL || '',
-              role: 'user', // Default role
+              role: 'user',
               onboardingCompleted: false,
               createdAt: Date.now(),
-            });
+            }, false);
           }
-          setLoading(false);
+        }, (error) => {
+          console.error("RTDB Profile Fetch Error:", error);
+          // Set a fallback profile to prevent redirect loops
+          setAuth({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            displayName: firebaseUser.displayName || 'User',
+            photoURL: firebaseUser.photoURL || '',
+            role: 'user',
+            onboardingCompleted: false,
+            createdAt: Date.now(),
+          }, false);
         });
       } else {
-        setUser(null);
-        setLoading(false);
+        setAuth(null, false);
       }
     });
 
-    return () => unsubscribe();
-  }, [setUser, setLoading]);
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeOnValue) unsubscribeOnValue();
+      clearTimeout(timeoutId);
+    };
+  }, [setAuth, setLoading]);
 
   return (
     <AuthContext.Provider value={{}}>

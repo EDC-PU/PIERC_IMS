@@ -105,7 +105,7 @@ export default function AdminSettingsPage() {
                       {new Date(u.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Select onValueChange={(val) => changeRole(u.uid, val as UserRole)} defaultValue={u.role}>
+                      <Select onValueChange={(val) => changeRole(u.uid, val as UserRole)} value={u.role}>
                         <SelectTrigger className="w-[130px] h-8 ml-auto">
                           <SelectValue />
                         </SelectTrigger>

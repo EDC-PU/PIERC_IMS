@@ -14,11 +14,17 @@ export default function DashboardLayout({
   const { user, loading } = useAuthStore();
   const router = useRouter();
 
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
+    if (!loading) {
+      if (!user) {
+        router.push('/login');
+      } else if (!user.onboardingCompleted && pathname !== '/onboarding') {
+        router.push('/onboarding');
+      }
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, pathname]);
 
   if (loading) {
     return (
@@ -35,7 +41,7 @@ export default function DashboardLayout({
       <Sidebar user={user} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header user={user} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 animate-page-entry">
           {children}
         </main>
       </div>
