@@ -60,8 +60,8 @@ export default function UserDashboard({ user }: UserDashboardProps) {
       const data = snapshot.val();
       if (data) {
         const list = Object.values(data) as Meeting[];
-        const userMeetings = list.filter(m => m.attendees.includes(user.uid));
-        setMeetings(userMeetings.sort((a, b) => a.startTime - b.startTime));
+        const userMeetings = list.filter(m => m && m.attendees && m.attendees.includes(user.uid));
+        setMeetings(userMeetings.sort((a, b) => (a.startTime || 0) - (b.startTime || 0)));
       }
     });
 
@@ -71,18 +71,20 @@ export default function UserDashboard({ user }: UserDashboardProps) {
       const data = snapshot.val();
       if (data) {
         const list = Object.entries(data).map(([id, val]: [string, any]) => ({ id, ...val })) as Application[];
-        const userApps = list.filter(a => a.userId === user.uid);
+        const userApps = list.filter(a => a && a.userId === user.uid);
         setApplications(userApps);
 
         // Fetch evaluations for these apps
         userApps.forEach(app => {
-          const evalRef = ref(db, `evaluations/${app.id}`);
-          onValue(evalRef, (evalSnap) => {
-            const evalData = evalSnap.val();
-            if (evalData) {
-              setEvaluations(prev => [...prev.filter(e => e.appId !== app.id), { appId: app.id, data: evalData }]);
-            }
-          });
+          if (app && app.id) {
+            const evalRef = ref(db, `evaluations/${app.id}`);
+            onValue(evalRef, (evalSnap) => {
+              const evalData = evalSnap.val();
+              if (evalData) {
+                setEvaluations(prev => [...prev.filter(e => e.appId !== app.id), { appId: app.id, data: evalData }]);
+              }
+            });
+          }
         });
       }
       setLoading(false);
@@ -95,12 +97,12 @@ export default function UserDashboard({ user }: UserDashboardProps) {
   }, [user.uid]);
 
   const latestApp = applications[0];
-  const appMeetings = meetings.filter(m => m.applicationId === latestApp?.id);
-  const appEvaluations = evaluations.find(e => e.appId === latestApp?.id)?.data || {};
+  const appMeetings = latestApp ? meetings.filter(m => m && m.applicationId === latestApp.id) : [];
+  const appEvaluations = latestApp ? (evaluations.find(e => e && e.appId === latestApp.id)?.data || {}) : {};
 
-  const hasPhase1Meeting = appMeetings.some(m => m.title.toLowerCase().includes('phase 1'));
+  const hasPhase1Meeting = appMeetings.some(m => m && m.title?.toLowerCase().includes('phase 1'));
   const hasPhase1Eval = !!appEvaluations.Phase_1;
-  const hasPhase2Meeting = appMeetings.some(m => m.title.toLowerCase().includes('phase 2'));
+  const hasPhase2Meeting = appMeetings.some(m => m && m.title?.toLowerCase().includes('phase 2'));
   const hasPhase2Eval = !!appEvaluations.Phase_2;
 
   const timelineSteps = [
@@ -115,14 +117,14 @@ export default function UserDashboard({ user }: UserDashboardProps) {
       label: 'Phase 1 Evaluation', 
       status: (hasPhase1Eval || ['Phase 2 Selected', 'Phase 2 Evaluation', 'Cohort Selected', 'Incubated'].includes(latestApp?.status || '')) ? 'completed' : 
               (hasPhase1Meeting || latestApp?.status === 'Phase 1 Evaluation') ? 'current' : 'pending',
-      date: appMeetings.find(m => m.title.toLowerCase().includes('phase 1'))?.startTime
+      date: appMeetings.find(m => m && m.title?.toLowerCase().includes('phase 1'))?.startTime
     },
     { 
       id: 'phase2_eval', 
       label: 'Phase 2 Evaluation', 
       status: (hasPhase2Eval || ['Cohort Selected', 'Incubated'].includes(latestApp?.status || '')) ? 'completed' : 
               (hasPhase2Meeting || latestApp?.status === 'Phase 2 Evaluation') ? 'current' : 'pending',
-      date: appMeetings.find(m => m.title.toLowerCase().includes('phase 2'))?.startTime
+      date: appMeetings.find(m => m && m.title?.toLowerCase().includes('phase 2'))?.startTime
     },
     { 
       id: 'final_selection', 
@@ -137,7 +139,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
     }
   ];
 
-  const upcomingMeeting = meetings.find(m => m.startTime > Date.now());
+  const upcomingMeeting = meetings.find(m => m && m.startTime && m.startTime > Date.now());
 
   return (
     <div className="space-y-8">

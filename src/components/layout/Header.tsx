@@ -12,7 +12,8 @@ import {
   User as UserIcon,
   Settings,
   HelpCircle,
-  LogOut
+  LogOut,
+  Menu
 } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -31,9 +32,10 @@ import { UserProfile } from '@/types';
 
 interface HeaderProps {
   user: UserProfile;
+  onMenuClick?: () => void;
 }
 
-export default function Header({ user }: HeaderProps) {
+export default function Header({ user, onMenuClick }: HeaderProps) {
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -48,8 +50,16 @@ export default function Header({ user }: HeaderProps) {
 
   return (
     <header className="h-16 bg-white border-b flex items-center justify-between px-6 shrink-0">
-      <div className="flex items-center flex-1 max-w-md">
-        <div className="relative w-full">
+      <div className="flex items-center flex-1 max-w-md gap-4">
+        {onMenuClick && (
+          <button 
+            onClick={onMenuClick}
+            className="lg:hidden p-2 -ml-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+        )}
+        <div className="relative w-full hidden md:block">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
           <Input
             type="search"

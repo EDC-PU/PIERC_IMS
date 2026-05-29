@@ -297,41 +297,43 @@ export default function MeetingsPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <Table>
-                      <TableHeader className="bg-slate-50/30">
-                        <TableRow className="border-slate-100">
-                          <TableHead className="w-16 py-6"></TableHead>
-                          <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 py-6">Project Title</TableHead>
-                          <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 py-6">Applicant</TableHead>
-                          <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 py-6 text-right">Submission Date</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {getCurrentList().length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={4} className="h-40 text-center text-slate-400 font-medium italic">No projects pending in this phase.</TableCell>
+                    <div className="w-full overflow-x-auto">
+                      <Table>
+                        <TableHeader className="bg-slate-50/30">
+                          <TableRow className="border-slate-100">
+                            <TableHead className="w-16 py-6"></TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 py-6">Project Title</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 py-6">Applicant</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 py-6 text-right">Submission Date</TableHead>
                           </TableRow>
-                        ) : (
-                          getCurrentList().map((app) => (
-                            <TableRow key={app.id} className={cn("border-slate-100 hover:bg-slate-50/50 cursor-pointer", selectedApps.includes(app.id) && "bg-primary/[0.02]")} onClick={() => toggleSelect(app.id)}>
-                              <TableCell className="py-6">
-                                <Checkbox checked={selectedApps.includes(app.id)} onCheckedChange={() => toggleSelect(app.id)} className="rounded-md h-5 w-5 border-slate-300" />
-                              </TableCell>
-                              <TableCell className="py-6">
-                                <p className={cn("font-bold text-sm", selectedApps.includes(app.id) ? "text-primary" : "text-slate-900")}>{app.data?.startupTitle || app.programmeTitle}</p>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-wider">{app.programmeTitle}</p>
-                              </TableCell>
-                              <TableCell className="py-6">
-                                <span className="text-xs font-black text-slate-700">{app.userName}</span>
-                              </TableCell>
-                              <TableCell className="py-6 text-right">
-                                <span className="text-[11px] font-black text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">{format(app.submittedAt, 'MMM dd, yyyy')}</span>
-                              </TableCell>
+                        </TableHeader>
+                        <TableBody>
+                          {getCurrentList().length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={4} className="h-40 text-center text-slate-400 font-medium italic">No projects pending in this phase.</TableCell>
                             </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
+                          ) : (
+                            getCurrentList().map((app) => (
+                              <TableRow key={app.id} className={cn("border-slate-100 hover:bg-slate-50/50 cursor-pointer", selectedApps.includes(app.id) && "bg-primary/[0.02]")} onClick={() => toggleSelect(app.id)}>
+                                <TableCell className="py-6">
+                                  <Checkbox checked={selectedApps.includes(app.id)} onCheckedChange={() => toggleSelect(app.id)} className="rounded-md h-5 w-5 border-slate-300" />
+                                </TableCell>
+                                <TableCell className="py-6">
+                                  <p className={cn("font-bold text-sm", selectedApps.includes(app.id) ? "text-primary" : "text-slate-900")}>{app.data?.startupTitle || app.programmeTitle}</p>
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-wider">{app.programmeTitle}</p>
+                                </TableCell>
+                                <TableCell className="py-6">
+                                  <span className="text-xs font-black text-slate-700">{app.userName}</span>
+                                </TableCell>
+                                <TableCell className="py-6 text-right">
+                                  <span className="text-[11px] font-black text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">{format(app.submittedAt, 'MMM dd, yyyy')}</span>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -497,110 +499,112 @@ export default function MeetingsPage() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader className="bg-slate-50">
-                  <TableRow className="border-slate-100">
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6 pl-8">Applicant</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6">Meeting Date & Time</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6">Venue / Mode</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6">Pending Evaluators</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6">Completed Evaluators</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6 text-right pr-8">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {meetings.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="h-40 text-center text-slate-400 font-medium italic">No meeting history available.</TableCell></TableRow>
-                  ) : (
-                    meetings.sort((a, b) => b.startTime - a.startTime).map(m => {
-                      const app = applications.find(a => a.id === m.applicationId);
-                      const phaseKey = m.title.toLowerCase().includes('phase 1') ? 'Phase_1' :
-                        m.title.toLowerCase().includes('phase 2') ? 'Phase_2' : 'Final_Review';
+              <div className="w-full overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-slate-50">
+                    <TableRow className="border-slate-100">
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6 pl-8">Applicant</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6">Meeting Date & Time</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6">Venue / Mode</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6">Pending Evaluators</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6">Completed Evaluators</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6 text-right pr-8">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {meetings.length === 0 ? (
+                      <TableRow><TableCell colSpan={6} className="h-40 text-center text-slate-400 font-medium italic">No meeting history available.</TableCell></TableRow>
+                    ) : (
+                      meetings.sort((a, b) => b.startTime - a.startTime).map(m => {
+                        const app = applications.find(a => a.id === m.applicationId);
+                        const phaseKey = m.title.toLowerCase().includes('phase 1') ? 'Phase_1' :
+                          m.title.toLowerCase().includes('phase 2') ? 'Phase_2' : 'Final_Review';
 
-                      const attendees = m.attendees || [];
-                      // Filter for evaluators only (roles: admin, super_admin, mentor)
-                      const evaluatorIds = attendees.filter(uid => {
-                        const role = allUsers[uid]?.role;
-                        return role === 'admin' || role === 'super_admin' || role === 'mentor';
-                      });
+                        const attendees = m.attendees || [];
+                        // Filter for evaluators only (roles: admin, super_admin, mentor)
+                        const evaluatorIds = attendees.filter(uid => {
+                          const role = allUsers[uid]?.role;
+                          return role === 'admin' || role === 'super_admin' || role === 'mentor';
+                        });
 
-                      const completed = evaluatorIds.filter(uid =>
-                        evaluations[m.applicationId]?.[uid]?.[phaseKey]
-                      );
-                      const pending = evaluatorIds.filter(uid =>
-                        !evaluations[m.applicationId]?.[uid]?.[phaseKey]
-                      );
+                        const completed = evaluatorIds.filter(uid =>
+                          evaluations[m.applicationId]?.[uid]?.[phaseKey]
+                        );
+                        const pending = evaluatorIds.filter(uid =>
+                          !evaluations[m.applicationId]?.[uid]?.[phaseKey]
+                        );
 
-                      return (
-                        <TableRow key={m.id} className="border-slate-100 hover:bg-slate-50/50 transition-colors">
-                          <TableCell className="py-8 pl-8 max-w-xs">
-                            <p className="font-black text-sm text-primary leading-tight uppercase tracking-tight">{app?.data?.startupTitle || 'Unknown Project'}</p>
-                            <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">by {app?.userName || 'N/A'}</p>
-                          </TableCell>
-                          <TableCell className="py-8">
-                            <p className="font-black text-slate-900 text-sm">{format(m.startTime, 'MMM dd,')}</p>
-                            <p className="text-xs font-bold text-slate-500 mt-0.5">{format(m.startTime, 'yyyy @ HH:mm')}</p>
-                          </TableCell>
-                          <TableCell className="py-8">
-                            {m.mode === 'Online' && m.link ? (
-                              <a 
-                                href={m.link} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline font-black text-xs flex items-center"
-                              >
-                                <Video className="h-3 w-3 mr-1" /> Join Link
-                              </a>
-                            ) : (
-                              <p className="font-black text-slate-900 text-xs">{m.location}</p>
-                            )}
-                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">({m.mode})</p>
-                          </TableCell>
-                          <TableCell className="py-8">
-                            {pending.length === 0 ? (
-                              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">None</span>
-                            ) : (
-                              <div className="flex flex-col gap-1">
-                                {Array.from(new Set(pending)).map(uid => {
-                                  const profile = allUsers[uid];
-                                  return (
-                                    <Link
-                                      key={uid}
-                                      href={`/dashboard/profile/${profile?.enrollmentNumber || uid}`}
-                                      className="text-[11px] font-black text-slate-700 hover:text-primary transition-colors"
-                                    >
-                                      {profile?.displayName}
+                        return (
+                          <TableRow key={m.id} className="border-slate-100 hover:bg-slate-50/50 transition-colors">
+                            <TableCell className="py-8 pl-8 max-w-xs">
+                              <p className="font-black text-sm text-primary leading-tight uppercase tracking-tight">{app?.data?.startupTitle || 'Unknown Project'}</p>
+                              <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">by {app?.userName || 'N/A'}</p>
+                            </TableCell>
+                            <TableCell className="py-8">
+                              <p className="font-black text-slate-900 text-sm">{format(m.startTime, 'MMM dd,')}</p>
+                              <p className="text-xs font-bold text-slate-500 mt-0.5">{format(m.startTime, 'yyyy @ HH:mm')}</p>
+                            </TableCell>
+                            <TableCell className="py-8">
+                              {m.mode === 'Online' && m.link ? (
+                                <a 
+                                  href={m.link} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline font-black text-xs flex items-center"
+                                >
+                                  <Video className="h-3 w-3 mr-1" /> Join Link
+                                </a>
+                              ) : (
+                                <p className="font-black text-slate-900 text-xs">{m.location}</p>
+                              )}
+                              <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">({m.mode})</p>
+                            </TableCell>
+                            <TableCell className="py-8">
+                              {pending.length === 0 ? (
+                                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">None</span>
+                              ) : (
+                                <div className="flex flex-col gap-1">
+                                  {Array.from(new Set(pending)).map(uid => {
+                                    const profile = allUsers[uid];
+                                    return (
+                                      <Link
+                                        key={uid}
+                                        href={`/dashboard/profile/${profile?.enrollmentNumber || uid}`}
+                                        className="text-[11px] font-black text-slate-700 hover:text-primary transition-colors"
+                                      >
+                                        {profile?.displayName}
+                                      </Link>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-8">
+                              {completed.length === 0 ? (
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">None</span>
+                              ) : (
+                                <div className="flex flex-col gap-1">
+                                  {completed.map(uid => (
+                                    <Link key={uid} href={`/dashboard/profile/${uid}`} className="text-[11px] font-black text-emerald-600 flex items-center hover:text-primary transition-colors">
+                                      <CheckCircle2 className="h-3 w-3 mr-1.5" />
+                                      {allUsers[uid]?.displayName}
                                     </Link>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="py-8">
-                            {completed.length === 0 ? (
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">None</span>
-                            ) : (
-                              <div className="flex flex-col gap-1">
-                                {completed.map(uid => (
-                                  <Link key={uid} href={`/dashboard/profile/${uid}`} className="text-[11px] font-black text-emerald-600 flex items-center hover:text-primary transition-colors">
-                                    <CheckCircle2 className="h-3 w-3 mr-1.5" />
-                                    {allUsers[uid]?.displayName}
-                                  </Link>
-                                ))}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="py-8 text-right pr-8">
-                            <Button variant="ghost" size="icon" className="rounded-xl text-slate-400 hover:text-primary">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
+                                  ))}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-8 text-right pr-8">
+                              <Button variant="ghost" size="icon" className="rounded-xl text-slate-400 hover:text-primary">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

@@ -126,29 +126,41 @@ export default function EvaluatePage() {
     selectedApp.status !== 'Revision Submitted';
 
   const handleSubmitEvaluation = async () => {
-    if (!selectedApp || !currentUser || marks === '' || !recommendation || !remarks.trim()) {
-      toast.error('Please provide both a score and detailed remarks.');
+    if (!selectedApp || !currentUser) return;
+    const currentPhase = getPhase(selectedApp.id);
+    const isPhase1 = currentPhase === 'Phase 1';
+
+    if (!recommendation) {
+      toast.error('Please select a recommendation.');
       return;
     }
 
-    if (marks > 100) {
-      toast.error('Marks cannot exceed 100');
-      return;
+    if (!isPhase1) {
+      if (marks === '' || !remarks.trim()) {
+        toast.error('Please provide both a score and detailed remarks.');
+        return;
+      }
+      if (marks > 100) {
+        toast.error('Marks cannot exceed 100');
+        return;
+      }
     }
 
     try {
-      const phase = getPhase(selectedApp.id);
-      const evalRef = ref(db, `evaluations/${selectedApp.id}/${currentUser.uid}/${phase.replace(' ', '_')}`);
+      const evalRef = ref(db, `evaluations/${selectedApp.id}/${currentUser.uid}/${currentPhase.replace(' ', '_')}`);
 
-      const evaluationData = {
+      const evaluationData: any = {
         evaluatorId: currentUser.uid,
         evaluatorName: currentUser.displayName,
-        marks,
-        remarks,
         recommendation,
         submittedAt: Date.now(),
-        phase
+        phase: currentPhase
       };
+
+      if (!isPhase1) {
+        evaluationData.marks = marks;
+        evaluationData.remarks = remarks;
+      }
 
       await set(evalRef, evaluationData);
 
@@ -297,64 +309,74 @@ export default function EvaluatePage() {
 
           <TabsContent value="history" className="mt-0 outline-none">
             <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2rem] overflow-hidden">
-              <Table>
-                <TableHeader className="bg-slate-50/50">
-                  <TableRow className="border-slate-100">
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest py-6 px-8">Startup / Project</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest py-6">Evaluation Phase</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest py-6">Score</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest py-6">Recommendation</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest py-6">Remarks</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest py-6 text-right px-8">Submission Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {evaluatedApps.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">No evaluation history found</TableCell>
+              <div className="w-full overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-slate-50/50">
+                    <TableRow className="border-slate-100">
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest py-6 px-8">Startup / Project</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest py-6">Evaluation Phase</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest py-6">Score</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest py-6">Recommendation</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest py-6">Remarks</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest py-6 text-right px-8">Submission Date</TableHead>
                     </TableRow>
-                  ) : (
-                    evaluatedApps.map((app) => (
-                      app.evals.map((ev: any, idx) => (
-                        <TableRow key={`${app.id}-${idx}`} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
-                          <TableCell className="py-6 px-8">
-                            <p className="font-black text-slate-900">{app.data?.startupTitle || app.programmeTitle}</p>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{app.userName}</p>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="rounded-full border-slate-200 font-black text-[9px] uppercase tracking-widest px-3">
-                              {ev.phase}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <span className="text-lg font-black text-primary mr-1">{ev.marks}</span>
-                              <span className="text-[10px] font-bold text-slate-300">/ 100</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={cn(
-                              "rounded-full font-black text-[9px] uppercase tracking-widest px-3 border-none",
-                              ev.recommendation === 'Recommended' ? 'bg-green-100 text-green-700' :
-                                ev.recommendation === 'Revision Needed' ? 'bg-orange-100 text-orange-700' : 'bg-rose-100 text-rose-700'
-                            )}>
-                              {ev.recommendation}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="max-w-xs">
-                            <p className="text-[11px] font-medium text-slate-500 italic line-clamp-2 leading-relaxed">
-                              "{ev.remarks}"
-                            </p>
-                          </TableCell>
-                          <TableCell className="text-right px-8 font-bold text-slate-400 text-xs whitespace-nowrap">
-                            {format(ev.submittedAt, 'MMM dd, yyyy')}
-                          </TableCell>
-                        </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {evaluatedApps.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">No evaluation history found</TableCell>
+                      </TableRow>
+                    ) : (
+                      evaluatedApps.map((app) => (
+                        app.evals.map((ev: any, idx) => (
+                          <TableRow key={`${app.id}-${idx}`} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
+                            <TableCell className="py-6 px-8">
+                              <p className="font-black text-slate-900">{app.data?.startupTitle || app.programmeTitle}</p>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{app.userName}</p>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="rounded-full border-slate-200 font-black text-[9px] uppercase tracking-widest px-3">
+                                {ev.phase}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {ev.phase === 'Phase 1' ? (
+                                <span className="text-slate-400 font-medium">-</span>
+                              ) : (
+                                <div className="flex items-center">
+                                  <span className="text-lg font-black text-primary mr-1">{ev.marks}</span>
+                                  <span className="text-[10px] font-bold text-slate-300">/ 100</span>
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={cn(
+                                "rounded-full font-black text-[9px] uppercase tracking-widest px-3 border-none",
+                                ev.recommendation === 'Recommended' ? 'bg-green-100 text-green-700' :
+                                  ev.recommendation === 'Revision Needed' ? 'bg-orange-100 text-orange-700' : 'bg-rose-100 text-rose-700'
+                              )}>
+                                {ev.recommendation}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="max-w-xs">
+                              {ev.phase === 'Phase 1' ? (
+                                <span className="text-slate-400 font-medium italic">-</span>
+                              ) : (
+                                <p className="text-[11px] font-medium text-slate-500 italic line-clamp-2 leading-relaxed">
+                                  "{ev.remarks}"
+                                </p>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right px-8 font-bold text-slate-400 text-xs whitespace-nowrap">
+                              {format(ev.submittedAt, 'MMM dd, yyyy')}
+                            </TableCell>
+                          </TableRow>
+                        ))
                       ))
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </Card>
           </TabsContent>
         </Tabs>
@@ -514,23 +536,25 @@ export default function EvaluatePage() {
                     </div>
                   ) : (
                     <>
-                      <div className="space-y-4 text-center">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Overall Marks (0-100)</Label>
-                        <div className="relative flex justify-center">
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={marks}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value);
-                              if (val > 100) return;
-                              setMarks(isNaN(val) ? '' : val);
-                            }}
-                            className="h-32 w-32 p-0 text-center text-6xl font-black rounded-[2rem] border-slate-100 bg-slate-50 focus:bg-white transition-all text-primary"
-                          />
+                      {phase !== 'Phase 1' && (
+                        <div className="space-y-4 text-center">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Overall Marks (0-100)</Label>
+                          <div className="relative flex justify-center">
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={marks}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                if (val > 100) return;
+                                setMarks(isNaN(val) ? '' : val);
+                              }}
+                              className="h-32 w-32 p-0 text-center text-6xl font-black rounded-[2rem] border-slate-100 bg-slate-50 focus:bg-white transition-all text-primary"
+                            />
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       <div className="space-y-4">
                         <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Recommendation</Label>
@@ -555,15 +579,17 @@ export default function EvaluatePage() {
                         </div>
                       </div>
 
-                      <div className="space-y-4">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Comments</Label>
-                        <Textarea
-                          placeholder="Enter evaluation remarks..."
-                          className="rounded-3xl min-h-[140px] border-slate-100 bg-slate-50 focus:bg-white transition-all p-6 font-medium text-slate-700"
-                          value={remarks}
-                          onChange={(e) => setRemarks(e.target.value)}
-                        />
-                      </div>
+                      {phase !== 'Phase 1' && (
+                        <div className="space-y-4">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Comments</Label>
+                          <Textarea
+                            placeholder="Enter evaluation remarks..."
+                            className="rounded-3xl min-h-[140px] border-slate-100 bg-slate-50 focus:bg-white transition-all p-6 font-medium text-slate-700"
+                            value={remarks}
+                            onChange={(e) => setRemarks(e.target.value)}
+                          />
+                        </div>
+                      )}
 
                       <Button
                         onClick={handleSubmitEvaluation}

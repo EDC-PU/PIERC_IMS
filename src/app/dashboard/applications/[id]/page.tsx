@@ -548,6 +548,9 @@ export default function ApplicationDetailsPage() {
               <InfoBlock label="Category" value={application.userCategory} />
               <InfoBlock label="Institute" value={application.userInstitute} />
               <InfoBlock label="Enrollment" value={application.userEnrollment} />
+              <InfoBlock label="Gender" value={application.userGender} />
+              <InfoBlock label="Social Category" value={application.userSocialCategory} />
+              <InfoBlock label="Caste" value={application.userCaste} />
             </CardContent>
           </Card>
 
@@ -967,39 +970,46 @@ export default function ApplicationDetailsPage() {
                   <div className="p-8 text-center text-slate-400 font-medium italic">No evaluations recorded yet.</div>
                 ) : (
                   <div className="divide-y divide-slate-100">
-                    {allEvaluations.map((ev, i) => (
-                      <div key={i} className="p-6 space-y-4 hover:bg-slate-50/50 transition-colors">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="text-xs font-black text-slate-900">{ev.evaluatorName}</p>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{ev.phaseKey?.replace('_', ' ')}</p>
+                    {allEvaluations.map((ev, i) => {
+                      const isPhase1 = ev.phaseKey === 'Phase_1' || ev.phase === 'Phase 1' || ev.phaseKey?.toLowerCase().includes('phase_1') || ev.phaseKey?.toLowerCase().includes('phase 1');
+                      return (
+                        <div key={i} className="p-6 space-y-4 hover:bg-slate-50/50 transition-colors">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="text-xs font-black text-slate-900">{ev.evaluatorName}</p>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{ev.phaseKey?.replace('_', ' ')}</p>
+                            </div>
+                            {!isPhase1 && (
+                              <Badge className={cn(
+                                "border-none font-black text-[9px] uppercase",
+                                ev.recommendation === 'Recommended' ? "bg-green-100 text-green-600" :
+                                  ev.recommendation === 'Revision Needed' ? "bg-orange-100 text-orange-600" :
+                                    "bg-rose-100 text-rose-600"
+                              )}>
+                                {ev.marks}/100
+                              </Badge>
+                            )}
                           </div>
-                          <Badge className={cn(
-                            "border-none font-black text-[9px] uppercase",
-                            ev.recommendation === 'Recommended' ? "bg-green-100 text-green-600" :
-                              ev.recommendation === 'Revision Needed' ? "bg-orange-100 text-orange-600" :
-                                "bg-rose-100 text-rose-600"
-                          )}>
-                            {ev.marks}/100
-                          </Badge>
+                          {!isPhase1 && ev.remarks && (
+                            <div className="bg-white p-4 rounded-2xl border border-slate-100">
+                              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tighter mb-2">Mentor Remarks</p>
+                              <p className="text-xs text-slate-600 leading-relaxed italic">"{ev.remarks}"</p>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <Badge variant="outline" className="text-[8px] font-black uppercase tracking-tighter border-slate-200 text-slate-400">
+                              {format(ev.submittedAt, 'MMM dd, HH:mm')}
+                            </Badge>
+                            <span className={cn(
+                              "text-[10px] font-black uppercase",
+                              ev.recommendation === 'Recommended' ? "text-green-600" :
+                                ev.recommendation === 'Revision Needed' ? "text-orange-600" :
+                                  "text-rose-600"
+                            )}>{ev.recommendation}</span>
+                          </div>
                         </div>
-                        <div className="bg-white p-4 rounded-2xl border border-slate-100">
-                          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tighter mb-2">Mentor Remarks</p>
-                          <p className="text-xs text-slate-600 leading-relaxed italic">"{ev.remarks}"</p>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline" className="text-[8px] font-black uppercase tracking-tighter border-slate-200 text-slate-400">
-                            {format(ev.submittedAt, 'MMM dd, HH:mm')}
-                          </Badge>
-                          <span className={cn(
-                            "text-[10px] font-black uppercase",
-                            ev.recommendation === 'Recommended' ? "text-green-600" :
-                              ev.recommendation === 'Revision Needed' ? "text-orange-600" :
-                                "text-rose-600"
-                          )}>{ev.recommendation}</span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>

@@ -63,6 +63,9 @@ const profileSchema = z.object({
   othersSpecify: z.string().optional(),
   institute: z.string().min(1, "Please select your institute"),
   linkedin: z.string().url().optional().or(z.literal('')),
+  socialCategory: z.string().optional(),
+  gender: z.string().optional(),
+  caste: z.string().optional(),
 });
 
 export default function SettingsPage() {
@@ -94,6 +97,9 @@ export default function SettingsPage() {
       othersSpecify: user?.othersSpecify || "",
       institute: user?.institute || "",
       linkedin: user?.linkedin || "",
+      socialCategory: user?.socialCategory || "",
+      gender: user?.gender || "",
+      caste: user?.caste || "",
     },
   });
 
@@ -107,6 +113,9 @@ export default function SettingsPage() {
         othersSpecify: user.othersSpecify || "",
         institute: user.institute || "",
         linkedin: user.linkedin || "",
+        socialCategory: user.socialCategory || "",
+        gender: user.gender || "",
+        caste: user.caste || "",
       });
     }
   }, [user, profileForm]);
@@ -124,6 +133,9 @@ export default function SettingsPage() {
         othersSpecify: values.othersSpecify || "",
         institute: values.institute,
         linkedin: values.linkedin || "",
+        socialCategory: values.socialCategory || "",
+        gender: values.gender || "",
+        caste: values.caste || "",
         updatedAt: Date.now(),
       };
       await update(userRef, updates);
@@ -370,6 +382,68 @@ export default function SettingsPage() {
                       )}
                     />
                   )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={profileForm.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Gender</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="w-full h-11 rounded-xl">
+                                <SelectValue placeholder="Select gender" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="male">Male</SelectItem>
+                              <SelectItem value="female">Female</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={profileForm.control}
+                      name="socialCategory"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Category</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="w-full h-11 rounded-xl">
+                                <SelectValue placeholder="Select category" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="General (Open)">General (Open)</SelectItem>
+                              <SelectItem value="OBC">OBC</SelectItem>
+                              <SelectItem value="SC">SC</SelectItem>
+                              <SelectItem value="ST">ST</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={profileForm.control}
+                    name="caste"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Caste</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter your caste" className="h-11 rounded-xl" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     control={profileForm.control}

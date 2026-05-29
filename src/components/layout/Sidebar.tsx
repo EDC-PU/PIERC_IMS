@@ -16,7 +16,8 @@ import {
   MessageSquare,
   BarChart3,
   UserCog,
-  ClipboardList
+  ClipboardList,
+  X
 } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
@@ -28,9 +29,11 @@ import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 
 interface SidebarProps {
   user: UserProfile;
+  isOpen?: boolean;
+  setIsOpen?: (open: boolean) => void;
 }
 
-export default function Sidebar({ user }: SidebarProps) {
+export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProps) {
   const pathname = usePathname();
   const [counts, setCounts] = useState({
     applications: 0,
@@ -108,54 +111,82 @@ export default function Sidebar({ user }: SidebarProps) {
   const filteredItems = menuItems.filter(item => item.roles.includes(user.role));
 
   return (
-    <aside className="w-70 bg-white border-r flex flex-col hidden lg:flex shadow-sm">
-      <div className="p-6 border-b bg-slate-50/50">
-        <Link href="/dashboard" className="block">
-          <img
-            src="https://www.pierc.org/_next/static/media/PIERC.959ad75d.svg"
-            alt="PIERC Logo"
-            className="h-18 w-auto"
-          />
-        </Link>
-      </div>
-      <nav className="flex-1 p-6 space-y-2 overflow-y-auto">
-        {filteredItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex items-center justify-between px-4 py-3 rounded-2xl transition-all duration-300 group",
-              pathname === item.href
-                ? "bg-slate-900 text-white shadow-xl shadow-slate-200 scale-[1.02]"
-                : "text-slate-500 hover:bg-slate-50 hover:text-primary"
-            )}
-          >
-            <div className="flex items-center space-x-3">
-              <item.icon className={cn("h-5 w-5 transition-transform group-hover:scale-110", pathname === item.href ? "text-primary" : "text-slate-400 group-hover:text-primary")} />
-              <span className={cn("text-[13px] font-black tracking-tight", pathname === item.href ? "text-white" : "text-slate-600")}>{item.name}</span>
-            </div>
-            {item.badge !== undefined && item.badge > 0 && (
-              <span className={cn(
-                "flex items-center justify-center text-[9px] font-black h-5 min-w-[20px] px-2 rounded-full ring-2 transition-all group-hover:scale-110",
-                pathname === item.href
-                  ? "bg-primary text-white ring-slate-900"
-                  : "bg-rose-500 text-white ring-white"
-              )}>
-                {item.badge}
-              </span>
-            )}
+    <>
+      {/* Mobile Sidebar backdrop */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden transition-opacity duration-300 animate-in fade-in"
+          onClick={() => setIsOpen?.(false)}
+        />
+      )}
+      <aside className={cn(
+        "bg-white border-r flex flex-col shadow-sm transition-all duration-300 z-50 shrink-0",
+        // Desktop styles
+        "lg:flex lg:w-70 lg:static lg:h-auto",
+        // Mobile styles
+        "fixed inset-y-0 left-0 w-70 h-full lg:translate-x-0 transform",
+        isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      )}>
+        <div className="p-6 border-b bg-slate-50/50 flex items-center justify-between">
+          <Link href="/dashboard" className="block" onClick={() => setIsOpen?.(false)}>
+            <img
+              src="https://www.pierc.org/_next/static/media/PIERC.959ad75d.svg"
+              alt="PIERC Logo"
+              className="h-18 w-auto"
+            />
           </Link>
-        ))}
-      </nav>
-      <div className="p-6 border-t bg-slate-50/30">
-        <button
-          onClick={handleLogout}
-          className="flex items-center space-x-3 px-4 py-3 w-full text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded-2xl transition-all font-bold text-[13px]"
-        >
-          <LogOut className="h-5 w-5" />
-          <span>Logout Session</span>
-        </button>
-      </div>
-    </aside>
+          {setIsOpen && (
+            <button 
+              onClick={() => setIsOpen(false)}
+              className="lg:hidden p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
+        </div>
+        <nav className="flex-1 p-6 space-y-2 overflow-y-auto">
+          {filteredItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setIsOpen?.(false)}
+              className={cn(
+                "flex items-center justify-between px-4 py-3 rounded-2xl transition-all duration-300 group",
+                pathname === item.href
+                  ? "bg-slate-900 text-white shadow-xl shadow-slate-200 scale-[1.02]"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-primary"
+              )}
+            >
+              <div className="flex items-center space-x-3">
+                <item.icon className={cn("h-5 w-5 transition-transform group-hover:scale-110", pathname === item.href ? "text-primary" : "text-slate-400 group-hover:text-primary")} />
+                <span className={cn("text-[13px] font-black tracking-tight", pathname === item.href ? "text-white" : "text-slate-600")}>{item.name}</span>
+              </div>
+              {item.badge !== undefined && item.badge > 0 && (
+                <span className={cn(
+                  "flex items-center justify-center text-[9px] font-black h-5 min-w-[20px] px-2 rounded-full ring-2 transition-all group-hover:scale-110",
+                  pathname === item.href
+                    ? "bg-primary text-white ring-slate-900"
+                    : "bg-rose-500 text-white ring-white"
+                )}>
+                  {item.badge}
+                </span>
+              )}
+            </Link>
+          ))}
+        </nav>
+        <div className="p-6 border-t bg-slate-50/30">
+          <button
+            onClick={() => {
+              setIsOpen?.(false);
+              handleLogout();
+            }}
+            className="flex items-center space-x-3 px-4 py-3 w-full text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded-2xl transition-all font-bold text-[13px]"
+          >
+            <LogOut className="h-5 w-5" />
+            <span>Logout Session</span>
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }

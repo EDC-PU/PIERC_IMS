@@ -133,56 +133,58 @@ export default function ApplicationsPage() {
         </Card>
       ) : (
         <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2rem] overflow-hidden">
-          <Table>
-            <TableHeader className="bg-slate-50/50">
-              <TableRow className="border-slate-100">
-                <TableHead className="py-6 px-8 text-[10px] font-black uppercase tracking-widest text-slate-500">Innovation / Project</TableHead>
-                {isAdmin && <TableHead className="py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Applicant Details</TableHead>}
-                <TableHead className="py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Timeline</TableHead>
-                <TableHead className="py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Status</TableHead>
-                <TableHead className="py-6 text-right pr-8 text-[10px] font-black uppercase tracking-widest text-slate-500">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredApplications.map((app) => (
-                <TableRow key={app.id} className="border-slate-50 hover:bg-slate-50/30 transition-all duration-300">
-                  <TableCell className="py-6 px-8">
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 group-hover:bg-primary group-hover:text-white transition-colors">
-                        <Rocket className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="font-black text-slate-900 leading-tight uppercase tracking-tight">{app.data?.startupTitle || app.programmeTitle}</p>
-                        <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{app.id.substring(0, 8)}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  {isAdmin && (
-                    <TableCell className="py-6">
-                      <div className="flex flex-col">
-                        <span className="font-black text-slate-900 text-xs uppercase tracking-tight">{app.userName}</span>
-                        <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-0.5">{app.userEmail}</span>
+          <div className="w-full overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-slate-50/50">
+                <TableRow className="border-slate-100">
+                  <TableHead className="py-6 px-8 text-[10px] font-black uppercase tracking-widest text-slate-500">Innovation / Project</TableHead>
+                  {isAdmin && <TableHead className="py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Applicant Details</TableHead>}
+                  <TableHead className="py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Timeline</TableHead>
+                  <TableHead className="py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Status</TableHead>
+                  <TableHead className="py-6 text-right pr-8 text-[10px] font-black uppercase tracking-widest text-slate-500">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredApplications.map((app) => (
+                  <TableRow key={app.id} className="border-slate-50 hover:bg-slate-50/30 transition-all duration-300">
+                    <TableCell className="py-6 px-8">
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 group-hover:bg-primary group-hover:text-white transition-colors">
+                          <Rocket className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-900 leading-tight uppercase tracking-tight">{app.data?.startupTitle || app.programmeTitle}</p>
+                          <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{app.id.substring(0, 8)}</p>
+                        </div>
                       </div>
                     </TableCell>
-                  )}
-                  <TableCell className="py-6">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-black text-slate-700 uppercase tracking-tight">{format(app.submittedAt, 'MMM dd, yyyy')}</span>
-                      <span className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Submitted</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-6">{getStatusBadge(app.status)}</TableCell>
-                  <TableCell className="text-right pr-8 py-6">
-                    <Button variant="outline" size="sm" asChild className="rounded-xl font-bold h-9 border-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
-                      <Link href={`/dashboard/applications/${app.id}`}>
-                        <Eye className="mr-2 h-4 w-4" /> View Details
-                      </Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    {isAdmin && (
+                      <TableCell className="py-6">
+                        <div className="flex flex-col">
+                          <span className="font-black text-slate-900 text-xs uppercase tracking-tight">{app.userName}</span>
+                          <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-0.5">{app.userEmail}</span>
+                        </div>
+                      </TableCell>
+                    )}
+                    <TableCell className="py-6">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-slate-700 uppercase tracking-tight">{format(app.submittedAt, 'MMM dd, yyyy')}</span>
+                        <span className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Submitted</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-6">{getStatusBadge(app.status)}</TableCell>
+                    <TableCell className="text-right pr-8 py-6">
+                      <Button variant="outline" size="sm" asChild className="rounded-xl font-bold h-9 border-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
+                        <Link href={`/dashboard/applications/${app.id}`}>
+                          <Eye className="mr-2 h-4 w-4" /> View Details
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
       )}
     </div>

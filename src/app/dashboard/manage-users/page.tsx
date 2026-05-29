@@ -145,8 +145,9 @@ export default function ManageUsersPage() {
 
       <Card className="border-none shadow-2xl ring-1 ring-slate-200 overflow-hidden rounded-3xl">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-slate-50/50">
+          <div className="w-full overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-slate-50/50">
               <TableRow className="hover:bg-transparent border-slate-100">
                 <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-slate-400">User Profile</TableHead>
                 <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-slate-400">Contact & ID</TableHead>
@@ -245,6 +246,7 @@ export default function ManageUsersPage() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

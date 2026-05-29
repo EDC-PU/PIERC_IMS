@@ -11,6 +11,9 @@ export interface UserProfile {
   enrollmentNumber?: string;
   institute?: string;
   category?: string;
+  socialCategory?: string;
+  gender?: string;
+  caste?: string;
   othersSpecify?: string;
   startupName?: string;
   website?: string;
@@ -60,6 +63,9 @@ export interface Application {
   userEmail?: string;
   userContact?: string;
   userCategory?: string;
+  userSocialCategory?: string;
+  userGender?: string;
+  userCaste?: string;
   userInstitute?: string;
   userEnrollment?: string;
   programmeId: string;

@@ -38,6 +38,9 @@ const onboardingSchema = z.object({
   category: z.string().min(1, "Please select a category"),
   othersSpecify: z.string().optional(),
   institute: z.string().min(1, "Please select your institute"),
+  socialCategory: z.string().min(1, "Please select a category"),
+  gender: z.string().min(1, "Please select a gender"),
+  caste: z.string().min(1, "Caste is required"),
 });
 
 export default function OnboardingForm() {
@@ -53,6 +56,9 @@ export default function OnboardingForm() {
       name: user?.displayName || "",
       enrollmentNumber: "",
       institute: "",
+      socialCategory: "",
+      gender: "",
+      caste: "",
     },
   });
 
@@ -67,6 +73,9 @@ export default function OnboardingForm() {
         category: "PU Student",
         othersSpecify: "",
         institute: "",
+        socialCategory: "",
+        gender: "",
+        caste: "",
       });
     }
   }, [user, form]);
@@ -242,6 +251,68 @@ export default function OnboardingForm() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Gender</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full h-12 rounded-xl">
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="socialCategory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Category</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full h-12 rounded-xl">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="General (Open)">General (Open)</SelectItem>
+                        <SelectItem value="OBC">OBC</SelectItem>
+                        <SelectItem value="SC">SC</SelectItem>
+                        <SelectItem value="ST">ST</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="caste"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Caste</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter your caste" {...field} className="h-12 rounded-xl" />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
