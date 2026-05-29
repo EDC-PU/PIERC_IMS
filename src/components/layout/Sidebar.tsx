@@ -39,7 +39,8 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
     applications: 0,
     evaluate: 0,
     messages: 0,
-    meetings: 0
+    notifications: 0,
+    totalMeetings: 0
   });
 
   useEffect(() => {
@@ -79,7 +80,21 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
       const data = snapshot.val();
       if (data) {
         const unread = Object.values(data).filter((n: any) => !n.read).length;
-        setCounts(prev => ({ ...prev, meetings: unread }));
+        setCounts(prev => ({ ...prev, notifications: unread }));
+      }
+    });
+
+    // 4. Total Pending Meetings (Meetings page - Phase 1 + Phase 2)
+    const centralMeetingsRef = ref(db, 'meetings');
+    onValue(centralMeetingsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const pendingMeetings = Object.values(data).filter((m: any) =>
+          m.status === 'Scheduled' && m.attendees?.includes(user.uid)
+        ).length;
+        setCounts(prev => ({ ...prev, totalMeetings: pendingMeetings }));
+      } else {
+        setCounts(prev => ({ ...prev, totalMeetings: 0 }));
       }
     });
 
@@ -95,11 +110,11 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
   };
 
   const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard', roles: ['user', 'admin', 'mentor', 'super_admin'], badge: counts.meetings },
+    { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard', roles: ['user', 'admin', 'mentor', 'super_admin'], badge: counts.notifications },
     { name: 'Programmes', icon: Rocket, href: '/dashboard/programmes', roles: ['user', 'admin', 'super_admin'] },
     { name: 'Applications', icon: FileText, href: '/dashboard/applications', roles: ['user', 'admin', 'mentor', 'super_admin'], badge: counts.applications },
     { name: 'Evaluate', icon: ClipboardList, href: '/dashboard/evaluate', roles: ['admin', 'mentor', 'super_admin'], badge: counts.evaluate },
-    { name: 'Meetings', icon: Calendar, href: '/dashboard/meetings', roles: ['user', 'admin', 'mentor', 'super_admin'] },
+    { name: 'Meetings', icon: Calendar, href: '/dashboard/meetings', roles: ['user', 'admin', 'mentor', 'super_admin'], badge: counts.totalMeetings },
     { name: 'Mentors', icon: Users, href: '/dashboard/mentors', roles: ['admin', 'super_admin'] },
     { name: 'Startups', icon: Rocket, href: '/dashboard/startups', roles: ['admin', 'mentor', 'super_admin'] },
     { name: 'Analytics', icon: BarChart3, href: '/dashboard/analytics', roles: ['admin', 'super_admin'] },
