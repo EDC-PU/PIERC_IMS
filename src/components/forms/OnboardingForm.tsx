@@ -29,18 +29,28 @@ import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import { institutes } from '@/lib/constants';
 import { Rocket, GraduationCap } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const onboardingSchema = z.object({
   email: z.string().email("Invalid email address"),
   contactNumber: z.string().min(10, "Contact number must be at least 10 digits"),
   name: z.string().min(2, "Name must be at least 2 characters"),
-  enrollmentNumber: z.string().min(1, "Enrollment number is required"),
+  enrollmentNumber: z.string().optional(),
   category: z.string().min(1, "Please select a category"),
   othersSpecify: z.string().optional(),
   institute: z.string().min(1, "Please select your institute"),
   socialCategory: z.string().min(1, "Please select a category"),
   gender: z.string().min(1, "Please select a gender"),
   caste: z.string().min(1, "Caste is required"),
+}).superRefine((data, ctx) => {
+  const isParulEmail = data.email?.toLowerCase().endsWith('@paruluniversity.ac.in');
+  if (isParulEmail && (!data.enrollmentNumber || data.enrollmentNumber.trim() === "")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['enrollmentNumber'],
+      message: 'Enrollment number is required for Parul University users',
+    });
+  }
 });
 
 export default function OnboardingForm() {
@@ -84,14 +94,17 @@ export default function OnboardingForm() {
     if (!user) return;
     setLoading(true);
     try {
-      // Step 1: Check for uniqueness of enrollment number
-      const slugRef = ref(db, `enrollment_slugs/${values.enrollmentNumber}`);
-      const slugSnap = await get(slugRef);
-      
-      if (slugSnap.exists() && slugSnap.val() !== user.uid) {
-        toast.error('This Enrollment Number is already registered with another account.');
-        setLoading(false);
-        return;
+      // Step 1: Check for uniqueness of enrollment number (only if email ends with @paruluniversity.ac.in)
+      const isParulEmail = values.email?.toLowerCase().endsWith('@paruluniversity.ac.in');
+      if (isParulEmail && values.enrollmentNumber && values.enrollmentNumber.trim() !== '') {
+        const slugRef = ref(db, `enrollment_slugs/${values.enrollmentNumber}`);
+        const slugSnap = await get(slugRef);
+        
+        if (slugSnap.exists() && slugSnap.val() !== user.uid) {
+          toast.error('This Enrollment Number is already registered with another account.');
+          setLoading(false);
+          return;
+        }
       }
 
       // Step 2: Atomic update for user profile and unique slug
@@ -100,11 +113,15 @@ export default function OnboardingForm() {
           ...user,
           ...values,
           displayName: values.name,
+          enrollmentNumber: isParulEmail ? (values.enrollmentNumber || '') : '',
           onboardingCompleted: true,
           updatedAt: Date.now(),
-        },
-        [`enrollment_slugs/${values.enrollmentNumber}`]: user.uid
+        }
       };
+
+      if (isParulEmail && values.enrollmentNumber && values.enrollmentNumber.trim() !== '') {
+        updates[`enrollment_slugs/${values.enrollmentNumber}`] = user.uid;
+      }
 
       await update(ref(db), updates);
 
@@ -180,20 +197,25 @@ export default function OnboardingForm() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="enrollmentNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Enrollment Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your enrollment number" {...field} className="h-12 rounded-xl" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className={cn(
+              "grid grid-cols-1 gap-6",
+              user?.email?.toLowerCase().endsWith('@paruluniversity.ac.in') ? "md:grid-cols-2" : "md:grid-cols-1"
+            )}>
+              {user?.email?.toLowerCase().endsWith('@paruluniversity.ac.in') && (
+                <FormField
+                  control={form.control}
+                  name="enrollmentNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Enrollment Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter your enrollment number" {...field} className="h-12 rounded-xl" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 control={form.control}
                 name="category"

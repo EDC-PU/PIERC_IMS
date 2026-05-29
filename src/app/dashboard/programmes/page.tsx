@@ -103,8 +103,8 @@ export default function ProgrammesPage() {
               <Button
                 asChild
                 className={cn(
-                  "w-full h-14 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all duration-300",
-                  prog.active ? "bg-slate-900 hover:bg-primary shadow-slate-200" : "bg-slate-100 text-slate-400 pointer-events-none"
+                  "w-full h-14 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300",
+                  prog.active ? "bg-slate-900 hover:bg-primary text-white shadow-md shadow-slate-900/10" : "bg-slate-100 text-slate-400 pointer-events-none"
                 )}
                 disabled={!prog.active}
               >

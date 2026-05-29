@@ -153,7 +153,7 @@ function MessagesContent() {
   };
 
   const filteredChats = chats.filter(c => 
-    c.otherUser.displayName.toLowerCase().includes(search.toLowerCase())
+    (c.otherUser.displayName || c.otherUser.email || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -194,13 +194,13 @@ function MessagesContent() {
                 <div className="relative">
                   <Avatar className="h-12 w-12 ring-2 ring-white">
                     <AvatarImage src={chat.otherUser.photoURL} />
-                    <AvatarFallback className="bg-primary text-white font-bold">{chat.otherUser.displayName[0]}</AvatarFallback>
+                    <AvatarFallback className="bg-primary text-white font-bold">{(chat.otherUser.displayName || chat.otherUser.email || 'U')[0].toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></div>
                 </div>
                 <div className="ml-4 flex-1 text-left min-w-0">
                   <div className="flex justify-between items-baseline mb-0.5">
-                    <h3 className="font-bold text-slate-900 truncate text-sm">{chat.otherUser.displayName}</h3>
+                    <h3 className="font-bold text-slate-900 truncate text-sm">{chat.otherUser.displayName || chat.otherUser.email || 'User'}</h3>
                     <span className="text-[10px] text-slate-400 font-medium">
                       {new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
@@ -224,10 +224,10 @@ function MessagesContent() {
               <div className="flex items-center">
                 <Avatar className="h-10 w-10 ring-2 ring-primary/10">
                   <AvatarImage src={selectedChat.photoURL} />
-                  <AvatarFallback className="bg-primary text-white font-bold">{selectedChat.displayName[0]}</AvatarFallback>
+                  <AvatarFallback className="bg-primary text-white font-bold">{(selectedChat.displayName || selectedChat.email || 'U')[0].toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="ml-4">
-                  <h2 className="font-black text-slate-900 text-sm">{selectedChat.displayName}</h2>
+                  <h2 className="font-black text-slate-900 text-sm">{selectedChat.displayName || selectedChat.email || 'User'}</h2>
                   <div className="flex items-center text-[10px] text-emerald-500 font-black uppercase tracking-widest">
                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse"></div>
                     Online Now
@@ -254,7 +254,7 @@ function MessagesContent() {
                     <div className="w-16 h-16 bg-primary/5 rounded-full flex items-center justify-center mx-auto">
                       <Hash className="h-8 w-8 text-primary/30" />
                     </div>
-                    <p className="text-slate-400 text-sm font-medium">Start your conversation with {selectedChat.displayName}</p>
+                    <p className="text-slate-400 text-sm font-medium">Start your conversation with {selectedChat.displayName || selectedChat.email || 'User'}</p>
                   </div>
                 )}
                 {messages.map((msg, idx) => (
@@ -291,7 +291,7 @@ function MessagesContent() {
                   <Input 
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder={`Write to ${selectedChat.displayName}...`} 
+                    placeholder={`Write to ${selectedChat.displayName || selectedChat.email || 'User'}...`} 
                     className="h-14 rounded-2xl bg-slate-50 border-none px-6 focus:ring-2 focus:ring-primary/20 transition-all font-medium"
                   />
                   <div className="absolute right-4 top-4 flex items-center space-x-2 text-slate-300">
