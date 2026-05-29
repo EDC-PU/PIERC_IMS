@@ -476,7 +476,7 @@ export default function ApplicationDetailsPage() {
 
             {application.status === 'Cohort Selected' && (
               <Button className="rounded-xl h-11 bg-primary font-black" onClick={() => updateStatus('Incubated')}>
-                🚀 Admit to Cohort
+                🚀 Mark Incubated
               </Button>
             )}
 
