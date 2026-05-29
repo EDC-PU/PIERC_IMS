@@ -52,7 +52,7 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
       onValue(appsRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          const pending = Object.values(data).filter((a: any) => a.status === 'Submitted').length;
+          const pending = Object.values(data).filter((a: any) => a.status === 'Submitted' || a.status === 'Under Review').length;
           setCounts(prev => ({ ...prev, applications: pending }));
         }
       });

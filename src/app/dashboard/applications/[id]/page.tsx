@@ -306,7 +306,7 @@ export default function ApplicationDetailsPage() {
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   const isOwner = user?.uid === application.userId;
   const isRevisionNeeded = application.status === 'Revision Needed';
-  const canEdit = isOwner && (isRevisionNeeded || (meetings.length === 0 && application.status === 'Submitted'));
+  const canEdit = isOwner && (isRevisionNeeded || (meetings.length === 0 && (application.status === 'Submitted' || application.status === 'Under Review')));
   const data = application.data || {};
   const isGrowthPad = application.programmeId.toLowerCase().includes('growth');
 
@@ -642,7 +642,9 @@ export default function ApplicationDetailsPage() {
               <InfoBlock label="Gender" value={application.userGender} />
               <InfoBlock label="Social Category" value={application.userSocialCategory} />
               <InfoBlock label="Caste" value={application.userCaste} />
-              <InfoBlock label="Assigned Mentor" value={application.mentorName || 'None'} icon={User} />
+              {(application.status === 'Cohort Selected' || application.status === 'Incubated') && (
+                <InfoBlock label="Assigned Mentor" value={application.mentorName || 'None'} icon={User} />
+              )}
             </CardContent>
           </Card>
 

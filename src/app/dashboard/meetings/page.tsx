@@ -133,7 +133,7 @@ export default function MeetingsPage() {
   const getAppMeetingCount = (appId: string) => meetings.filter(m => m.applicationId === appId).length;
 
   const phase1Apps = applications.filter(app =>
-    (app.status === 'Submitted' || app.status === 'Revision Submitted' || app.status === 'Phase 1 Evaluation' || app.status === 'Revision Needed' || app.status === 'Shortlisted')
+    (app.status === 'Submitted' || app.status === 'Under Review' || app.status === 'Revision Submitted' || app.status === 'Phase 1 Evaluation' || app.status === 'Revision Needed' || app.status === 'Shortlisted')
   );
 
   const phase2Apps = applications.filter(app =>

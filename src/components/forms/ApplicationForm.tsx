@@ -149,7 +149,7 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
         startupTitle: isGrowthPad ? values.startupName : values.startupTitle,
         programmeId,
         programmeTitle,
-        status: 'Submitted',
+        status: 'Under Review',
         submittedAt: Date.now(),
         updatedAt: Date.now(),
         data: values,
@@ -157,7 +157,7 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
           pitchDeck: pitchDeckUrl,
         },
         timeline: [
-          { status: 'Submitted', timestamp: Date.now(), remarks: 'Application submitted successfully.' }
+          { status: 'Under Review', timestamp: Date.now(), remarks: 'Application submitted successfully.' }
         ]
       };
 

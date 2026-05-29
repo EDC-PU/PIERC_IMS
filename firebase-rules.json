@@ -18,6 +18,7 @@
           root.child('users').child(auth.uid).child('role').val() == 'super_admin' || 
           (data.child('userId').val() == auth.uid && (
             data.child('status').val() == 'Submitted' || 
+            data.child('status').val() == 'Under Review' || 
             data.child('status').val() == 'Revision Needed' || 
             data.child('status').val() == 'Revision Submitted' ||
             data.child('status').val() == 'Phase 2 Selected'
