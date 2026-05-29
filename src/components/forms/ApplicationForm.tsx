@@ -117,16 +117,19 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
 
   async function onSubmit(values: any) {
     if (!user) return;
-    if (!file) {
+    const isIncubation = programmeId.trim().toLowerCase() === 'incubation';
+    if (!file && !isIncubation) {
       toast.error('Please upload your Pitch Deck');
       return;
     }
     setLoading(true);
     try {
       let pitchDeckUrl = "";
-      const fileRef = sRef(storage, `applications/${user.uid}/${Date.now()}_${file.name}`);
-      const uploadResult = await uploadBytes(fileRef, file);
-      pitchDeckUrl = await getDownloadURL(uploadResult.ref);
+      if (file) {
+        const fileRef = sRef(storage, `applications/${user.uid}/${Date.now()}_${file.name}`);
+        const uploadResult = await uploadBytes(fileRef, file);
+        pitchDeckUrl = await getDownloadURL(uploadResult.ref);
+      }
 
       const applicationsRef = ref(db, 'applications');
       const newAppRef = push(applicationsRef);
@@ -704,45 +707,47 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
               </div>
             )}
 
-            {/* Final Section: Documents (Always Visible at bottom) */}
-            <div className="space-y-6 pt-12 border-t">
-              <div className="flex items-center space-x-2 pb-2">
-                <Upload className="h-4 w-4 text-primary" />
-                <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Documentation</h3>
-              </div>
-              
-              <div className="space-y-4">
-                <label className="text-xs font-black uppercase tracking-[0.2em] text-primary">Pitch Deck</label>
-                <div 
-                  className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all cursor-pointer shadow-sm ${file ? 'border-primary bg-primary/5 ring-4 ring-primary/5' : 'border-slate-200 hover:border-primary/50 hover:bg-slate-50'}`}
-                  onClick={() => document.getElementById('pitchDeck')?.click()}
-                >
-                  <input id="pitchDeck" type="file" className="hidden" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-                  {file ? (
-                    <div className="space-y-4">
-                      <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                        <CheckCircle2 className="h-8 w-8 text-primary" />
+            {/* Final Section: Documents (Always Visible at bottom except for Incubation) */}
+            {programmeId.trim().toLowerCase() !== 'incubation' && (
+              <div className="space-y-6 pt-12 border-t">
+                <div className="flex items-center space-x-2 pb-2">
+                  <Upload className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Documentation</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <label className="text-xs font-black uppercase tracking-[0.2em] text-primary">Pitch Deck</label>
+                  <div 
+                    className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all cursor-pointer shadow-sm ${file ? 'border-primary bg-primary/5 ring-4 ring-primary/5' : 'border-slate-200 hover:border-primary/50 hover:bg-slate-50'}`}
+                    onClick={() => document.getElementById('pitchDeck')?.click()}
+                  >
+                    <input id="pitchDeck" type="file" className="hidden" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                    {file ? (
+                      <div className="space-y-4">
+                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                          <CheckCircle2 className="h-8 w-8 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-base font-bold text-slate-900">{file.name}</p>
+                          <p className="text-xs text-slate-500 mt-1">{(file.size / (1024 * 1024)).toFixed(2)} MB • PDF Document</p>
+                        </div>
+                        <Button variant="ghost" size="sm" className="text-rose-500 font-bold hover:bg-rose-50 rounded-xl" onClick={(e) => { e.stopPropagation(); setFile(null); }}>Remove and Replace</Button>
                       </div>
-                      <div>
-                        <p className="text-base font-bold text-slate-900">{file.name}</p>
-                        <p className="text-xs text-slate-500 mt-1">{(file.size / (1024 * 1024)).toFixed(2)} MB • PDF Document</p>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
+                          <Upload className="h-8 w-8 text-slate-400" />
+                        </div>
+                        <div>
+                          <p className="text-base font-bold text-slate-900">Click to upload Pitch Deck</p>
+                          <p className="text-xs text-slate-500 mt-1">Maximum file size: 10MB • Format: PDF</p>
+                        </div>
                       </div>
-                      <Button variant="ghost" size="sm" className="text-rose-500 font-bold hover:bg-rose-50 rounded-xl" onClick={(e) => { e.stopPropagation(); setFile(null); }}>Remove and Replace</Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
-                        <Upload className="h-8 w-8 text-slate-400" />
-                      </div>
-                      <div>
-                        <p className="text-base font-bold text-slate-900">Click to upload Pitch Deck</p>
-                        <p className="text-xs text-slate-500 mt-1">Maximum file size: 10MB • Format: PDF</p>
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Submission */}
             <div className="pt-8 border-t flex flex-col items-center space-y-4">

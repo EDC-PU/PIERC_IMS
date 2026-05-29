@@ -154,13 +154,22 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
               className={cn(
                 "flex items-center justify-between px-4 py-3 rounded-2xl transition-all duration-300 group",
                 pathname === item.href
-                  ? "bg-primary text-white shadow-xl shadow-primary/20 scale-[1.02]"
+                  ? "text-white shadow-xl shadow-primary/20 scale-[1.02]"
                   : "text-slate-500 hover:bg-slate-50 hover:text-primary"
               )}
+              style={pathname === item.href ? { backgroundColor: '#D91A2A', color: '#FFFFFF' } : undefined}
             >
               <div className="flex items-center space-x-3">
-                <item.icon className={cn("h-5 w-5 transition-transform group-hover:scale-110", pathname === item.href ? "text-white" : "text-slate-400 group-hover:text-primary")} />
-                <span className={cn("text-[13px] font-black tracking-tight", pathname === item.href ? "text-white" : "text-slate-600")}>{item.name}</span>
+                <item.icon 
+                  className={cn("h-5 w-5 transition-transform group-hover:scale-110", pathname === item.href ? "text-white" : "text-slate-400 group-hover:text-primary")}
+                  style={pathname === item.href ? { color: '#FFFFFF' } : undefined}
+                />
+                <span 
+                  className={cn("text-[13px] font-black tracking-tight", pathname === item.href ? "text-white" : "text-slate-600")}
+                  style={pathname === item.href ? { color: '#FFFFFF' } : undefined}
+                >
+                  {item.name}
+                </span>
               </div>
               {item.badge !== undefined && item.badge > 0 && (
                 <span className={cn(

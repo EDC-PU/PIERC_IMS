@@ -104,12 +104,17 @@ export default function ProgrammesPage() {
                 asChild
                 className={cn(
                   "w-full h-14 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300",
-                  prog.active ? "bg-primary hover:bg-slate-900 text-white shadow-md shadow-primary/20" : "bg-slate-100 text-slate-400 pointer-events-none"
+                  prog.active ? "text-white shadow-md shadow-primary/20" : "bg-slate-100 text-slate-400 pointer-events-none"
                 )}
+                style={prog.active ? { backgroundColor: '#D91A2A', color: '#FFFFFF' } : undefined}
                 disabled={!prog.active}
               >
-                <Link href={`/dashboard/programmes/${prog.id}/apply`} className="flex items-center justify-center gap-2">
-                  Apply Now <Rocket className="h-4 w-4" />
+                <Link
+                  href={`/dashboard/programmes/${prog.id}/apply`}
+                  className="flex items-center justify-center gap-2"
+                  style={prog.active ? { backgroundColor: '#D91A2A', color: '#FFFFFF' } : undefined}
+                >
+                  Apply Now <Rocket className="h-4 w-4" style={prog.active ? { color: '#FFFFFF' } : undefined} />
                 </Link>
               </Button>
             </div>

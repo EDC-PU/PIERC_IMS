@@ -816,20 +816,22 @@ export default function ApplicationDetailsPage() {
                         placeholder="How does your innovation solve the problem?"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Update Pitch Deck (Optional)</Label>
-                      <div className="flex items-center gap-4">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="rounded-xl h-12 flex-1 border-dashed bg-slate-50 border-slate-200"
-                          onClick={() => document.getElementById('new-pitch')?.click()}
-                        >
-                          <Upload className="h-4 w-4 mr-2" /> {newPitchDeck ? newPitchDeck.name : 'Choose New PDF'}
-                        </Button>
-                        <input id="new-pitch" type="file" className="hidden" onChange={(e) => setNewPitchDeck(e.target.files?.[0] || null)} accept=".pdf" />
+                    {application.programmeId.trim().toLowerCase() !== 'incubation' && (
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Update Pitch Deck (Optional)</Label>
+                        <div className="flex items-center gap-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="rounded-xl h-12 flex-1 border-dashed bg-slate-50 border-slate-200"
+                            onClick={() => document.getElementById('new-pitch')?.click()}
+                          >
+                            <Upload className="h-4 w-4 mr-2" /> {newPitchDeck ? newPitchDeck.name : 'Choose New PDF'}
+                          </Button>
+                          <input id="new-pitch" type="file" className="hidden" onChange={(e) => setNewPitchDeck(e.target.files?.[0] || null)} accept=".pdf" />
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 ) : (
                   <>
