@@ -97,7 +97,9 @@ export default function OnboardingForm() {
       // Step 2: Atomic update for user profile and unique slug
       const updates: Record<string, any> = {
         [`users/${user.uid}`]: {
+          ...user,
           ...values,
+          displayName: values.name,
           onboardingCompleted: true,
           updatedAt: Date.now(),
         },

@@ -71,12 +71,12 @@ export default function MentorsPage() {
 
   const potentialMentors = allUsers.filter(u => 
     u.role !== 'mentor' && 
-    (u.displayName.toLowerCase().includes(userSearch.toLowerCase()) || 
-     u.email.toLowerCase().includes(userSearch.toLowerCase()))
+    ((u.displayName || u.email || '').toLowerCase().includes(userSearch.toLowerCase()) || 
+     (u.email || '').toLowerCase().includes(userSearch.toLowerCase()))
   );
 
   const filteredMentors = mentors.filter(m => 
-    m.displayName.toLowerCase().includes(search.toLowerCase()) ||
+    (m.displayName || m.email || '').toLowerCase().includes(search.toLowerCase()) ||
     m.bio?.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -123,10 +123,10 @@ export default function MentorsPage() {
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
                             <AvatarImage src={u.photoURL} />
-                            <AvatarFallback className="bg-primary text-white font-bold">{u.displayName.charAt(0)}</AvatarFallback>
+                            <AvatarFallback className="bg-primary text-white font-bold">{(u.displayName || u.email || 'U')[0].toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">{u.displayName}</p>
+                            <p className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">{u.displayName || u.email || 'User'}</p>
                             <p className="text-[10px] text-slate-400 font-medium">{u.email}</p>
                           </div>
                         </div>
@@ -170,14 +170,14 @@ export default function MentorsPage() {
                 <div className="flex justify-between items-start">
                   <Avatar className="h-16 w-16 border-2 border-white shadow-sm">
                     <AvatarImage src={mentor.photoURL} />
-                    <AvatarFallback>{mentor.displayName.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{(mentor.displayName || mentor.email || 'M')[0].toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <Button variant="ghost" size="icon">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </div>
                 <div className="mt-4">
-                  <CardTitle className="text-lg">{mentor.displayName}</CardTitle>
+                  <CardTitle className="text-lg">{mentor.displayName || mentor.email || 'Mentor'}</CardTitle>
                   <CardDescription className="line-clamp-1">{mentor.bio || 'Expert Mentor at PIERC'}</CardDescription>
                 </div>
               </CardHeader>

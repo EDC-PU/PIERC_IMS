@@ -90,6 +90,8 @@ export interface Application {
     phase2?: EvaluationRecord;
     funding?: EvaluationRecord;
   };
+  mentorId?: string;
+  mentorName?: string;
 }
 
 export interface EvaluationRecord {

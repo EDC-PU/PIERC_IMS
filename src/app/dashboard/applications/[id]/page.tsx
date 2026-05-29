@@ -5,8 +5,15 @@ import { useParams } from 'next/navigation';
 import { ref, onValue, update, push, remove, set, get } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
-import { Application } from '@/types';
+import { Application, UserProfile } from '@/types';
 import { useAuthStore } from '@/store/authStore';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -96,6 +103,11 @@ export default function ApplicationDetailsPage() {
   const [phase2PPT, setPhase2PPT] = useState<File | null>(null);
   const [isUploadingPPT, setIsUploadingPPT] = useState(false);
 
+  // Mentor Assignment states
+  const [mentors, setMentors] = useState<UserProfile[]>([]);
+  const [showCohortDialog, setShowCohortDialog] = useState(false);
+  const [cohortMentorId, setCohortMentorId] = useState('');
+
   const handleUploadPhase2PPT = async () => {
     if (!phase2PPT || !id || !application) return;
     setIsUploadingPPT(true);
@@ -182,13 +194,26 @@ export default function ApplicationDetailsPage() {
       }
     });
 
+    const usersRef = ref(db, 'users');
+    const usersUnsubscribe = onValue(usersRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const mentorList = Object.values(data)
+          .filter((u: any) => u.role === 'mentor') as UserProfile[];
+        setMentors(mentorList);
+      } else {
+        setMentors([]);
+      }
+    });
+
     return () => {
       unsubscribe();
       evalUnsubscribe();
+      usersUnsubscribe();
     };
   }, [id]);
 
-  const updateStatus = async (newStatus: string, remarks?: string) => {
+  const updateStatus = async (newStatus: string, remarks?: string, mentorId?: string, mentorName?: string) => {
     if (!application || !user || user.role === 'user') return;
 
     try {
@@ -201,12 +226,21 @@ export default function ApplicationDetailsPage() {
         updates.revisionRemarks = remarks;
       }
 
+      if (newStatus === 'Cohort Selected' && mentorId && mentorName) {
+        updates.mentorId = mentorId;
+        updates.mentorName = mentorName;
+      }
+
+      const timelineRemark = remarks || (newStatus === 'Cohort Selected' && mentorName
+        ? `Selected for Final Cohort and assigned mentor ${mentorName} by ${user.displayName}`
+        : `Status updated to ${newStatus} by ${user.displayName}`);
+
       const newTimeline = [
         ...application.timeline || [],
         {
           status: newStatus,
           timestamp: Date.now(),
-          remarks: remarks || `Status updated to ${newStatus} by ${user.displayName}`
+          remarks: timelineRemark
         }
       ];
       updates.timeline = newTimeline;
@@ -431,7 +465,7 @@ export default function ApplicationDetailsPage() {
             {/* Phase 2 Decision: Show if a Phase 2 meeting exists and we haven't passed it */}
             {(application.status === 'Phase 2 Selected' || application.status === 'Phase 2 Evaluation') && meetings.some(m => m.title.toLowerCase().includes('phase 2')) && (
               <div className="flex gap-2">
-                <Button className="rounded-xl h-11 bg-green-600 hover:bg-green-700 text-white border-none" onClick={() => updateStatus('Cohort Selected')}>
+                <Button className="rounded-xl h-11 bg-green-600 hover:bg-green-700 text-white border-none" onClick={() => setShowCohortDialog(true)}>
                   <CheckCircle2 className="mr-2 h-4 w-4" /> Final Selection (Cohort)
                 </Button>
                 <Button className="rounded-xl h-11 bg-rose-600 hover:bg-rose-700 text-white border-none" onClick={() => updateStatus('Phase 2 Rejected')}>
@@ -485,6 +519,63 @@ export default function ApplicationDetailsPage() {
                 </DialogContent>
               </Dialog>
             )}
+
+            {/* Mentor Assignment Dialog for Cohort Selection */}
+            <Dialog open={showCohortDialog} onOpenChange={setShowCohortDialog}>
+              <DialogContent className="rounded-[2rem] border-none shadow-2xl bg-white max-w-md w-full p-6">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-black text-slate-900">Assign Mentor</DialogTitle>
+                  <DialogDescription className="text-slate-500 font-medium pt-2">
+                    Before marking this startup as "Cohort Selected", please assign a mentor from the available list of active mentors.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-6 space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Available Mentors</Label>
+                    <Select onValueChange={(val) => setCohortMentorId(val || '')} value={cohortMentorId}>
+                      <SelectTrigger className="w-full h-12 rounded-xl bg-slate-50 border-none focus:ring-primary/20 font-bold flex justify-between items-center px-4">
+                        <SelectValue>
+                          {cohortMentorId ? mentors.find(m => m.uid === cohortMentorId)?.displayName : "Choose a mentor..."}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl shadow-2xl border-none ring-1 ring-slate-100 bg-white p-1">
+                        {mentors.length === 0 ? (
+                          <SelectItem value="" disabled className="text-slate-400">No active mentors found</SelectItem>
+                        ) : (
+                          mentors.map(m => (
+                            <SelectItem key={m.uid} value={m.uid} className="cursor-pointer hover:bg-slate-50 rounded-lg py-2 px-3">
+                              {m.displayName}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter className="flex gap-2">
+                  <Button variant="ghost" className="rounded-xl" onClick={() => {
+                    setShowCohortDialog(false);
+                    setCohortMentorId('');
+                  }}>Cancel</Button>
+                  <Button
+                    className="rounded-xl bg-green-600 hover:bg-green-700 font-bold text-white px-6"
+                    onClick={async () => {
+                      const selectedMentor = mentors.find(m => m.uid === cohortMentorId);
+                      if (selectedMentor) {
+                        await updateStatus('Cohort Selected', undefined, selectedMentor.uid, selectedMentor.displayName);
+                        setShowCohortDialog(false);
+                        setCohortMentorId('');
+                      } else {
+                        toast.error('Please select a valid mentor');
+                      }
+                    }}
+                    disabled={!cohortMentorId}
+                  >
+                    Approve & Assign Mentor
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {user?.role === 'super_admin' && (
               <AlertDialog>
@@ -551,6 +642,7 @@ export default function ApplicationDetailsPage() {
               <InfoBlock label="Gender" value={application.userGender} />
               <InfoBlock label="Social Category" value={application.userSocialCategory} />
               <InfoBlock label="Caste" value={application.userCaste} />
+              <InfoBlock label="Assigned Mentor" value={application.mentorName || 'None'} icon={User} />
             </CardContent>
           </Card>
 

@@ -94,9 +94,9 @@ export default function AdminSettingsPage() {
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={u.photoURL} />
-                          <AvatarFallback>{u.displayName.charAt(0)}</AvatarFallback>
+                          <AvatarFallback>{(u.displayName || u.email || 'U')[0].toUpperCase()}</AvatarFallback>
                         </Avatar>
-                        <span className="font-medium">{u.displayName}</span>
+                        <span className="font-medium">{u.displayName || u.email || 'User'}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-slate-500">{u.email}</TableCell>

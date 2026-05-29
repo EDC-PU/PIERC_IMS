@@ -75,12 +75,12 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost" }), "flex items-center space-x-2 px-2 hover:bg-slate-100 h-12 py-1.5 outline-none cursor-pointer rounded-xl transition-all")}>
             <Avatar className="h-8 w-8 ring-2 ring-slate-100">
-              <AvatarImage src={user.photoURL} alt={user.displayName} />
-              <AvatarFallback className="bg-primary text-white font-bold">{user.displayName.charAt(0)}</AvatarFallback>
+              <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />
+              <AvatarFallback className="bg-primary text-white font-bold">{(user.displayName || user.email || 'U')[0].toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="hidden sm:block text-left">
-              <p className="text-sm font-bold leading-none text-slate-900">{user.displayName}</p>
-              <p className="text-[10px] text-slate-500 mt-1 capitalize font-black tracking-widest uppercase">{user.role.replace('_', ' ')}</p>
+              <p className="text-sm font-bold leading-none text-slate-900">{user.displayName || user.email || 'User'}</p>
+              <p className="text-[10px] text-slate-500 mt-1 capitalize font-black tracking-widest uppercase">{(user.role || 'user').replace('_', ' ')}</p>
             </div>
             <ChevronDown className="h-4 w-4 text-slate-400 ml-1" />
           </DropdownMenuTrigger>
