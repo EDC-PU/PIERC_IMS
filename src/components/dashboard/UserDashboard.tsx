@@ -156,7 +156,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
       </div>
 
       {/* Hero Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-6", user.role === 'user' ? "lg:grid-cols-3" : "lg:grid-cols-4")}>
         <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-3xl overflow-hidden bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/30">
             <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Application</CardTitle>
@@ -183,16 +183,18 @@ export default function UserDashboard({ user }: UserDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/30">
-            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evaluations</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="text-2xl font-black text-slate-900">{Object.keys(appEvaluations).length}</div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Completed Reviews</p>
-          </CardContent>
-        </Card>
+        {user.role !== 'user' && (
+          <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-3xl overflow-hidden bg-white">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/30">
+              <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evaluations</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="text-2xl font-black text-slate-900">{Object.keys(appEvaluations).length}</div>
+              <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Completed Reviews</p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-3xl overflow-hidden bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/30">

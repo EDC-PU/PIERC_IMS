@@ -498,9 +498,11 @@ export default function MeetingsPage() {
                       <SelectItem value="completed">Completed</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl h-11 px-6 shadow-lg shadow-primary/20">
-                    <Send className="h-4 w-4 mr-2" /> Remind Evaluators
-                  </Button>
+                  {currentUser?.role !== 'user' && (
+                    <Button className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl h-11 px-6 shadow-lg shadow-primary/20">
+                      <Send className="h-4 w-4 mr-2" /> Remind Evaluators
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -512,8 +514,12 @@ export default function MeetingsPage() {
                       <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6 pl-8">Applicant</TableHead>
                       <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6">Meeting Date & Time</TableHead>
                       <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6">Venue / Mode</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6">Pending Evaluators</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6">Completed Evaluators</TableHead>
+                      {currentUser?.role !== 'user' && (
+                        <>
+                          <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6">Pending Evaluators</TableHead>
+                          <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6">Completed Evaluators</TableHead>
+                        </>
+                      )}
                       <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-6 text-right pr-8">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -570,40 +576,44 @@ export default function MeetingsPage() {
                               )}
                               <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">({m.mode})</p>
                             </TableCell>
-                            <TableCell className="py-8">
-                              {pending.length === 0 ? (
-                                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">None</span>
-                              ) : (
-                                <div className="flex flex-col gap-1">
-                                  {Array.from(new Set(pending)).map(uid => {
-                                    const profile = allUsers[uid];
-                                    return (
-                                      <Link
-                                        key={uid}
-                                        href={`/dashboard/profile/${profile?.enrollmentNumber || uid}`}
-                                        className="text-[11px] font-black text-slate-700 hover:text-primary transition-colors"
-                                      >
-                                        {profile?.displayName}
-                                      </Link>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell className="py-8">
-                              {completed.length === 0 ? (
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">None</span>
-                              ) : (
-                                <div className="flex flex-col gap-1">
-                                  {completed.map(uid => (
-                                    <Link key={uid} href={`/dashboard/profile/${uid}`} className="text-[11px] font-black text-emerald-600 flex items-center hover:text-primary transition-colors">
-                                      <CheckCircle2 className="h-3 w-3 mr-1.5" />
-                                      {allUsers[uid]?.displayName}
-                                    </Link>
-                                  ))}
-                                </div>
-                              )}
-                            </TableCell>
+                            {currentUser?.role !== 'user' && (
+                              <>
+                                <TableCell className="py-8">
+                                  {pending.length === 0 ? (
+                                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">None</span>
+                                  ) : (
+                                    <div className="flex flex-col gap-1">
+                                      {Array.from(new Set(pending)).map(uid => {
+                                        const profile = allUsers[uid];
+                                        return (
+                                          <Link
+                                            key={uid}
+                                            href={`/dashboard/profile/${profile?.enrollmentNumber || uid}`}
+                                            className="text-[11px] font-black text-slate-700 hover:text-primary transition-colors"
+                                          >
+                                            {profile?.displayName}
+                                          </Link>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-8">
+                                  {completed.length === 0 ? (
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">None</span>
+                                  ) : (
+                                    <div className="flex flex-col gap-1">
+                                      {completed.map(uid => (
+                                        <Link key={uid} href={`/dashboard/profile/${uid}`} className="text-[11px] font-black text-emerald-600 flex items-center hover:text-primary transition-colors">
+                                          <CheckCircle2 className="h-3 w-3 mr-1.5" />
+                                          {allUsers[uid]?.displayName}
+                                        </Link>
+                                      ))}
+                                    </div>
+                                  )}
+                                </TableCell>
+                              </>
+                            )}
                             <TableCell className="py-8 text-right pr-8">
                               <Button variant="ghost" size="icon" className="rounded-xl text-slate-400 hover:text-primary">
                                 <MoreVertical className="h-4 w-4" />
