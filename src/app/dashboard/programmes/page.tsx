@@ -104,7 +104,7 @@ export default function ProgrammesPage() {
                 asChild
                 className={cn(
                   "w-full h-14 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300",
-                  prog.active ? "bg-slate-900 hover:bg-primary text-white shadow-md shadow-slate-900/10" : "bg-slate-100 text-slate-400 pointer-events-none"
+                  prog.active ? "bg-primary hover:bg-slate-900 text-white shadow-md shadow-primary/20" : "bg-slate-100 text-slate-400 pointer-events-none"
                 )}
                 disabled={!prog.active}
               >

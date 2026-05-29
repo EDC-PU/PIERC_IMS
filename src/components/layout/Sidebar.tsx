@@ -115,8 +115,8 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
     <>
       {/* Mobile Sidebar backdrop */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden transition-opacity duration-300 animate-in fade-in"
+        <div
+          className="fixed inset-0 z-40 bg-primary backdrop-blur-sm lg:hidden transition-opacity duration-300 animate-in fade-in"
           onClick={() => setIsOpen?.(false)}
         />
       )}
@@ -137,7 +137,7 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
             />
           </Link>
           {setIsOpen && (
-            <button 
+            <button
               onClick={() => setIsOpen(false)}
               className="lg:hidden p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-900 transition-colors"
             >
