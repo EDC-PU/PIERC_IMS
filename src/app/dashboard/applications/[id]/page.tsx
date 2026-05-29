@@ -451,7 +451,7 @@ export default function ApplicationDetailsPage() {
           <div className="flex flex-wrap items-center gap-3">
 
             {/* Phase 1 Decision: Show if a Phase 1 meeting exists or it is Shortlisted by experts */}
-            {(application.status === 'Submitted' || application.status === 'Under Review' || application.status === 'Shortlisted') && (
+            {(application.status === 'Submitted' || application.status === 'Under Review' || application.status === 'Shortlisted') && meetings.length > 0 && (
               <div className="flex gap-2">
                 <Button className="rounded-xl h-11 bg-green-600 hover:bg-green-700 text-white border-none" onClick={() => updateStatus('Phase 2 Selected')}>
                   <CheckCircle2 className="mr-2 h-4 w-4" /> Select for Phase 2
