@@ -7,25 +7,25 @@ import { useAuthStore } from '@/store/authStore';
 import { Application } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { Eye, Clock, CheckCircle2, XCircle, Search, Rocket, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select';
 
 export default function ApplicationsPage() {
@@ -49,9 +49,9 @@ export default function ApplicationsPage() {
           id,
           ...val
         })) as Application[];
-        
-        const filteredApps = isAdmin 
-          ? allApps 
+
+        const filteredApps = isAdmin
+          ? allApps
           : allApps.filter(app => app.userId === user.uid);
 
         setApplications(filteredApps.sort((a, b) => b.submittedAt - a.submittedAt));
@@ -85,18 +85,18 @@ export default function ApplicationsPage() {
     const startupName = (app.data?.startupTitle || '').toLowerCase();
     const applicantName = (app.userName || '').toLowerCase();
     const email = (app.userEmail || '').toLowerCase();
-    
+
     // Check team members
     const teamMembers = app.data?.teamMembers || [];
-    const matchesTeam = Array.isArray(teamMembers) && teamMembers.some((m: any) => 
-      (m.name || '').toLowerCase().includes(query) || 
+    const matchesTeam = Array.isArray(teamMembers) && teamMembers.some((m: any) =>
+      (m.name || '').toLowerCase().includes(query) ||
       (m.email || '').toLowerCase().includes(query)
     );
 
-    const matchesSearch = startupName.includes(query) || 
-                          applicantName.includes(query) || 
-                          email.includes(query) || 
-                          matchesTeam;
+    const matchesSearch = startupName.includes(query) ||
+      applicantName.includes(query) ||
+      email.includes(query) ||
+      matchesTeam;
 
     if (!matchesSearch) return false;
 
@@ -106,7 +106,7 @@ export default function ApplicationsPage() {
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
       return app.submittedAt >= todayStart;
     }
-    
+
     if (dateRangeOption === 'week') {
       const sevenDaysAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
       return app.submittedAt >= sevenDaysAgo;
@@ -159,8 +159,8 @@ export default function ApplicationsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-2 relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input 
-            placeholder="Search by startup, applicant, team members, or email..." 
+          <Input
+            placeholder="Search by startup, applicant, team members, or email..."
             className="pl-12 rounded-2xl h-14 border-slate-200 bg-white shadow-sm focus:ring-primary/10 transition-all text-sm font-medium"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -188,27 +188,27 @@ export default function ApplicationsPage() {
       {dateRangeOption === 'custom' && (
         <div className="bg-slate-50/50 p-6 rounded-[2rem] border border-slate-200/60 flex flex-wrap items-center gap-6 animate-in slide-in-from-top-2 duration-300">
           <div className="flex items-center gap-3">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Start Date:</span>
-            <input 
-              type="date" 
+            <span className="text-[10px] font-black tracking-widest text-slate-400">Start Date:</span>
+            <input
+              type="date"
               className="rounded-xl h-11 border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20"
               value={customStartDate}
               onChange={(e) => setCustomStartDate(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">End Date:</span>
-            <input 
-              type="date" 
+            <span className="text-[10px] font-black tracking-widest text-slate-400">End Date:</span>
+            <input
+              type="date"
               className="rounded-xl h-11 border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20"
               value={customEndDate}
               onChange={(e) => setCustomEndDate(e.target.value)}
             />
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 ml-auto h-9"
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-lg text-[10px] font-black tracking-widest text-slate-500 hover:bg-slate-100 ml-auto h-9"
             onClick={() => {
               setCustomStartDate('');
               setCustomEndDate('');
@@ -226,7 +226,7 @@ export default function ApplicationsPage() {
               <Search className="h-8 w-8" />
             </div>
             <div className="space-y-1">
-              <h3 className="font-black text-xl text-slate-900 uppercase tracking-tight">No matching results</h3>
+              <h3 className="font-black text-xl text-slate-900 tracking-tight">No matching results</h3>
               <p className="text-slate-500 max-w-sm mx-auto font-medium">
                 We couldn't find any applications matching "<strong>{searchQuery}</strong>". Try adjusting your search criteria.
               </p>
@@ -239,11 +239,11 @@ export default function ApplicationsPage() {
             <Table>
               <TableHeader className="bg-slate-50/50">
                 <TableRow className="border-slate-100">
-                  <TableHead className="py-6 px-8 text-[10px] font-black uppercase tracking-widest text-slate-500">Innovation / Project</TableHead>
-                  {isAdmin && <TableHead className="py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Applicant Details</TableHead>}
-                  <TableHead className="py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Timeline</TableHead>
-                  <TableHead className="py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Status</TableHead>
-                  <TableHead className="py-6 text-right pr-8 text-[10px] font-black uppercase tracking-widest text-slate-500">Actions</TableHead>
+                  <TableHead className="py-6 px-8 text-[10px] font-black tracking-widest text-slate-500">Innovation / Project</TableHead>
+                  {isAdmin && <TableHead className="py-6 text-[10px] font-black tracking-widest text-slate-500">Applicant Details</TableHead>}
+                  <TableHead className="py-6 text-[10px] font-black tracking-widest text-slate-500">Timeline</TableHead>
+                  <TableHead className="py-6 text-[10px] font-black tracking-widest text-slate-500">Status</TableHead>
+                  <TableHead className="py-6 text-right pr-8 text-[10px] font-black tracking-widest text-slate-500">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -255,23 +255,23 @@ export default function ApplicationsPage() {
                           <Rocket className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="font-black text-slate-900 leading-tight uppercase tracking-tight break-words whitespace-normal">{app.data?.startupTitle || app.programmeTitle}</p>
-                          <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{app.id.substring(0, 8)}</p>
+                          <p className="font-black text-slate-900 leading-tight tracking-tight break-words whitespace-normal">{app.data?.startupTitle || app.programmeTitle}</p>
+                          <p className="text-[10px] font-bold text-slate-400 mt-1 tracking-widest">{app.id.substring(0, 8)}</p>
                         </div>
                       </div>
                     </TableCell>
                     {isAdmin && (
                       <TableCell className="py-6 max-w-[200px] whitespace-normal break-words">
                         <div className="flex flex-col">
-                          <span className="font-black text-slate-900 text-xs uppercase tracking-tight break-words whitespace-normal">{app.userName}</span>
-                          <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-0.5 break-all whitespace-normal">{app.userEmail}</span>
+                          <span className="font-black text-slate-900 text-xs tracking-tight break-words whitespace-normal">{app.userName}</span>
+                          <span className="text-[10px] text-slate-400 font-black tracking-widest mt-0.5 break-all whitespace-normal">{app.userEmail}</span>
                         </div>
                       </TableCell>
                     )}
                     <TableCell className="py-6">
                       <div className="flex flex-col">
-                        <span className="text-xs font-black text-slate-700 uppercase tracking-tight">{format(app.submittedAt, 'MMM dd, yyyy')}</span>
-                        <span className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Submitted</span>
+                        <span className="text-xs font-black text-slate-700 tracking-tight">{format(app.submittedAt, 'MMM dd, yyyy')}</span>
+                        <span className="text-[10px] font-bold text-slate-400 mt-0.5 tracking-widest">Submitted</span>
                       </div>
                     </TableCell>
                     <TableCell className="py-6">{getStatusBadge(app.status)}</TableCell>
