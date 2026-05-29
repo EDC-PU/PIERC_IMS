@@ -661,7 +661,7 @@ export default function ApplicationDetailsPage() {
                   className="rounded-xl font-bold h-9 border-primary/20 text-primary hover:bg-primary hover:text-white transition-all"
                   onClick={() => setEditingIdea(true)}
                 >
-                  <Edit3 className="h-4 w-4 mr-2" /> Update Proposal
+                  <Edit3 className="h-4 w-4 mr-2" /> Update Submission
                 </Button>
               )}
               {editingIdea && (
