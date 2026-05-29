@@ -319,7 +319,13 @@ export default function MeetingsPage() {
                                   <Checkbox checked={selectedApps.includes(app.id)} onCheckedChange={() => toggleSelect(app.id)} className="rounded-md h-5 w-5 border-slate-300" />
                                 </TableCell>
                                 <TableCell className="py-6 max-w-[220px] md:max-w-[320px] whitespace-normal break-words">
-                                  <p className={cn("font-bold text-sm break-words whitespace-normal", selectedApps.includes(app.id) ? "text-primary" : "text-slate-900")}>{app.data?.startupTitle || app.programmeTitle}</p>
+                                  <Link 
+                                    href={`/dashboard/applications/${app.id}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className={cn("font-bold text-sm break-words whitespace-normal hover:underline", selectedApps.includes(app.id) ? "text-primary" : "text-slate-900")}
+                                  >
+                                    {app.data?.startupTitle || app.programmeTitle}
+                                  </Link>
                                   <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-wider break-words whitespace-normal">{app.programmeTitle}</p>
                                 </TableCell>
                                 <TableCell className="py-6 max-w-[160px] whitespace-normal break-words">
@@ -537,7 +543,12 @@ export default function MeetingsPage() {
                         return (
                           <TableRow key={m.id} className="border-slate-100 hover:bg-slate-50/50 transition-colors">
                             <TableCell className="py-8 pl-8 max-w-xs whitespace-normal break-words">
-                              <p className="font-black text-sm text-primary leading-tight uppercase tracking-tight break-words whitespace-normal">{app?.data?.startupTitle || 'Unknown Project'}</p>
+                              <Link 
+                                href={`/dashboard/applications/${m.applicationId}`}
+                                className="font-black text-sm text-primary leading-tight uppercase tracking-tight break-words whitespace-normal hover:underline"
+                              >
+                                {app?.data?.startupTitle || 'Unknown Project'}
+                              </Link>
                               <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase break-words whitespace-normal">by {app?.userName || 'N/A'}</p>
                             </TableCell>
                             <TableCell className="py-8">
