@@ -45,8 +45,9 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
   useEffect(() => {
     if (!user) return;
 
+    const userRole = user.role || 'user';
     // 1. Applications Count (Admins only)
-    if (user.role === 'admin' || user.role === 'super_admin') {
+    if (userRole === 'admin' || userRole === 'super_admin') {
       const appsRef = ref(db, 'applications');
       onValue(appsRef, (snapshot) => {
         const data = snapshot.val();
@@ -58,7 +59,7 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
     }
 
     // 2. Evaluate Count (Admins/Mentors)
-    if (user.role !== 'user') {
+    if (userRole !== 'user') {
       const meetingsRef = ref(db, 'meetings');
       onValue(meetingsRef, (snapshot) => {
         const data = snapshot.val();
@@ -108,7 +109,7 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
     { name: 'Settings', icon: Settings, href: '/dashboard/settings', roles: ['user', 'admin', 'mentor', 'super_admin'] },
   ];
 
-  const filteredItems = menuItems.filter(item => item.roles.includes(user.role));
+  const filteredItems = menuItems.filter(item => item.roles.includes(user.role || 'user'));
 
   return (
     <>
