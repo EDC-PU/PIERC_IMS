@@ -36,19 +36,35 @@ const onboardingSchema = z.object({
   contactNumber: z.string().min(10, "Contact number must be at least 10 digits"),
   name: z.string().min(2, "Name must be at least 2 characters"),
   enrollmentNumber: z.string().optional(),
-  category: z.string().min(1, "Please select a category"),
+  category: z.string().optional(),
   othersSpecify: z.string().optional(),
-  institute: z.string().min(1, "Please select your institute"),
+  institute: z.string().optional(),
   socialCategory: z.string().min(1, "Please select a category"),
   gender: z.string().min(1, "Please select a gender"),
   caste: z.string().min(1, "Caste is required"),
 }).superRefine((data, ctx) => {
   const isParulEmail = data.email?.toLowerCase().endsWith('@paruluniversity.ac.in');
-  if (isParulEmail && (!data.enrollmentNumber || data.enrollmentNumber.trim() === "")) {
+  if (isParulEmail) {
+    if (!data.enrollmentNumber || data.enrollmentNumber.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['enrollmentNumber'],
+        message: 'Enrollment number is required for Parul University users',
+      });
+    }
+    if (!data.category || data.category.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['category'],
+        message: 'Please select a category',
+      });
+    }
+  }
+  if (!data.institute || data.institute.trim() === "") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      path: ['enrollmentNumber'],
-      message: 'Enrollment number is required for Parul University users',
+      path: ['institute'],
+      message: isParulEmail ? 'Please select your institute' : 'Please enter your institute name',
     });
   }
 });
@@ -65,6 +81,8 @@ export default function OnboardingForm() {
       contactNumber: "",
       name: user?.displayName || "",
       enrollmentNumber: "",
+      category: "",
+      othersSpecify: "",
       institute: "",
       socialCategory: "",
       gender: "",
@@ -75,12 +93,13 @@ export default function OnboardingForm() {
   // Update form when user state is available
   useEffect(() => {
     if (user) {
+      const isParulEmail = user.email?.toLowerCase().endsWith('@paruluniversity.ac.in');
       form.reset({
         email: user.email || "",
         name: user.displayName || "",
         contactNumber: "",
         enrollmentNumber: "",
-        category: "PU Student",
+        category: isParulEmail ? "PU Student" : "",
         othersSpecify: "",
         institute: "",
         socialCategory: "",
@@ -114,6 +133,8 @@ export default function OnboardingForm() {
           ...values,
           displayName: values.name,
           enrollmentNumber: isParulEmail ? (values.enrollmentNumber || '') : '',
+          category: isParulEmail ? (values.category || '') : '',
+          othersSpecify: (isParulEmail && values.category === 'Others') ? (values.othersSpecify || '') : '',
           onboardingCompleted: true,
           updatedAt: Date.now(),
         }
@@ -134,6 +155,8 @@ export default function OnboardingForm() {
       setLoading(false);
     }
   }
+
+  const isParulEmail = user?.email?.toLowerCase().endsWith('@paruluniversity.ac.in');
 
   return (
     <Card className="max-w-xl mx-auto shadow-2xl border-none glass-card">
@@ -197,11 +220,8 @@ export default function OnboardingForm() {
               />
             </div>
 
-            <div className={cn(
-              "grid grid-cols-1 gap-6",
-              user?.email?.toLowerCase().endsWith('@paruluniversity.ac.in') ? "md:grid-cols-2" : "md:grid-cols-1"
-            )}>
-              {user?.email?.toLowerCase().endsWith('@paruluniversity.ac.in') && (
+            {isParulEmail && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="enrollmentNumber"
@@ -215,33 +235,33 @@ export default function OnboardingForm() {
                     </FormItem>
                   )}
                 />
-              )}
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Applicant Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-full h-12 rounded-xl">
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="PU Student">Parul University Student</SelectItem>
-                        <SelectItem value="PU Staff member">Parul University Staff member</SelectItem>
-                        <SelectItem value="PU Alumni">Parul University Alumni</SelectItem>
-                        <SelectItem value="Others">Others</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Applicant Category</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="w-full h-12 rounded-xl">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="PU Student">Parul University Student</SelectItem>
+                          <SelectItem value="PU Staff member">Parul University Staff member</SelectItem>
+                          <SelectItem value="PU Alumni">Parul University Alumni</SelectItem>
+                          <SelectItem value="Others">Others</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
 
-            {form.watch("category") === "Others" && (
+            {isParulEmail && form.watch("category") === "Others" && (
               <FormField
                 control={form.control}
                 name="othersSpecify"
@@ -262,19 +282,27 @@ export default function OnboardingForm() {
               name="institute"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Select your Institute</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    {isParulEmail ? "Select your Institute" : "Institute / College Name"}
+                  </FormLabel>
+                  {isParulEmail ? (
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full h-12 rounded-xl">
+                          <SelectValue placeholder="Select your institute" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="max-h-[300px] overflow-y-auto">
+                        {institutes.map((inst, idx) => (
+                          <SelectItem key={idx} value={inst}>{inst}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
                     <FormControl>
-                      <SelectTrigger className="w-full h-12 rounded-xl">
-                        <SelectValue placeholder="Select your institute" />
-                      </SelectTrigger>
+                      <Input placeholder="Enter your institute/college name" {...field} className="h-12 rounded-xl" />
                     </FormControl>
-                    <SelectContent className="max-h-[300px] overflow-y-auto">
-                      {institutes.map((inst, idx) => (
-                        <SelectItem key={idx} value={inst}>{inst}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

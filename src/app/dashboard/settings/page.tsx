@@ -40,6 +40,7 @@ import { ref, update, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { institutes } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 import { programmeDefaults } from '@/lib/programmes';
 import { 
   User, 
@@ -56,21 +57,48 @@ import {
 } from 'lucide-react';
 
 const profileSchema = z.object({
+  email: z.string().optional(),
   name: z.string().min(2, "Name must be at least 2 characters"),
   contactNumber: z.string().min(10, "Contact number must be at least 10 digits"),
-  enrollmentNumber: z.string().min(1, "Enrollment number is required"),
-  category: z.string().min(1, "Please select a category"),
+  enrollmentNumber: z.string().optional(),
+  category: z.string().optional(),
   othersSpecify: z.string().optional(),
-  institute: z.string().min(1, "Please select your institute"),
+  institute: z.string().optional(),
   linkedin: z.string().url().optional().or(z.literal('')),
   socialCategory: z.string().optional(),
   gender: z.string().optional(),
   caste: z.string().optional(),
+}).superRefine((data, ctx) => {
+  const isParulEmail = data.email?.toLowerCase().endsWith('@paruluniversity.ac.in');
+  if (isParulEmail) {
+    if (!data.enrollmentNumber || data.enrollmentNumber.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['enrollmentNumber'],
+        message: 'Enrollment number is required',
+      });
+    }
+    if (!data.category || data.category.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['category'],
+        message: 'Please select a category',
+      });
+    }
+  }
+  if (!data.institute || data.institute.trim() === "") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['institute'],
+      message: isParulEmail ? 'Please select your institute' : 'Please enter your institute name',
+    });
+  }
 });
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const { user, setUser } = useAuthStore();
+  const isParulEmail = user?.email?.toLowerCase().endsWith('@paruluniversity.ac.in');
   const [notifPrefs, setNotifPrefs] = useState({
     applications: true,
     meetings: true,
@@ -90,10 +118,11 @@ export default function SettingsPage() {
   const profileForm = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
+      email: user?.email || "",
       name: user?.displayName || "",
       contactNumber: user?.contactNumber || "",
       enrollmentNumber: user?.enrollmentNumber || "",
-      category: user?.category || "PU Student",
+      category: user?.category || "",
       othersSpecify: user?.othersSpecify || "",
       institute: user?.institute || "",
       linkedin: user?.linkedin || "",
@@ -105,11 +134,13 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (user) {
+      const isParulEmail = user.email?.toLowerCase().endsWith('@paruluniversity.ac.in');
       profileForm.reset({
+        email: user.email || "",
         name: user.displayName,
         contactNumber: user.contactNumber || "",
         enrollmentNumber: user.enrollmentNumber || "",
-        category: user.category || "PU Student",
+        category: user.category || (isParulEmail ? "PU Student" : ""),
         othersSpecify: user.othersSpecify || "",
         institute: user.institute || "",
         linkedin: user.linkedin || "",
@@ -124,14 +155,15 @@ export default function SettingsPage() {
     if (!user) return;
     setLoading(true);
     try {
+      const isParulEmail = values.email?.toLowerCase().endsWith('@paruluniversity.ac.in');
       const userRef = ref(db, `users/${user.uid}`);
       const updates = {
         displayName: values.name,
         contactNumber: values.contactNumber,
-        enrollmentNumber: values.enrollmentNumber,
-        category: values.category,
-        othersSpecify: values.othersSpecify || "",
-        institute: values.institute,
+        enrollmentNumber: isParulEmail ? (values.enrollmentNumber || "") : "",
+        category: isParulEmail ? (values.category || "") : "",
+        othersSpecify: (isParulEmail && values.category === "Others") ? (values.othersSpecify || "") : "",
+        institute: values.institute || "",
         linkedin: values.linkedin || "",
         socialCategory: values.socialCategory || "",
         gender: values.gender || "",
@@ -284,7 +316,10 @@ export default function SettingsPage() {
                     </FormItem>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className={cn(
+                    "grid grid-cols-1 gap-6",
+                    isParulEmail ? "md:grid-cols-2" : "md:grid-cols-1"
+                  )}>
                     <FormField
                       control={profileForm.control}
                       name="contactNumber"
@@ -301,73 +336,88 @@ export default function SettingsPage() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={profileForm.control}
-                      name="enrollmentNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Enrollment Number</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <GraduationCap className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                              <Input {...field} className="pl-10 h-11 rounded-xl" />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {isParulEmail && (
+                      <FormField
+                        control={profileForm.control}
+                        name="enrollmentNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Enrollment Number</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <GraduationCap className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                                <Input {...field} className="pl-10 h-11 rounded-xl" />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={profileForm.control}
-                      name="category"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Applicant Category</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="w-full h-11 rounded-xl">
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="PU Student">Parul University Student</SelectItem>
-                              <SelectItem value="PU Staff member">Parul University Staff member</SelectItem>
-                              <SelectItem value="PU Alumni">Parul University Alumni</SelectItem>
-                              <SelectItem value="Others">Others</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <div className={cn(
+                    "grid grid-cols-1 gap-6",
+                    isParulEmail ? "md:grid-cols-2" : "md:grid-cols-1"
+                  )}>
+                    {isParulEmail && (
+                      <FormField
+                        control={profileForm.control}
+                        name="category"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Applicant Category</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="w-full h-11 rounded-xl">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="PU Student">Parul University Student</SelectItem>
+                                <SelectItem value="PU Staff member">Parul University Staff member</SelectItem>
+                                <SelectItem value="PU Alumni">Parul University Alumni</SelectItem>
+                                <SelectItem value="Others">Others</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                     <FormField
                       control={profileForm.control}
                       name="institute"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Institute / College</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            {isParulEmail ? "Institute / College" : "Institute / College Name"}
+                          </FormLabel>
+                          {isParulEmail ? (
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="w-full h-11 rounded-xl">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="max-h-[300px] overflow-y-auto">
+                                {institutes.map((inst, idx) => (
+                                  <SelectItem key={idx} value={inst}>{inst}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
                             <FormControl>
-                              <SelectTrigger className="w-full h-11 rounded-xl">
-                                <SelectValue />
-                              </SelectTrigger>
+                              <Input placeholder="Enter your institute/college name" {...field} className="h-11 rounded-xl" />
                             </FormControl>
-                            <SelectContent className="max-h-[300px] overflow-y-auto">
-                              {institutes.map((inst, idx) => (
-                                <SelectItem key={idx} value={inst}>{inst}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          )}
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
 
-                  {profileForm.watch("category") === "Others" && (
+                  {isParulEmail && profileForm.watch("category") === "Others" && (
                     <FormField
                       control={profileForm.control}
                       name="othersSpecify"

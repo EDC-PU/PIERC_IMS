@@ -4,24 +4,24 @@ import { db } from '@/lib/firebase';
 import { Application, UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  Users, 
-  Rocket, 
-  BarChart3, 
-  Shield, 
+import {
+  Users,
+  Rocket,
+  BarChart3,
+  Shield,
   Activity,
   ArrowUpRight,
   TrendingUp,
   Briefcase,
   Layers
 } from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -150,15 +150,15 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
                 <AreaChart data={growthData}>
                   <defs>
                     <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} 
+                  <Tooltip
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                   />
                   <Area type="monotone" dataKey="apps" stroke="#3b82f6" fillOpacity={1} fill="url(#colorApps)" />
                 </AreaChart>
@@ -297,7 +297,7 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
               </button>
             </div>
             <div className="p-6 bg-slate-50 border-t flex flex-col items-center">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">PIERC CORE ENGINE</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">PIERC</p>
               <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-1">v2.4.0-STABLE • 2026</p>
             </div>
           </CardContent>
