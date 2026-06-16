@@ -114,7 +114,7 @@ export interface Meeting {
   location?: string;
   attendees: string[]; // UIDs
   notes?: string;
-  status: 'Scheduled' | 'Completed' | 'Cancelled';
+  status: 'Scheduled' | 'Completed' | 'Cancelled' | 'Absent';
 }
 
 export interface Notification {

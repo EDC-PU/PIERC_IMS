@@ -48,7 +48,8 @@ import {
   Hash,
   Sparkles,
   BrainCircuit,
-  Plus
+  Plus,
+  ArrowLeft
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -309,6 +310,7 @@ export default function ApplicationDetailsPage() {
   const canEdit = isOwner && (isRevisionNeeded || (meetings.length === 0 && (application.status === 'Submitted' || application.status === 'Under Review')));
   const data = application.data || {};
   const isGrowthPad = application.programmeId.toLowerCase().includes('growth');
+  const hasBeenSelectedForPhase2 = application.timeline?.some((event: any) => event.status === 'Phase 2 Selected') || false;
 
   const handleDelete = async () => {
     if (user?.role !== 'super_admin' || !application) return;
@@ -423,6 +425,14 @@ export default function ApplicationDetailsPage() {
 
   return (
     <div className="space-y-8 p-6 md:p-8 animate-in fade-in duration-700">
+      <Button
+        variant="ghost"
+        onClick={() => router.back()}
+        className="group hover:bg-transparent -ml-4 text-slate-500 hover:text-primary font-black uppercase text-[10px] tracking-widest flex items-center"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Back
+      </Button>
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-6 border-b">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
@@ -450,8 +460,8 @@ export default function ApplicationDetailsPage() {
         {isAdmin && (
           <div className="flex flex-wrap items-center gap-3">
 
-            {/* Phase 1 Decision: Show if a Phase 1 meeting exists or it is Shortlisted by experts */}
-            {(application.status === 'Submitted' || application.status === 'Under Review' || application.status === 'Shortlisted') && meetings.length > 0 && (
+            {/* Phase 1 Decision: Show if a Phase 1 meeting exists or it is Shortlisted by experts, and they have not been selected for Phase 2 yet */}
+            {!hasBeenSelectedForPhase2 && (application.status === 'Submitted' || application.status === 'Under Review' || application.status === 'Shortlisted') && meetings.length > 0 && (
               <div className="flex gap-2">
                 <Button className="rounded-xl h-11 bg-green-600 hover:bg-green-700 text-white border-none" onClick={() => updateStatus('Phase 2 Selected')}>
                   <CheckCircle2 className="mr-2 h-4 w-4" /> Select for Phase 2
@@ -462,8 +472,11 @@ export default function ApplicationDetailsPage() {
               </div>
             )}
 
-            {/* Phase 2 Decision: Show if a Phase 2 meeting exists and we haven't passed it */}
-            {(application.status === 'Phase 2 Selected' || application.status === 'Phase 2 Evaluation') && meetings.some(m => m.title.toLowerCase().includes('phase 2')) && (
+            {/* Phase 2 Decision: Show if they have already been selected for Phase 2 or are currently in Phase 2 evaluation, and status is not final */}
+            {(hasBeenSelectedForPhase2 || application.status === 'Phase 2 Selected' || application.status === 'Phase 2 Evaluation') &&
+              application.status !== 'Cohort Selected' &&
+              application.status !== 'Incubated' &&
+              application.status !== 'Phase 2 Rejected' && (
               <div className="flex gap-2">
                 <Button className="rounded-xl h-11 bg-green-600 hover:bg-green-700 text-white border-none" onClick={() => setShowCohortDialog(true)}>
                   <CheckCircle2 className="mr-2 h-4 w-4" /> Final Selection (Cohort)
@@ -627,10 +640,30 @@ export default function ApplicationDetailsPage() {
         <div className="lg:col-span-2 space-y-8">
           {/* Applicant Profile Snapshot */}
           <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b">
+            <CardHeader className="bg-slate-50/50 border-b flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center">
                 <User className="h-4 w-4 mr-2 text-primary" /> Applicant Information
               </CardTitle>
+              {!isOwner && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl font-bold h-9 border-primary/20 text-primary hover:bg-primary hover:text-white transition-all"
+                  onClick={() => router.push(`/dashboard/messages?userId=${application.userId}`)}
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" /> Message Applicant
+                </Button>
+              )}
+              {isOwner && (application.status === 'Cohort Selected' || application.status === 'Incubated') && application.mentorId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl font-bold h-9 border-primary/20 text-primary hover:bg-primary hover:text-white transition-all"
+                  onClick={() => router.push(`/dashboard/messages?userId=${application.mentorId}`)}
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" /> Chat with Mentor
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
               <InfoBlock label="Name" value={application.userName} />
@@ -643,7 +676,25 @@ export default function ApplicationDetailsPage() {
               <InfoBlock label="Social Category" value={application.userSocialCategory} />
               <InfoBlock label="Caste" value={application.userCaste} />
               {(application.status === 'Cohort Selected' || application.status === 'Incubated') && (
-                <InfoBlock label="Assigned Mentor" value={application.mentorName || 'None'} icon={User} />
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2 text-slate-400">
+                    <User className="h-3.5 w-3.5" />
+                    <span className="text-[10px] font-black uppercase tracking-wider">Assigned Mentor</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-slate-900">{application.mentorName || 'None'}</p>
+                    {isOwner && application.mentorId && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs font-bold text-primary hover:no-underline flex items-center gap-1"
+                        onClick={() => router.push(`/dashboard/messages?userId=${application.mentorId}`)}
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" /> Chat
+                      </Button>
+                    )}
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -1031,6 +1082,31 @@ export default function ApplicationDetailsPage() {
 
         {/* Timeline & Meta */}
         <div className="space-y-8">
+          {isOwner && (application.status === 'Cohort Selected' || application.status === 'Incubated') && application.mentorId && (
+            <Card className="border-none shadow-sm ring-1 ring-slate-200 bg-primary text-white overflow-hidden relative">
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                <MessageCircle className="h-24 w-24" />
+              </div>
+              <CardHeader>
+                <CardTitle className="text-xs font-black uppercase tracking-widest text-white/95 flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4" /> Mentor Support
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 relative z-10">
+                <p className="text-xs text-white/90 font-medium leading-relaxed">
+                  Congratulations on your selection! You have been assigned <strong>{application.mentorName}</strong> as your primary mentor to support your journey.
+                </p>
+                <Button
+                  className="w-full bg-white text-primary hover:bg-white/90 rounded-xl font-bold h-11"
+                  variant="secondary"
+                  onClick={() => router.push(`/dashboard/messages?userId=${application.mentorId}`)}
+                >
+                  <MessageCircle className="mr-2 h-4 w-4" /> Chat with Mentor
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="border-none shadow-sm ring-1 ring-slate-200">
             <CardHeader>
               <CardTitle className="text-sm font-black uppercase tracking-widest">Activity Timeline</CardTitle>

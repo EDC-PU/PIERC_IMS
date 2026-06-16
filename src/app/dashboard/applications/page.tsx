@@ -5,6 +5,7 @@ import { ref, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { Application } from '@/types';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -30,6 +31,7 @@ import {
 
 export default function ApplicationsPage() {
   const { user } = useAuthStore();
+  const router = useRouter();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,8 +39,16 @@ export default function ApplicationsPage() {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
+  // Mentors do not have access to the applications list
+  useEffect(() => {
+    if (user && user.role === 'mentor') {
+      router.replace('/dashboard');
+    }
+  }, [user, router]);
+
   useEffect(() => {
     if (!user) return;
+    if (user.role === 'mentor') return;
 
     const isAdmin = user.role === 'admin' || user.role === 'super_admin';
     const appsRef = ref(db, 'applications');

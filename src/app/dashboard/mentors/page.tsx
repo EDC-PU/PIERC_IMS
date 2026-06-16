@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
-import { UserProfile } from '@/types';
+import { UserProfile, Application } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,9 @@ import {
   MoreVertical,
   ExternalLink,
   UserPlus,
-  Check
+  Check,
+  Trash2,
+  Phone
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -30,19 +32,59 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { update } from 'firebase/database';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
+import { useRouter } from 'next/navigation';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 
 export default function MentorsPage() {
   const { user: currentUser } = useAuthStore();
+  const router = useRouter();
   const [mentors, setMentors] = useState<UserProfile[]>([]);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+
+  const getAssignedStartupsCount = (mentorId: string) => {
+    return applications.filter(app => app.mentorId === mentorId).length;
+  };
+
+  const getMentorSectors = (mentorId: string) => {
+    const mentorApps = applications.filter(app => app.mentorId === mentorId);
+    const sectors = new Set<string>();
+    mentorApps.forEach(app => {
+      const sector = app.data?.sector || app.data?.startupSector;
+      if (sector) sectors.add(sector);
+    });
+    if (sectors.size === 0) {
+      return ['General Mentorship', 'Advising'];
+    }
+    return Array.from(sectors);
+  };
+
+  const removeMentorRole = async (uid: string) => {
+    try {
+      await update(ref(db, `users/${uid}`), {
+        role: 'user',
+        updatedAt: Date.now()
+      });
+      toast.success('Mentor role removed successfully');
+    } catch (error) {
+      toast.error('Failed to remove mentor role');
+    }
+  };
+
   useEffect(() => {
     const usersRef = ref(db, 'users');
-    const unsubscribe = onValue(usersRef, (snapshot) => {
+    const unsubscribeUsers = onValue(usersRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         const userList = Object.values(data) as UserProfile[];
@@ -50,10 +92,24 @@ export default function MentorsPage() {
         const mentorList = userList.filter((user: any) => user.role === 'mentor');
         setMentors(mentorList);
       }
+    });
+
+    const appsRef = ref(db, 'applications');
+    const unsubscribeApps = onValue(appsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const appsList = Object.values(data) as Application[];
+        setApplications(appsList);
+      } else {
+        setApplications([]);
+      }
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeUsers();
+      unsubscribeApps();
+    };
   }, []);
 
   const assignAsMentor = async (uid: string) => {
@@ -172,9 +228,22 @@ export default function MentorsPage() {
                     <AvatarImage src={mentor.photoURL} />
                     <AvatarFallback>{(mentor.displayName || mentor.email || 'M')[0].toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <Button variant="ghost" size="icon">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
+                  {isAdmin && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-xl p-2 text-slate-400 hover:bg-white hover:shadow-md transition-all outline-none h-8 w-8 cursor-pointer">
+                        <MoreVertical className="h-4 w-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-2xl border-none ring-1 ring-slate-100">
+                        <DropdownMenuItem 
+                          className="p-2.5 cursor-pointer group text-rose-600 focus:text-rose-600 focus:bg-rose-50 rounded-lg m-1"
+                          onClick={() => removeMentorRole(mentor.uid)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          <span className="font-bold text-sm">Remove Mentor</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
                 <div className="mt-4">
                   <CardTitle className="text-lg">{mentor.displayName || mentor.email || 'Mentor'}</CardTitle>
@@ -183,23 +252,58 @@ export default function MentorsPage() {
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">FinTech</Badge>
-                  <Badge variant="secondary">Scaling</Badge>
-                  <Badge variant="secondary">Strategy</Badge>
+                  {getMentorSectors(mentor.uid).map((sector, idx) => (
+                    <Badge key={idx} variant="secondary">
+                      {sector}
+                    </Badge>
+                  ))}
+                </div>
+
+                <div className="space-y-1.5 text-xs text-slate-500 pt-1">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <span className="font-medium truncate">{mentor.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <span className="font-medium">{mentor.contactNumber || mentor.phoneNumber || 'No contact number'}</span>
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-3 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => router.push(`/dashboard/messages?userId=${mentor.uid}`)}
+                  >
                     <Mail className="mr-2 h-4 w-4" /> Contact
                   </Button>
-                  <Button variant="outline" size="sm" className="px-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="px-3"
+                    onClick={() => {
+                      const link = mentor.linkedin || mentor.website;
+                      if (link) {
+                        window.open(link.startsWith('http') ? link : `https://${link}`, '_blank');
+                      } else {
+                        toast.info('No external links provided by this mentor');
+                      }
+                    }}
+                  >
                     <ExternalLink className="h-4 w-4 text-blue-600" />
                   </Button>
                 </div>
               </CardContent>
               <div className="px-6 py-3 border-t bg-slate-50 flex justify-between items-center text-xs">
-                <span className="text-slate-500 font-medium">Assigned Startups: 4</span>
-                <Button variant="link" size="sm" className="h-auto p-0 text-primary">
+                <span className="text-slate-500 font-medium">Assigned Startups: {getAssignedStartupsCount(mentor.uid)}</span>
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  className="h-auto p-0 text-primary font-bold hover:no-underline"
+                  onClick={() => router.push(`/dashboard/profile/${mentor.uid}`)}
+                >
                   View Profile <ExternalLink className="ml-1 h-3 w-3" />
                 </Button>
               </div>

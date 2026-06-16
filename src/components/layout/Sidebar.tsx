@@ -47,57 +47,156 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
     if (!user) return;
 
     const userRole = user.role || 'user';
+    const unsubscribes: (() => void)[] = [];
+
     // 1. Applications Count (Admins only)
     if (userRole === 'admin' || userRole === 'super_admin') {
       const appsRef = ref(db, 'applications');
-      onValue(appsRef, (snapshot) => {
+      const unsub = onValue(appsRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
           const pending = Object.values(data).filter((a: any) => a.status === 'Submitted' || a.status === 'Under Review').length;
           setCounts(prev => ({ ...prev, applications: pending }));
         }
       });
+      unsubscribes.push(unsub);
     }
 
     // 2. Evaluate Count (Admins/Mentors)
     if (userRole !== 'user') {
+      const appsRef = ref(db, 'applications');
       const meetingsRef = ref(db, 'meetings');
-      onValue(meetingsRef, (snapshot) => {
+      const evalsRef = ref(db, 'evaluations');
+
+      let currentApps: any[] = [];
+      let currentMeetings: any[] = [];
+      let currentEvals: Record<string, any> = {};
+
+      const calculateEvaluateCount = () => {
+        const getPhase = (appStatus: string) => {
+          if (appStatus === 'Submitted' || appStatus === 'Revision Submitted' || appStatus === 'Under Review' || appStatus === 'Revision Needed') return 'Phase 1';
+          if (appStatus === 'Phase 1 Selected' || appStatus === 'Phase 2 Selected') return 'Phase 2';
+          if (appStatus === 'Cohort Selected') return 'Final Review';
+          return 'Phase 1';
+        };
+
+        const pendingList = currentApps.filter(app => {
+          if (app.status === 'Draft') return false;
+          const phase = getPhase(app.status);
+          const isEvaluated = currentEvals[app.id]?.[user.uid]?.[phase.replace(' ', '_')];
+
+          const isCommitteeMember = currentMeetings.some(m =>
+            m.applicationId === app.id && m.status === 'Scheduled' && (
+              m.attendees?.includes(user.uid) ||
+              (phase === 'Phase 1' && m.title?.toLowerCase().includes('phase 1'))
+            )
+          );
+
+          return isCommitteeMember && (!isEvaluated || app.status === 'Revision Submitted');
+        });
+
+        let totalMeetings = 0;
+        if (userRole === 'admin' || userRole === 'super_admin') {
+          const hasScheduledMeeting = (appId: string, phase: string) => {
+            return currentMeetings.some(m => {
+              if (m.applicationId !== appId || m.status !== 'Scheduled') return false;
+              const titleLower = m.title?.toLowerCase() || '';
+              if (phase === 'phase1') return titleLower.includes('phase 1');
+              if (phase === 'phase2') return titleLower.includes('phase 2');
+              if (phase === 'review') return titleLower.includes('final review') || titleLower.includes('review meeting');
+              return false;
+            });
+          };
+
+          const p1 = currentApps.filter(app =>
+            (app.status === 'Submitted' || app.status === 'Under Review' || app.status === 'Revision Submitted' || app.status === 'Phase 1 Evaluation' || app.status === 'Revision Needed' || app.status === 'Shortlisted')
+            && !hasScheduledMeeting(app.id, 'phase1')
+          ).length;
+
+          const p2 = currentApps.filter(app =>
+            (app.status === 'Phase 2 Selected' || app.status === 'Phase 2 Evaluation')
+            && !hasScheduledMeeting(app.id, 'phase2')
+          ).length;
+
+          const rev = currentApps.filter(app =>
+            (app.status === 'Cohort Selected' || app.status === 'Final Review')
+            && !hasScheduledMeeting(app.id, 'review')
+          ).length;
+
+          totalMeetings = p1 + p2 + rev;
+        }
+
+        setCounts(prev => ({ 
+          ...prev, 
+          evaluate: pendingList.length,
+          ...(userRole === 'admin' || userRole === 'super_admin' ? { totalMeetings } : {})
+        }));
+      };
+
+      const unsubApps = onValue(appsRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          // Simplistic logic: count scheduled meetings where user is attendee
-          const pending = Object.values(data).filter((m: any) =>
-            m.status === 'Scheduled' && m.attendees?.includes(user.uid)
-          ).length;
-          setCounts(prev => ({ ...prev, evaluate: pending }));
+          currentApps = Object.entries(data).map(([id, val]: [string, any]) => ({
+            id,
+            ...val
+          }));
+        } else {
+          currentApps = [];
         }
+        calculateEvaluateCount();
       });
+      unsubscribes.push(unsubApps);
+
+      const unsubMeetings = onValue(meetingsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          currentMeetings = Object.values(data);
+        } else {
+          currentMeetings = [];
+        }
+        calculateEvaluateCount();
+      });
+      unsubscribes.push(unsubMeetings);
+
+      const unsubEvals = onValue(evalsRef, (snapshot) => {
+        const data = snapshot.val();
+        currentEvals = data || {};
+        calculateEvaluateCount();
+      });
+      unsubscribes.push(unsubEvals);
     }
 
     // 3. Unread Notifications (Dashboard)
     const notifRef = ref(db, `notifications/${user.uid}`);
-    onValue(notifRef, (snapshot) => {
+    const unsubNotif = onValue(notifRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         const unread = Object.values(data).filter((n: any) => !n.read).length;
         setCounts(prev => ({ ...prev, notifications: unread }));
       }
     });
+    unsubscribes.push(unsubNotif);
 
     // 4. Total Pending Meetings (Meetings page - Phase 1 + Phase 2)
-    const centralMeetingsRef = ref(db, 'meetings');
-    onValue(centralMeetingsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const pendingMeetings = Object.values(data).filter((m: any) =>
-          m.status === 'Scheduled' && m.attendees?.includes(user.uid)
-        ).length;
-        setCounts(prev => ({ ...prev, totalMeetings: pendingMeetings }));
-      } else {
-        setCounts(prev => ({ ...prev, totalMeetings: 0 }));
-      }
-    });
+    if (userRole !== 'admin' && userRole !== 'super_admin') {
+      const centralMeetingsRef = ref(db, 'meetings');
+      const unsubCentralMeetings = onValue(centralMeetingsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const pendingMeetings = Object.values(data).filter((m: any) =>
+            m.status === 'Scheduled' && m.attendees?.includes(user.uid)
+          ).length;
+          setCounts(prev => ({ ...prev, totalMeetings: pendingMeetings }));
+        } else {
+          setCounts(prev => ({ ...prev, totalMeetings: 0 }));
+        }
+      });
+      unsubscribes.push(unsubCentralMeetings);
+    }
 
+    return () => {
+      unsubscribes.forEach(unsub => unsub());
+    };
   }, [user]);
 
   const handleLogout = async () => {
@@ -112,7 +211,7 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard', roles: ['user', 'admin', 'mentor', 'super_admin'], badge: counts.notifications },
     { name: 'Programmes', icon: Rocket, href: '/dashboard/programmes', roles: ['user', 'admin', 'super_admin'] },
-    { name: 'Applications', icon: FileText, href: '/dashboard/applications', roles: ['user', 'admin', 'mentor', 'super_admin'], badge: counts.applications },
+    { name: 'Applications', icon: FileText, href: '/dashboard/applications', roles: ['user', 'admin', 'super_admin'], badge: counts.applications },
     { name: 'Evaluate', icon: ClipboardList, href: '/dashboard/evaluate', roles: ['admin', 'mentor', 'super_admin'], badge: counts.evaluate },
     { name: 'Meetings', icon: Calendar, href: '/dashboard/meetings', roles: ['user', 'admin', 'mentor', 'super_admin'], badge: counts.totalMeetings },
     { name: 'Mentors', icon: Users, href: '/dashboard/mentors', roles: ['admin', 'super_admin'] },

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import { db } from '@/lib/firebase';
 import { ref, onValue, set, push } from 'firebase/database';
@@ -202,14 +203,52 @@ export default function EvaluatePage() {
     }
   };
 
+  const handleMarkAbsent = async () => {
+    if (!selectedApp || !currentUser) return;
+    const currentPhase = getPhase(selectedApp.id);
+    
+    // Find the scheduled meeting for this application and phase
+    const currentMeeting = meetings.find(m =>
+      m.applicationId === selectedApp.id &&
+      m.status === 'Scheduled' &&
+      (
+        (currentPhase === 'Phase 1' && m.title.toLowerCase().includes('phase 1')) ||
+        (currentPhase === 'Phase 2' && m.title.toLowerCase().includes('phase 2')) ||
+        (currentPhase === 'Final Review' && (m.title.toLowerCase().includes('final review') || m.title.toLowerCase().includes('review meeting')))
+      )
+    );
+
+    if (!currentMeeting) {
+      toast.error('No active scheduled meeting found for this project.');
+      return;
+    }
+
+    try {
+      const appMeetingRef = ref(db, `applications/${selectedApp.id}/meetings/${currentMeeting.id}/status`);
+      const centralMeetingRef = ref(db, `meetings/${currentMeeting.id}/status`);
+      
+      await set(appMeetingRef, 'Absent');
+      await set(centralMeetingRef, 'Absent');
+      
+      toast.success('Marked candidate as absent. The application has been returned to the scheduling queue.');
+      setSelectedApp(null);
+    } catch (error) {
+      console.error('Failed to update meeting status to Absent:', error);
+      toast.error('Failed to mark candidate as absent.');
+    }
+  };
+
   const filteredApps = applications.filter(app => {
     const phase = getPhase(app.id);
     const isEvaluated = userEvaluations[app.id]?.[currentUser?.uid || '']?.[phase.replace(' ', '_')];
 
-    // COMMITTEE CHECK: Only show if user is an attendee in a meeting for this app
+    // COMMITTEE CHECK: Only show if user is an attendee in a scheduled meeting for this app,
+    // OR if it's Phase 1 and there is a Phase 1 meeting scheduled for this app (renders in all mentors' Hub)
     const isCommitteeMember = meetings.some(m =>
-      m.applicationId === app.id &&
-      m.attendees?.includes(currentUser?.uid || '')
+      m.applicationId === app.id && m.status === 'Scheduled' && (
+        m.attendees?.includes(currentUser?.uid || '') ||
+        (phase === 'Phase 1' && m.title.toLowerCase().includes('phase 1'))
+      )
     );
 
     // Only show if part of committee, NOT evaluated, and matches search
@@ -299,7 +338,15 @@ export default function EvaluatePage() {
                       <CardTitle className="text-xl font-black leading-tight text-slate-900 group-hover:text-primary transition-colors">
                         {app.data?.startupTitle || app.programmeTitle}
                       </CardTitle>
-                      <CardDescription className="font-bold text-[10px] uppercase tracking-widest mt-2">{app.userName}</CardDescription>
+                      <CardDescription className="font-bold text-[10px] uppercase tracking-widest mt-2">
+                        <Link 
+                          href={`/dashboard/profile/${app.userId}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="hover:underline hover:text-primary transition-colors"
+                        >
+                          {app.userName}
+                        </Link>
+                      </CardDescription>
                     </CardHeader>
                   </Card>
                 ))
@@ -332,7 +379,12 @@ export default function EvaluatePage() {
                           <TableRow key={`${app.id}-${idx}`} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
                             <TableCell className="py-6 px-8">
                               <p className="font-black text-slate-900">{app.data?.startupTitle || app.programmeTitle}</p>
-                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{app.userName}</p>
+                              <Link 
+                                href={`/dashboard/profile/${app.userId}`}
+                                className="text-[10px] font-bold text-slate-400 hover:text-primary hover:underline uppercase tracking-widest transition-colors block w-fit"
+                              >
+                                {app.userName}
+                              </Link>
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="rounded-full border-slate-200 font-black text-[9px] uppercase tracking-widest px-3">
@@ -405,7 +457,15 @@ export default function EvaluatePage() {
                       <Badge className="bg-primary text-white font-black px-4 py-1 rounded-full border-none text-[9px] uppercase tracking-widest">
                         {getPhase(selectedApp.id)} Evaluation
                       </Badge>
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Submitted by {selectedApp.userName}</span>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                        Submitted by{' '}
+                        <Link 
+                          href={`/dashboard/profile/${selectedApp.userId}`}
+                          className="hover:underline hover:text-primary transition-colors font-black text-slate-600"
+                        >
+                          {selectedApp.userName}
+                        </Link>
+                      </span>
                     </div>
                   </div>
                   <div className="bg-slate-50 p-6 rounded-3xl min-w-[200px]">
@@ -591,12 +651,22 @@ export default function EvaluatePage() {
                         </div>
                       )}
 
-                      <Button
-                        onClick={handleSubmitEvaluation}
-                        className="w-full h-16 rounded-3xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-primary/30 transition-all"
-                      >
-                        Submit Evaluation
-                      </Button>
+                      <div className="space-y-3 pt-2">
+                        <Button
+                          onClick={handleSubmitEvaluation}
+                          className="w-full h-16 rounded-3xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-2xl shadow-primary/30 transition-all"
+                        >
+                          Submit Evaluation
+                        </Button>
+
+                        <Button
+                          onClick={handleMarkAbsent}
+                          variant="outline"
+                          className="w-full h-16 rounded-3xl border-rose-200 hover:bg-rose-50 hover:text-rose-700 text-rose-600 font-black uppercase tracking-widest text-xs transition-all"
+                        >
+                          Mark Candidate as Absent
+                        </Button>
+                      </div>
                     </>
                   )}
                 </CardContent>

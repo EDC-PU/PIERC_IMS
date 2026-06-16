@@ -1,4 +1,7 @@
+'use client';
+
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ref, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { Application, UserProfile } from '@/types';
@@ -27,6 +30,7 @@ import {
   Pie,
   Cell
 } from 'recharts';
+import { format } from 'date-fns';
 
 interface SuperAdminDashboardProps {
   user: UserProfile;
@@ -35,6 +39,7 @@ interface SuperAdminDashboardProps {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#ec4899', '#f97316'];
 
 export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) {
+  const router = useRouter();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -62,17 +67,91 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
 
   const sectorData = Object.keys(sectorCounts).map(name => ({
     name,
-    value: Math.round((sectorCounts[name] / applications.length) * 100)
+    value: Math.round((sectorCounts[name] / (applications.length || 1)) * 100)
   })).sort((a, b) => b.value - a.value).slice(0, 5);
 
-  const growthData = [
-    { month: 'Jan', apps: 40, funding: 2400 },
-    { month: 'Feb', apps: 30, funding: 1398 },
-    { month: 'Mar', apps: 20, funding: 9800 },
-    { month: 'Apr', apps: 27, funding: 3908 },
-    { month: 'May', apps: 18, funding: 4800 },
-    { month: 'Jun', apps: 23, funding: 3800 },
+  // Group applications by month of submission (last 6 months)
+  const monthlyData: Record<string, number> = {};
+  applications.forEach(app => {
+    if (app.submittedAt) {
+      const month = format(new Date(app.submittedAt), 'MMM');
+      monthlyData[month] = (monthlyData[month] || 0) + 1;
+    }
+  });
+
+  const monthsOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const currentMonthIdx = new Date().getMonth();
+  const recentMonths = [];
+  for (let i = 5; i >= 0; i--) {
+    const idx = (currentMonthIdx - i + 12) % 12;
+    recentMonths.push(monthsOrder[idx]);
+  }
+
+  const growthData = recentMonths.map(month => ({
+    month,
+    apps: monthlyData[month] || 0
+  }));
+
+  // Compile logs from timeline history across all applications
+  const allLogs: any[] = [];
+  applications.forEach(app => {
+    if (app.timeline) {
+      app.timeline.forEach(event => {
+        allLogs.push({
+          event: event.status,
+          details: event.remarks || `Status updated to ${event.status}`,
+          time: event.timestamp,
+          appName: app.data?.startupTitle || app.programmeTitle || 'Startup'
+        });
+      });
+    }
+  });
+
+  const recentLogs = allLogs
+    .sort((a, b) => b.time - a.time)
+    .slice(0, 4)
+    .map(log => {
+      const diffMs = Date.now() - log.time;
+      const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+      let timeStr = 'Just now';
+      if (diffHrs > 0 && diffHrs < 24) {
+        timeStr = `${diffHrs} hours ago`;
+      } else if (diffHrs >= 24) {
+        timeStr = `${Math.floor(diffHrs / 24)} days ago`;
+      } else {
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        if (diffMins > 0) timeStr = `${diffMins} mins ago`;
+      }
+
+      // Choose icon based on status
+      let icon = Activity;
+      if (log.event === 'Submitted' || log.event === 'Revision Submitted') icon = Rocket;
+      else if (log.event === 'Incubated') icon = Briefcase;
+      else if (log.event.includes('Selected')) icon = Shield;
+
+      return {
+        event: log.event,
+        details: `[${log.appName}] ${log.details}`,
+        time: timeStr,
+        icon
+      };
+    });
+
+  // Default logs if none exist
+  const displayLogs = recentLogs.length > 0 ? recentLogs : [
+    { event: 'Ecosystem Active', details: 'PIERC Portal is live and synchronizing.', time: 'Just now', icon: Activity },
+    { event: 'Ready for Submissions', details: 'Programmes are active and accepting proposals.', time: 'Just now', icon: Rocket }
   ];
+
+  const exportAuditTrail = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(applications, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `pierc_applications_audit_${Date.now()}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
 
   if (loading) return <div className="p-8 text-center animate-pulse text-slate-400 font-bold uppercase tracking-widest">Synchronizing Ecosystem Data...</div>;
 
@@ -84,8 +163,8 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
           <p className="text-slate-500">Global overview of PIERC incubation activities.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">Download Report</Button>
-          <Button variant="default" className="bg-slate-900">Configure Workflow</Button>
+          <Button variant="outline" onClick={exportAuditTrail}>Download Report</Button>
+          <Button variant="default" className="bg-slate-900" onClick={() => router.push('/dashboard/manage-users')}>Configure Workflow</Button>
         </div>
       </div>
 
@@ -174,32 +253,38 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
           </CardHeader>
           <CardContent>
             <div className="h-[300px] min-h-[300px] w-full flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={sectorData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {sectorData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              {sectorData.length === 0 ? (
+                <div className="text-slate-400 font-bold uppercase text-xs italic">No sector data available</div>
+              ) : (
+                <>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={sectorData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {sectorData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-2 ml-4">
+                    {sectorData.map((sector, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i] }} />
+                        <span className="text-xs font-medium text-slate-600">{sector.name} ({sector.value}%)</span>
+                      </div>
                     ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="space-y-2 ml-4">
-                {sectorData.map((sector, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i] }} />
-                    <span className="text-xs font-medium text-slate-600">{sector.name} ({sector.value}%)</span>
                   </div>
-                ))}
-              </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -215,12 +300,7 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { event: 'New Programme Created', details: 'Startup Nivesh launched by Admin', time: '2 hours ago', icon: Rocket },
-                { event: 'User Role Escalation', details: 'Rahul M. promoted to Mentor', time: '5 hours ago', icon: Shield },
-                { event: 'Large Funding Disbursed', details: '₹25,00,000 to Solaris Mobility', time: '1 day ago', icon: Briefcase },
-                { event: 'Security Audit', details: 'Automated system-wide scan completed', time: '1 day ago', icon: Activity },
-              ].map((log, i) => (
+              {displayLogs.map((log, i) => (
                 <div key={i} className="flex items-start gap-4 p-3 hover:bg-slate-50 rounded-lg transition-colors">
                   <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
                     <log.icon className="w-4 h-4" />
@@ -242,9 +322,12 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
           <CardHeader className="border-b bg-slate-50/50">
             <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900">System Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent>
             <div className="grid grid-cols-1 divide-y divide-slate-100">
-              <button className="flex items-center justify-between p-6 hover:bg-slate-50 transition-all group w-full text-left">
+              <button 
+                className="flex items-center justify-between p-6 hover:bg-slate-50 transition-all group w-full text-left"
+                onClick={() => router.push('/dashboard/programmes')}
+              >
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-all">
                     <Rocket className="w-5 h-5" />
@@ -257,7 +340,10 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
                 <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-colors" />
               </button>
 
-              <button className="flex items-center justify-between p-6 hover:bg-slate-50 transition-all group w-full text-left">
+              <button 
+                className="flex items-center justify-between p-6 hover:bg-slate-50 transition-all group w-full text-left"
+                onClick={() => router.push('/dashboard/manage-users')}
+              >
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:bg-emerald-600 group-hover:text-white transition-all">
                     <Shield className="w-5 h-5" />
@@ -270,20 +356,26 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
                 <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 transition-colors" />
               </button>
 
-              <button className="flex items-center justify-between p-6 hover:bg-slate-50 transition-all group w-full text-left">
+              <button 
+                className="flex items-center justify-between p-6 hover:bg-slate-50 transition-all group w-full text-left"
+                onClick={() => router.push('/dashboard/settings')}
+              >
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl group-hover:bg-purple-600 group-hover:text-white transition-all">
                     <Activity className="w-5 h-5" />
                   </div>
                   <div>
                     <p className="font-black text-slate-900 text-sm">Configure Notifications</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">System Alerts & SMTP</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Configure Alerts & Settings</p>
                   </div>
                 </div>
                 <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-purple-600 transition-colors" />
               </button>
 
-              <button className="flex items-center justify-between p-6 hover:bg-slate-50 transition-all group w-full text-left">
+              <button 
+                className="flex items-center justify-between p-6 hover:bg-slate-50 transition-all group w-full text-left"
+                onClick={exportAuditTrail}
+              >
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-orange-50 text-orange-600 rounded-2xl group-hover:bg-orange-600 group-hover:text-white transition-all">
                     <Briefcase className="w-5 h-5" />

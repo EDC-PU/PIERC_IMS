@@ -29,6 +29,12 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import {
   Calendar as CalendarIcon,
   Clock,
   MapPin,
@@ -132,16 +138,30 @@ export default function MeetingsPage() {
   // Categorization Logic
   const getAppMeetingCount = (appId: string) => meetings.filter(m => m.applicationId === appId).length;
 
+  const hasScheduledMeeting = (appId: string, phase: string) => {
+    return meetings.some(m => {
+      if (m.applicationId !== appId || m.status !== 'Scheduled') return false;
+      const titleLower = m.title.toLowerCase();
+      if (phase === 'phase1') return titleLower.includes('phase 1');
+      if (phase === 'phase2') return titleLower.includes('phase 2');
+      if (phase === 'review') return titleLower.includes('final review') || titleLower.includes('review meeting');
+      return false;
+    });
+  };
+
   const phase1Apps = applications.filter(app =>
     (app.status === 'Submitted' || app.status === 'Under Review' || app.status === 'Revision Submitted' || app.status === 'Phase 1 Evaluation' || app.status === 'Revision Needed' || app.status === 'Shortlisted')
+    && !hasScheduledMeeting(app.id, 'phase1')
   );
 
   const phase2Apps = applications.filter(app =>
-    app.status === 'Phase 2 Selected' || app.status === 'Phase 2 Evaluation'
+    (app.status === 'Phase 2 Selected' || app.status === 'Phase 2 Evaluation')
+    && !hasScheduledMeeting(app.id, 'phase2')
   );
 
   const reviewApps = applications.filter(app =>
-    app.status === 'Cohort Selected' || app.status === 'Final Review'
+    (app.status === 'Cohort Selected' || app.status === 'Final Review')
+    && !hasScheduledMeeting(app.id, 'review')
   );
 
   const historyMeetings = meetings.filter(m => isPast(m.startTime));
@@ -193,6 +213,13 @@ export default function MeetingsPage() {
         const phaseTitle = activePhase === 'phase1' ? 'Phase 1 Evaluation' :
           activePhase === 'phase2' ? 'Phase 2 Evaluation' : 'Final Review Meeting';
 
+        const isPhase1 = activePhase === 'phase1';
+        const attendeesList = Array.from(new Set([
+          currentUser!.uid,
+          ...(!isPhase1 && selectedEvaluator ? [selectedEvaluator] : []),
+          app.userId
+        ]));
+
         const meetingData: Meeting = {
           id: newRef.key!,
           applicationId: appId,
@@ -202,7 +229,7 @@ export default function MeetingsPage() {
           mode: mode as any,
           location: mode === 'Offline' ? venue : 'Online',
           link: mode === 'Online' ? meetingLink : '',
-          attendees: Array.from(new Set([currentUser!.uid, ...(selectedEvaluator ? [selectedEvaluator] : []), app.userId])),
+          attendees: attendeesList,
           status: 'Scheduled',
           description: `${phaseTitle} session bulk-scheduled.`
         };
@@ -214,7 +241,11 @@ export default function MeetingsPage() {
         await set(centralMeetingsRef, meetingData);
 
         // Push Notifications to all attendees
-        const attendees = Array.from(new Set([app.userId, ...(selectedEvaluator ? [selectedEvaluator] : []), currentUser!.uid]));
+        const attendees = Array.from(new Set([
+          app.userId,
+          ...(!isPhase1 && selectedEvaluator ? [selectedEvaluator] : []),
+          currentUser!.uid
+        ]));
         const notifyPromises = attendees.map(uid => {
           const notifRef = ref(db, `notifications/${uid}`);
           const newNotifRef = push(notifRef);
@@ -240,6 +271,21 @@ export default function MeetingsPage() {
     }
   };
 
+  const handleUpdateMeetingStatus = async (meeting: Meeting, newStatus: 'Scheduled' | 'Completed' | 'Cancelled' | 'Absent') => {
+    try {
+      const appMeetingRef = ref(db, `applications/${meeting.applicationId}/meetings/${meeting.id}/status`);
+      const centralMeetingRef = ref(db, `meetings/${meeting.id}/status`);
+      
+      await set(appMeetingRef, newStatus);
+      await set(centralMeetingRef, newStatus);
+      
+      toast.success(`Meeting status updated to ${newStatus}`);
+    } catch (error) {
+      console.error('Failed to update meeting status:', error);
+      toast.error('Failed to update meeting status');
+    }
+  };
+
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
   const days = eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
 
@@ -254,7 +300,14 @@ export default function MeetingsPage() {
         </div>
       </div>
 
-      <Tabs defaultValue={isAdmin ? "phase1" : "calendar"} className="w-full" onValueChange={setActivePhase}>
+      <Tabs 
+        defaultValue={isAdmin ? "phase1" : "calendar"} 
+        className="w-full" 
+        onValueChange={(val) => {
+          setActivePhase(val);
+          setSelectedEvaluator('');
+        }}
+      >
         <TabsList className="bg-slate-100/50 p-1 rounded-2xl border border-slate-200 h-14 w-full justify-start space-x-2">
           {isAdmin && (
             <>
@@ -329,7 +382,13 @@ export default function MeetingsPage() {
                                   <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-wider break-words whitespace-normal">{app.programmeTitle}</p>
                                 </TableCell>
                                 <TableCell className="py-6 max-w-[160px] whitespace-normal break-words">
-                                  <span className="text-xs font-black text-slate-700 break-words whitespace-normal">{app.userName}</span>
+                                  <Link 
+                                    href={`/dashboard/profile/${app.userId}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-xs font-black text-slate-700 hover:text-primary hover:underline transition-colors break-words whitespace-normal"
+                                  >
+                                    {app.userName}
+                                  </Link>
                                 </TableCell>
                                 <TableCell className="py-6 text-right">
                                   <span className="text-[11px] font-black text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">{format(app.submittedAt, 'MMM dd, yyyy')}</span>
@@ -355,7 +414,13 @@ export default function MeetingsPage() {
                     <div className="space-y-4">
                       <div className="space-y-1">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Meeting Date</Label>
-                        <Input type="date" value={meetingDate} onChange={(e) => setMeetingDate(e.target.value)} className="rounded-xl h-11" />
+                        <Input 
+                          type="date" 
+                          value={meetingDate} 
+                          onChange={(e) => setMeetingDate(e.target.value)} 
+                          min={format(new Date(), 'yyyy-MM-dd')}
+                          className="rounded-xl h-11" 
+                        />
                       </div>
                       <div className="space-y-1">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Time</Label>
@@ -394,19 +459,21 @@ export default function MeetingsPage() {
                           </div>
                         )}
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evaluator / Panelist</Label>
-                        <Select onValueChange={(val) => setSelectedEvaluator(val || '')} value={selectedEvaluator}>
-                          <SelectTrigger className="rounded-xl h-11">
-                            <SelectValue>
-                              {selectedEvaluator ? allUsers[selectedEvaluator]?.displayName : "Choose an evaluator"}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl shadow-2xl border-none ring-1 ring-slate-100">
-                            {evaluators.map(ev => <SelectItem key={ev.uid} value={ev.uid}>{ev.displayName}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      {activePhase !== 'phase1' && (
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evaluator / Panelist</Label>
+                          <Select onValueChange={(val) => setSelectedEvaluator(val || '')} value={selectedEvaluator}>
+                            <SelectTrigger className="rounded-xl h-11">
+                              <SelectValue>
+                                {selectedEvaluator ? allUsers[selectedEvaluator]?.displayName : "Choose an evaluator"}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl shadow-2xl border-none ring-1 ring-slate-100">
+                              {evaluators.map(ev => <SelectItem key={ev.uid} value={ev.uid}>{ev.displayName}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
                     <Button onClick={handleBulkSchedule} disabled={selectedApps.length === 0} className="w-full h-14 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20">
                       Schedule for Selected
@@ -539,12 +606,15 @@ export default function MeetingsPage() {
                           return role === 'admin' || role === 'super_admin' || role === 'mentor';
                         });
 
-                        const completed = evaluatorIds.filter(uid =>
+                        // For Phase 1, check all evaluations submitted since no specific panelist was assigned
+                        const completed = Object.keys(evaluations[m.applicationId] || {}).filter(uid =>
                           evaluations[m.applicationId]?.[uid]?.[phaseKey]
                         );
-                        const pending = evaluatorIds.filter(uid =>
-                          !evaluations[m.applicationId]?.[uid]?.[phaseKey]
-                        );
+                        const pending = phaseKey === 'Phase_1'
+                          ? []
+                          : evaluatorIds.filter(uid =>
+                              !evaluations[m.applicationId]?.[uid]?.[phaseKey]
+                            );
 
                         return (
                           <TableRow key={m.id} className="border-slate-100 hover:bg-slate-50/50 transition-colors">
@@ -555,7 +625,19 @@ export default function MeetingsPage() {
                               >
                                 {app?.data?.startupTitle || 'Unknown Project'}
                               </Link>
-                              <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase break-words whitespace-normal">by {app?.userName || 'N/A'}</p>
+                              <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase break-words whitespace-normal">
+                                by{' '}
+                                {app ? (
+                                  <Link 
+                                    href={`/dashboard/profile/${app.userId}`}
+                                    className="hover:text-primary hover:underline transition-colors font-black text-slate-500"
+                                  >
+                                    {app.userName}
+                                  </Link>
+                                ) : (
+                                  'N/A'
+                                )}
+                              </p>
                             </TableCell>
                             <TableCell className="py-8">
                               <p className="font-black text-slate-900 text-sm">{format(m.startTime, 'MMM dd,')}</p>
@@ -575,11 +657,21 @@ export default function MeetingsPage() {
                                 <p className="font-black text-slate-900 text-xs">{m.location}</p>
                               )}
                               <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">({m.mode})</p>
+                              <Badge className={cn(
+                                "mt-2 font-black text-[9px] uppercase tracking-widest px-2 py-0.5 border-none rounded-full w-fit block",
+                                m.status === 'Scheduled' ? 'bg-blue-100 text-blue-700' :
+                                m.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
+                                m.status === 'Absent' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
+                              )}>
+                                {m.status}
+                              </Badge>
                             </TableCell>
                             {currentUser?.role !== 'user' && (
                               <>
                                 <TableCell className="py-8">
-                                  {pending.length === 0 ? (
+                                  {phaseKey === 'Phase_1' ? (
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">All Mentors Eligible</span>
+                                  ) : pending.length === 0 ? (
                                     <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">None</span>
                                   ) : (
                                     <div className="flex flex-col gap-1">
@@ -615,9 +707,37 @@ export default function MeetingsPage() {
                               </>
                             )}
                             <TableCell className="py-8 text-right pr-8">
-                              <Button variant="ghost" size="icon" className="rounded-xl text-slate-400 hover:text-primary">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
+                              {currentUser?.role !== 'user' ? (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-xl p-2 text-slate-400 hover:bg-slate-50 hover:text-primary transition-all outline-none h-10 w-10 cursor-pointer">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="rounded-2xl shadow-2xl border border-slate-100 p-2 bg-white min-w-[150px]">
+                                    <DropdownMenuItem 
+                                      className="rounded-xl p-3 cursor-pointer hover:bg-slate-50 text-slate-700 hover:text-primary font-bold text-xs outline-none"
+                                      onClick={() => handleUpdateMeetingStatus(m, 'Absent')}
+                                    >
+                                      Mark as Absent
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      className="rounded-xl p-3 cursor-pointer hover:bg-slate-50 text-slate-700 hover:text-primary font-bold text-xs outline-none"
+                                      onClick={() => handleUpdateMeetingStatus(m, 'Completed')}
+                                    >
+                                      Mark as Completed
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      className="rounded-xl p-3 cursor-pointer hover:bg-slate-50 text-slate-700 hover:text-primary font-bold text-xs outline-none"
+                                      onClick={() => handleUpdateMeetingStatus(m, 'Cancelled')}
+                                    >
+                                      Cancel Meeting
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              ) : (
+                                <Button variant="ghost" size="icon" className="rounded-xl text-slate-400 cursor-not-allowed" disabled>
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         );

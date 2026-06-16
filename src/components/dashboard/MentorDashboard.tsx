@@ -1,6 +1,10 @@
 'use client';
 
-import { UserProfile } from '@/types';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { ref, onValue } from 'firebase/database';
+import { db } from '@/lib/firebase';
+import { UserProfile, Meeting, Application } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -12,14 +16,82 @@ import {
   Clock,
   Star
 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
 
 interface MentorDashboardProps {
   user: UserProfile;
 }
 
 export default function MentorDashboard({ user }: MentorDashboardProps) {
+  const router = useRouter();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // 1. Fetch applications
+    const appsRef = ref(db, 'applications');
+    const unsubscribeApps = onValue(appsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const appsList = Object.entries(data).map(([id, val]: [string, any]) => ({
+          id,
+          ...val
+        })) as Application[];
+        setApplications(appsList);
+      } else {
+        setApplications([]);
+      }
+    });
+
+    // 2. Fetch meetings
+    const meetingsRef = ref(db, 'meetings');
+    const unsubscribeMeetings = onValue(meetingsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const list = Object.values(data) as Meeting[];
+        setMeetings(list);
+      } else {
+        setMeetings([]);
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      unsubscribeApps();
+      unsubscribeMeetings();
+    };
+  }, []);
+
+  // Filter assigned startups
+  const assignedApps = applications.filter(app => app.mentorId === user.uid);
+  const totalStartups = assignedApps.length;
+
+  // Filter upcoming sessions for the mentor
+  const upcomingMeetings = meetings
+    .filter(m => m.attendees?.includes(user.uid) && m.startTime > Date.now() && m.status === 'Scheduled')
+    .sort((a, b) => a.startTime - b.startTime);
+  
+  const upcomingCount = upcomingMeetings.length;
+
+  // Find last meeting for a given application ID
+  const getLastMeetingTime = (appId: string) => {
+    const appMeetings = meetings.filter(m => m.applicationId === appId && m.status === 'Completed' && m.startTime < Date.now());
+    if (appMeetings.length === 0) return 'Never met';
+    const sorted = appMeetings.sort((a, b) => b.startTime - a.startTime);
+    const diffMs = Date.now() - sorted[0].startTime;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return format(new Date(sorted[0].startTime), 'MMM dd, yyyy');
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center animate-pulse text-slate-400 font-bold uppercase tracking-widest">Synchronizing dashboard...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -27,7 +99,7 @@ export default function MentorDashboard({ user }: MentorDashboardProps) {
           <h1 className="text-2xl font-bold">Mentor Dashboard</h1>
           <p className="text-slate-500">Welcome back, {user.displayName}. Here's your mentorship overview.</p>
         </div>
-        <Button>
+        <Button onClick={() => router.push('/dashboard/meetings')}>
           <Calendar className="mr-2 h-4 w-4" /> Schedule Session
         </Button>
       </div>
@@ -39,7 +111,7 @@ export default function MentorDashboard({ user }: MentorDashboardProps) {
             <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{totalStartups}</div>
             <p className="text-xs text-slate-500 mt-1">Actively mentoring</p>
           </CardContent>
         </Card>
@@ -49,8 +121,8 @@ export default function MentorDashboard({ user }: MentorDashboardProps) {
             <Clock className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-slate-500 mt-1">Scheduled for this week</p>
+            <div className="text-2xl font-bold">{upcomingCount}</div>
+            <p className="text-xs text-slate-500 mt-1">Scheduled in calendar</p>
           </CardContent>
         </Card>
         <Card>
@@ -73,34 +145,47 @@ export default function MentorDashboard({ user }: MentorDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { name: 'EcoFlow Solutions', sector: 'GreenTech', stage: 'Early Traction', lastMeeting: '2 days ago' },
-                { name: 'Zenith AgriTech', sector: 'AgriTech', stage: 'Prototype', lastMeeting: '1 week ago' },
-                { name: 'Quantum Health', sector: 'HealthTech', stage: 'Ideation', lastMeeting: '3 days ago' },
-              ].map((startup, i) => (
-                <div key={i} className="flex items-center justify-between p-4 bg-white border rounded-xl hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary font-bold">
-                      {startup.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-bold">{startup.name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-[10px] uppercase tracking-wider">{startup.sector}</Badge>
-                        <span className="text-xs text-slate-500">{startup.stage}</span>
+              {assignedApps.length === 0 ? (
+                <div className="p-10 text-center text-slate-400 font-bold uppercase text-xs italic">
+                  No assigned startups
+                </div>
+              ) : (
+                assignedApps.map((startup) => (
+                  <div key={startup.id} className="flex items-center justify-between p-4 bg-white border rounded-xl hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary font-bold">
+                        {(startup.data?.startupName || startup.data?.startupTitle || startup.programmeTitle || 'S').charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-bold">{startup.data?.startupName || startup.data?.startupTitle || startup.programmeTitle}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
+                            {startup.data?.sector || 'General'}
+                          </Badge>
+                          <span className="text-xs text-slate-500">{startup.data?.currentStage || 'Incubating'}</span>
+                        </div>
                       </div>
                     </div>
+                    <div className="text-right hidden md:block">
+                      <p className="text-xs text-slate-500 italic">Last met: {getLastMeetingTime(startup.id)}</p>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="mt-1 text-primary hover:text-primary-focus"
+                        onClick={() => router.push(`/dashboard/applications/${startup.id}`)}
+                      >
+                        View Details <ChevronRight className="ml-1 h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="text-right hidden md:block">
-                    <p className="text-xs text-slate-500 italic">Last met: {startup.lastMeeting}</p>
-                    <Button variant="ghost" size="sm" className="mt-1">View Details <ChevronRight className="ml-1 h-3 w-3" /></Button>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
           <CardFooter className="justify-center border-t py-3">
-            <Button variant="link">View All Startups</Button>
+            <Button variant="link" className="text-primary font-bold" onClick={() => router.push('/dashboard/applications')}>
+              View All Startups
+            </Button>
           </CardFooter>
         </Card>
 
@@ -111,22 +196,28 @@ export default function MentorDashboard({ user }: MentorDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { startup: 'EcoFlow Solutions', time: 'Today, 2:00 PM', type: 'Online' },
-                { startup: 'Zenith AgriTech', time: 'Tomorrow, 11:00 AM', type: 'Hybrid' },
-                { startup: 'Quantum Health', time: 'May 18, 4:30 PM', type: 'Offline' },
-              ].map((session, i) => (
-                <div key={i} className="flex flex-col p-3 bg-slate-50 rounded-lg border-l-4 border-primary">
-                  <p className="text-sm font-bold">{session.startup}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-slate-500 flex items-center">
-                      <Clock className="w-3 h-3 mr-1" /> {session.time}
-                    </p>
-                    <Badge variant="secondary" className="text-[10px]">{session.type}</Badge>
-                  </div>
+              {upcomingMeetings.length === 0 ? (
+                <div className="p-10 text-center text-slate-400 font-bold uppercase text-xs italic">
+                  No upcoming sessions
                 </div>
-              ))}
-              <Button className="w-full mt-4" variant="outline">
+              ) : (
+                upcomingMeetings.map((session) => {
+                  const startup = applications.find(a => a.id === session.applicationId);
+                  const startupName = startup?.data?.startupName || startup?.data?.startupTitle || startup?.programmeTitle || 'Startup';
+                  return (
+                    <div key={session.id} className="flex flex-col p-3 bg-slate-50 rounded-lg border-l-4 border-primary">
+                      <p className="text-sm font-bold">{startupName}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-xs text-slate-500 flex items-center">
+                          <Clock className="w-3 h-3 mr-1" /> {format(new Date(session.startTime), 'MMM dd • hh:mm a')}
+                        </p>
+                        <Badge variant="secondary" className="text-[10px]">{session.mode}</Badge>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <Button className="w-full mt-4" variant="outline" onClick={() => router.push('/dashboard/meetings')}>
                 <Calendar className="mr-2 h-4 w-4" /> View Full Calendar
               </Button>
             </div>
@@ -150,16 +241,20 @@ export default function MentorDashboard({ user }: MentorDashboardProps) {
               <p className="text-sm text-slate-600 mt-2">
                 Monitor the month-on-month growth of your assigned startups and submit quarterly feedback.
               </p>
-              <Button className="mt-4 w-full" variant="secondary">Submit Report</Button>
+              <Button className="mt-4 w-full" variant="secondary" onClick={() => router.push('/dashboard/applications')}>
+                View Assigned Startups
+              </Button>
             </div>
             <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
               <h3 className="font-bold flex items-center gap-2">
                 <Clock className="h-4 w-4 text-orange-600" /> Pending Feedback
               </h3>
               <p className="text-sm text-slate-600 mt-2">
-                You have 2 sessions from last week waiting for feedback submission.
+                Evaluate scheduled and past incubation presentations for all applications.
               </p>
-              <Button className="mt-4 w-full" variant="outline">Submit Feedback</Button>
+              <Button className="mt-4 w-full" variant="outline" onClick={() => router.push('/dashboard/evaluate')}>
+                Go to Evaluation Hub
+              </Button>
             </div>
           </div>
         </CardContent>

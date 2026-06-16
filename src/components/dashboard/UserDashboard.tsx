@@ -34,6 +34,7 @@ import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 interface UserDashboardProps {
   user: UserProfile;
@@ -48,6 +49,7 @@ const tractionData = [
 ];
 
 export default function UserDashboard({ user }: UserDashboardProps) {
+  const router = useRouter();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [evaluations, setEvaluations] = useState<any[]>([]);
@@ -335,7 +337,10 @@ export default function UserDashboard({ user }: UserDashboardProps) {
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white p-8 group hover:ring-primary/20 transition-all cursor-pointer">
+            <Card 
+              className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white p-8 group hover:ring-primary/20 transition-all cursor-pointer"
+              onClick={() => router.push(latestApp ? `/dashboard/applications/${latestApp.id}` : '/dashboard/applications')}
+            >
               <div className="flex items-center justify-between mb-6">
                 <div className="h-12 w-12 bg-primary/5 rounded-2xl flex items-center justify-center text-primary">
                   <FileText className="h-6 w-6" />
@@ -346,12 +351,15 @@ export default function UserDashboard({ user }: UserDashboardProps) {
               <p className="text-sm font-medium text-slate-500 mt-1">Manage your application attachments and resources.</p>
             </Card>
 
-            <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white p-8 group hover:ring-primary/20 transition-all cursor-pointer">
+            <Card 
+              className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white p-8 group hover:ring-primary/20 transition-all cursor-pointer"
+              onClick={() => router.push(latestApp?.mentorId ? `/dashboard/profile/${latestApp.mentorId}` : '/dashboard/mentors')}
+            >
               <div className="flex items-center justify-between mb-6">
                 <div className="h-12 w-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
                   <Rocket className="h-6 w-6" />
                 </div>
-                <ChevronRight className="h-5 w-5 text-slate-200 group-hover:purple-600 transition-colors" />
+                <ChevronRight className="h-5 w-5 text-slate-200 group-hover:text-purple-600 transition-colors" />
               </div>
               <h3 className="text-lg font-black text-slate-900 tracking-tight">Innovation Mentorship</h3>
               <p className="text-sm font-medium text-slate-500 mt-1">Connect with assigned mentors and industry experts.</p>
