@@ -49,11 +49,13 @@ import {
   ChevronLeft,
   LayoutDashboard,
   Send,
-  MoreVertical
+  MoreVertical,
+  Download
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isPast } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { exportToCSV } from '@/lib/export';
 
 export default function MeetingsPage() {
   const { user: currentUser } = useAuthStore();
@@ -347,6 +349,39 @@ export default function MeetingsPage() {
     }
   };
 
+  const handleExportMeetings = () => {
+    const headers = [
+      'Meeting ID',
+      'Title',
+      'Application ID',
+      'Date & Time',
+      'Mode',
+      'Venue',
+      'Meeting Link',
+      'Status',
+      'Attendees Count'
+    ];
+    const keys = [
+      'id',
+      'title',
+      'applicationId',
+      'formattedTime',
+      'mode',
+      'venue',
+      'meetingLink',
+      'status',
+      'attendeesCount'
+    ];
+
+    const dataToExport = meetings.map(m => ({
+      ...m,
+      formattedTime: m.startTime ? format(new Date(m.startTime), 'yyyy-MM-dd HH:mm:ss') : 'N/A',
+      attendeesCount: m.attendees?.length || 0
+    }));
+
+    exportToCSV(dataToExport, 'meetings_report.csv', headers, keys);
+  };
+
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
   const days = eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
 
@@ -358,6 +393,11 @@ export default function MeetingsPage() {
         <div>
           <h1 className="text-3xl font-black tracking-tight text-slate-900">Evaluation & Review Dashboard</h1>
           <p className="text-slate-500 font-medium mt-1">Coordinate multi-phase evaluations and project selection panels.</p>
+        </div>
+        <div>
+          <Button variant="outline" onClick={handleExportMeetings} className="rounded-2xl h-12 px-6 font-bold flex items-center gap-2 border-slate-200 shadow-sm bg-white hover:bg-slate-50">
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
         </div>
       </div>
 

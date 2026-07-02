@@ -114,7 +114,7 @@ export default function SystemHealthPage() {
           </CardContent>
         </Card>
 
-        {/* RTDB */}
+        {/* Firestore */}
         <Card className="border-none shadow-2xl ring-1 ring-slate-200 overflow-hidden rounded-3xl">
           <CardHeader className="bg-slate-50/50 border-b">
             <div className="flex justify-between items-center">
@@ -123,11 +123,11 @@ export default function SystemHealthPage() {
                   <Database className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg">Realtime Database</CardTitle>
-                  <CardDescription className="text-xs">Real-time data synchronization service</CardDescription>
+                  <CardTitle className="text-lg">Firestore Database</CardTitle>
+                  <CardDescription className="text-xs">NoSQL cloud database service</CardDescription>
                 </div>
               </div>
-              <StatusBadge status={healthData?.rtdb?.status} />
+              <StatusBadge status={healthData?.firestore?.status} />
             </div>
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
@@ -135,20 +135,20 @@ export default function SystemHealthPage() {
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Can Read</p>
                 <div className="flex items-center space-x-2">
-                  {healthData?.rtdb?.canRead ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-rose-500" />}
-                  <span className="font-bold text-slate-700">{healthData?.rtdb?.canRead ? 'Yes' : 'No'}</span>
+                  {healthData?.firestore?.canRead ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-rose-500" />}
+                  <span className="font-bold text-slate-700">{healthData?.firestore?.canRead ? 'Yes' : 'No'}</span>
                 </div>
               </div>
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Can Write</p>
                 <div className="flex items-center space-x-2">
-                  {healthData?.rtdb?.canWrite ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-rose-500" />}
-                  <span className="font-bold text-slate-700">{healthData?.rtdb?.canWrite ? 'Yes' : 'No'}</span>
+                  {healthData?.firestore?.canWrite ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-rose-500" />}
+                  <span className="font-bold text-slate-700">{healthData?.firestore?.canWrite ? 'Yes' : 'No'}</span>
                 </div>
               </div>
             </div>
-            <div className={`p-4 rounded-2xl text-xs font-medium ${healthData?.rtdb?.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
-              {healthData?.rtdb?.message || 'Waiting for check...'}
+            <div className={`p-4 rounded-2xl text-xs font-medium ${healthData?.firestore?.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+              {healthData?.firestore?.message || 'Waiting for check...'}
             </div>
           </CardContent>
         </Card>

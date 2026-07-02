@@ -18,9 +18,10 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
-import { Eye, Clock, CheckCircle2, XCircle, Search, Rocket, Calendar } from 'lucide-react';
+import { Eye, Clock, CheckCircle2, XCircle, Search, Rocket, Calendar, Download } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
+import { exportToCSV } from '@/lib/export';
 import {
   Select,
   SelectContent,
@@ -140,6 +141,36 @@ export default function ApplicationsPage() {
     return true;
   });
 
+  const handleExportApplications = () => {
+    const headers = [
+      'Application ID',
+      'Startup Title',
+      'Applicant Name',
+      'Applicant Email',
+      'Programme Title',
+      'Sector',
+      'Status',
+      'Submitted Date'
+    ];
+    const keys = [
+      'id',
+      'data.startupTitle',
+      'userName',
+      'userEmail',
+      'programmeTitle',
+      'data.sector',
+      'status',
+      'submittedAt'
+    ];
+
+    const dataToExport = filteredApplications.map(app => ({
+      ...app,
+      submittedAt: app.submittedAt ? format(new Date(app.submittedAt), 'yyyy-MM-dd HH:mm:ss') : 'N/A'
+    }));
+
+    exportToCSV(dataToExport, 'applications_report.csv', headers, keys);
+  };
+
   if (loading) {
     return <div className="p-8 text-center">Loading applications...</div>;
   }
@@ -151,11 +182,16 @@ export default function ApplicationsPage() {
           <h1 className="text-2xl font-bold">{isAdmin ? 'All Applications' : 'My Applications'}</h1>
           <p className="text-slate-500">{isAdmin ? 'Review and manage all programme submissions.' : 'Track the status of your programme applications.'}</p>
         </div>
-        {!isAdmin && (
-          <Button asChild>
-            <Link href="/dashboard/programmes">Apply for Programme</Link>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={handleExportApplications} className="rounded-xl font-bold flex items-center gap-2 border-slate-200">
+            <Download className="h-4 w-4" /> Export CSV
           </Button>
-        )}
+          {!isAdmin && (
+            <Button asChild>
+              <Link href="/dashboard/programmes">Apply for Programme</Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

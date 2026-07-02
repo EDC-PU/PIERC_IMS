@@ -20,10 +20,12 @@ import {
   LayoutGrid,
   List as ListIcon,
   Globe,
-  Briefcase
+  Briefcase,
+  Download
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { exportToCSV } from '@/lib/export';
 
 export default function StartupsDirectory() {
   const [startups, setStartups] = useState<Application[]>([]);
@@ -51,6 +53,36 @@ export default function StartupsDirectory() {
     return matchesSearch && matchesSector;
   });
 
+  const handleExportStartups = () => {
+    const headers = [
+      'Startup Title',
+      'Founder',
+      'Founder Email',
+      'Programme Track',
+      'Sector',
+      'City HQ',
+      'Status'
+    ];
+    const keys = [
+      'startupTitle',
+      'userName',
+      'userEmail',
+      'programmeTitle',
+      'sector',
+      'cityHQ',
+      'status'
+    ];
+
+    const dataToExport = filteredStartups.map(s => ({
+      ...s,
+      startupTitle: s.data?.startupTitle || s.programmeTitle,
+      sector: s.data?.sector || 'Other',
+      cityHQ: s.data?.cityHQ || 'N/A'
+    }));
+
+    exportToCSV(dataToExport, 'startups_report.csv', headers, keys);
+  };
+
   if (loading) return (
     <div className="p-8 flex flex-col items-center justify-center min-h-[60vh] space-y-4">
       <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
@@ -66,6 +98,9 @@ export default function StartupsDirectory() {
           <p className="text-slate-500 font-medium mt-1">Exploring {startups.length} ventures in the PIERC ecosystem.</p>
         </div>
         <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={handleExportStartups} className="rounded-xl font-bold flex items-center gap-2 border-slate-200 h-11 px-6 shadow-sm bg-white hover:bg-slate-50">
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
           <div className="bg-slate-100 p-1 rounded-xl flex">
             <Button 
               variant={viewMode === 'grid' ? 'default' : 'ghost'} 

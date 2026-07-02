@@ -41,10 +41,12 @@ import {
   Mail, 
   Phone,
   Building,
-  UserCog
+  UserCog,
+  Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { UserProfile, UserRole } from '@/types';
+import { exportToCSV } from '@/lib/export';
 
 export default function ManageUsersPage() {
   const { user: currentUser } = useAuthStore();
@@ -103,6 +105,35 @@ export default function ManageUsersPage() {
     return name.toLowerCase().includes(searchTerm) || email.toLowerCase().includes(searchTerm);
   });
 
+  const handleExportUsers = () => {
+    const headers = [
+      'Display Name',
+      'Email',
+      'Phone',
+      'Institute',
+      'Role',
+      'Enrollment Number',
+      'Joined Date'
+    ];
+    const keys = [
+      'displayName',
+      'email',
+      'phone',
+      'institute',
+      'role',
+      'enrollmentNumber',
+      'joinedDate'
+    ];
+
+    const dataToExport = filteredUsers.map(u => ({
+      ...u,
+      phone: u.contactNumber || u.phoneNumber || 'N/A',
+      joinedDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'
+    }));
+
+    exportToCSV(dataToExport, 'users_report.csv', headers, keys);
+  };
+
   const roleColors: Record<UserRole, string> = {
     'super_admin': 'bg-purple-100 text-purple-700 border-purple-200',
     'admin': 'bg-blue-100 text-blue-700 border-blue-200',
@@ -131,6 +162,9 @@ export default function ManageUsersPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <Button variant="outline" onClick={handleExportUsers} className="h-11 rounded-xl font-bold flex items-center gap-2 border-slate-200 bg-white hover:bg-slate-50">
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
           <Button className="h-11 rounded-xl shadow-lg shadow-primary/20 font-bold">
             <UserPlus className="mr-2 h-4 w-4" /> Add Member
           </Button>

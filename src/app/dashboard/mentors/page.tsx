@@ -12,14 +12,16 @@ import {
   Search, 
   Plus, 
   Mail, 
-  MoreVertical,
-  ExternalLink,
-  UserPlus,
-  Check,
-  Trash2,
-  Phone
+  MoreVertical, 
+  ExternalLink, 
+  UserPlus, 
+  Check, 
+  Trash2, 
+  Phone,
+  Download
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { exportToCSV } from '@/lib/export';
 import {
   Dialog,
   DialogContent,
@@ -126,6 +128,34 @@ export default function MentorsPage() {
     m.bio?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleExportMentors = () => {
+    const headers = [
+      'Name',
+      'Email',
+      'Phone',
+      'Institute',
+      'Assigned Startups',
+      'Expertise Sectors'
+    ];
+    const keys = [
+      'displayName',
+      'email',
+      'phone',
+      'institute',
+      'assignedCount',
+      'expertiseSectors'
+    ];
+
+    const dataToExport = filteredMentors.map(m => ({
+      ...m,
+      phone: m.contactNumber || m.phoneNumber || 'N/A',
+      assignedCount: getAssignedStartupsCount(m.uid),
+      expertiseSectors: getMentorSectors(m.uid).join('; ')
+    }));
+
+    exportToCSV(dataToExport, 'mentors_report.csv', headers, keys);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -134,10 +164,14 @@ export default function MentorsPage() {
           <p className="text-slate-500">Manage and assign expert mentors to startups.</p>
         </div>
         
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" /> Add New Mentor</Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportMentors} className="rounded-xl font-bold flex items-center gap-2 border-slate-200 bg-white hover:bg-slate-50">
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="mr-2 h-4 w-4" /> Add New Mentor</Button>
+            </DialogTrigger>
           <DialogContent className="rounded-[2rem] border-none shadow-2xl max-w-md">
             <DialogHeader>
               <DialogTitle className="text-2xl font-black text-slate-900">Assign New Mentor</DialogTitle>
@@ -188,6 +222,7 @@ export default function MentorsPage() {
           </DialogContent>
         </Dialog>
       </div>
+    </div>
 
       <div className="relative max-w-sm">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />

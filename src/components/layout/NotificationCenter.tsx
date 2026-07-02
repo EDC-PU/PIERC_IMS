@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ref, onValue, update } from 'firebase/database';
-import { rtdb as db } from '@/lib/firebase';
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Notification } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { 
@@ -32,15 +32,12 @@ export default function NotificationCenter() {
   useEffect(() => {
     if (!user) return;
 
-    const notifRef = ref(db, `notifications/${user.uid}`);
-    const unsubscribe = onValue(notifRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const list = Object.values(data) as Notification[];
-        const sorted = list.sort((a, b) => b.timestamp - a.timestamp);
-        setNotifications(sorted);
-        setUnreadCount(sorted.filter(n => !n.read).length);
-      }
+    const notifCol = collection(db, 'notifications', user.uid, 'items');
+    const unsubscribe = onSnapshot(notifCol, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Notification[];
+      const sorted = list.sort((a, b) => b.timestamp - a.timestamp);
+      setNotifications(sorted);
+      setUnreadCount(sorted.filter(n => !n.read).length);
     });
 
     return () => unsubscribe();
@@ -48,13 +45,10 @@ export default function NotificationCenter() {
 
   const markAllAsRead = async () => {
     if (!user) return;
-    const updates: any = {};
-    notifications.forEach(n => {
-      if (!n.read) {
-        updates[`notifications/${user.uid}/${n.id}/read`] = true;
-      }
-    });
-    await update(ref(db), updates);
+    const promises = notifications
+      .filter(n => !n.read)
+      .map(n => updateDoc(doc(db, 'notifications', user.uid, 'items', n.id), { read: true }));
+    await Promise.all(promises);
   };
 
   const getIcon = (type: string) => {

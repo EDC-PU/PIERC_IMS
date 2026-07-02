@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { ref, onValue, update, push, remove, set, get } from 'firebase/database';
+import { doc, onSnapshot, getDoc, updateDoc, deleteDoc, collection, query, where, addDoc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { rtdb as db, storage } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { Application, UserProfile } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { triggerEmailNotification } from '@/lib/email-client';
@@ -118,22 +118,18 @@ export default function ApplicationDetailsPage() {
       const snapshot = await uploadBytes(fileRef, phase2PPT);
       const downloadURL = await getDownloadURL(snapshot.ref);
 
-      await update(ref(db, `applications/${id}/documents`), {
-        phase2PPT: downloadURL,
+      await updateDoc(doc(db, 'applications', id), {
+        'documents.phase2PPT': downloadURL,
       });
 
       // Notify Administrators (via Programme Manager if assigned)
       try {
-        const progRef = ref(db, `programmes/${application.programmeId}`);
-        const progSnapshot = await get(progRef);
+        const progSnap = await getDoc(doc(db, 'programmes', application.programmeId));
 
-        if (progSnapshot.exists()) {
-          const managerId = progSnapshot.val().managerId;
+        if (progSnap.exists()) {
+          const managerId = progSnap.data().managerId;
           if (managerId) {
-            const notifRef = ref(db, `notifications/${managerId}`);
-            const newNotifRef = push(notifRef);
-            await set(newNotifRef, {
-              id: newNotifRef.key!,
+            await addDoc(collection(db, 'notifications', managerId, 'items'), {
               userId: managerId,
               title: 'Phase 2 PPT Submitted',
               message: `${application.userName} has submitted the Phase 2 Presentation for ${application.data?.startupTitle || application.programmeTitle}.`,
@@ -159,57 +155,49 @@ export default function ApplicationDetailsPage() {
   };
 
   useEffect(() => {
-    const appRef = ref(db, `applications/${id}`);
-    const unsubscribe = onValue(appRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
+    // 1. Fetch application details
+    const appDocRef = doc(db, 'applications', id);
+    const unsubscribe = onSnapshot(appDocRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = { id: snapshot.id, ...snapshot.data() } as Application;
         setApplication(data);
         setNewIdea(data.data?.problemStatement || '');
         setNewSolution(data.data?.solution || '');
         setNewStartupName(data.data?.startupName || data.data?.startupTitle || '');
         setNewCurrentStage(data.data?.currentStage || '');
         setNewTeamMembers(data.data?.teamMembers || []);
-
-        // Extract meetings from application
-        if (data.meetings) {
-          setMeetings(Object.values(data.meetings));
-        } else {
-          setMeetings([]);
-        }
       }
       setLoading(false);
     });
 
-    const evalRef = ref(db, `evaluations/${id}`);
-    const evalUnsubscribe = onValue(evalRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const evals: any[] = [];
-        Object.entries(data).forEach(([evaluatorId, phases]: [string, any]) => {
-          Object.entries(phases).forEach(([phaseKey, record]: [string, any]) => {
-            evals.push({ ...record, phaseKey, evaluatorId });
-          });
-        });
-        setAllEvaluations(evals.sort((a, b) => b.submittedAt - a.submittedAt));
-      } else {
-        setAllEvaluations([]);
-      }
+    // 2. Fetch meetings for this application
+    const meetingsCol = collection(db, 'meetings');
+    const meetingsQuery = query(meetingsCol, where('applicationId', '==', id));
+    const unsubscribeMeetings = onSnapshot(meetingsQuery, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setMeetings(list);
     });
 
-    const usersRef = ref(db, 'users');
-    const usersUnsubscribe = onValue(usersRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const mentorList = Object.values(data)
-          .filter((u: any) => u.role === 'mentor') as UserProfile[];
-        setMentors(mentorList);
-      } else {
-        setMentors([]);
-      }
+    // 3. Fetch evaluations for this application
+    const evalCol = collection(db, 'evaluations');
+    const evalQuery = query(evalCol, where('applicationId', '==', id));
+    const evalUnsubscribe = onSnapshot(evalQuery, (snapshot) => {
+      const evals = snapshot.docs.map(doc => doc.data());
+      setAllEvaluations(evals.sort((a, b) => b.submittedAt - a.submittedAt));
+    });
+
+    // 4. Fetch mentors from users collection
+    const usersCol = collection(db, 'users');
+    const usersUnsubscribe = onSnapshot(usersCol, (snapshot) => {
+      const mentorList = snapshot.docs
+        .map(doc => doc.data() as UserProfile)
+        .filter(u => u.role === 'mentor');
+      setMentors(mentorList);
     });
 
     return () => {
       unsubscribe();
+      unsubscribeMeetings();
       evalUnsubscribe();
       usersUnsubscribe();
     };
@@ -247,13 +235,10 @@ export default function ApplicationDetailsPage() {
       ];
       updates.timeline = newTimeline;
 
-      await update(ref(db, `applications/${id}`), updates);
+      await updateDoc(doc(db, 'applications', id), updates);
 
       // Push notification to applicant
-      const notifRef = ref(db, `notifications/${application.userId}`);
-      const newNotifRef = push(notifRef);
-      await set(newNotifRef, {
-        id: newNotifRef.key!,
+      await addDoc(collection(db, 'notifications', application.userId, 'items'), {
         userId: application.userId,
         title: `Application Status Update`,
         message: newStatus === 'Phase 2 Selected'
@@ -412,12 +397,12 @@ export default function ApplicationDetailsPage() {
     setIsUpdating(true);
     try {
       const updates: any = {
-        'data/problemStatement': newIdea,
-        'data/solution': newSolution,
-        'data/startupName': newStartupName,
-        'data/startupTitle': newStartupName,
-        'data/currentStage': newCurrentStage,
-        'data/teamMembers': newTeamMembers,
+        'data.problemStatement': newIdea,
+        'data.solution': newSolution,
+        'data.startupName': newStartupName,
+        'data.startupTitle': newStartupName,
+        'data.currentStage': newCurrentStage,
+        'data.teamMembers': newTeamMembers,
         updatedAt: Date.now()
       };
 
@@ -425,10 +410,10 @@ export default function ApplicationDetailsPage() {
         const fileRef = storageRef(storage, `applications/${id}/pitch_deck_${Date.now()}`);
         const snapshot = await uploadBytes(fileRef, newPitchDeck);
         const downloadURL = await getDownloadURL(snapshot.ref);
-        updates['documents/pitchDeck'] = downloadURL;
+        updates['documents.pitchDeck'] = downloadURL;
       }
 
-      await update(ref(db, `applications/${id}`), updates);
+      await updateDoc(doc(db, 'applications', id), updates);
 
       // Send email notifications to applicant and team members
       const recipientEmails = [
@@ -489,10 +474,7 @@ export default function ApplicationDetailsPage() {
     if (user?.role !== 'super_admin' || !application) return;
     try {
       // Notify the applicant before deletion
-      const notifRef = ref(db, `notifications/${application.userId}`);
-      const newNotifRef = push(notifRef);
-      await set(newNotifRef, {
-        id: newNotifRef.key!,
+      await addDoc(collection(db, 'notifications', application.userId, 'items'), {
         userId: application.userId,
         title: 'Application Record Removed',
         message: `Your application for ${application.programmeTitle} (${application.data?.startupTitle || 'Innovation'}) has been permanently removed from the portal by an administrator.`,
@@ -534,7 +516,7 @@ export default function ApplicationDetailsPage() {
         }).catch(err => console.error('Failed to send deletion confirmation email:', err));
       }
 
-      await remove(ref(db, `applications/${id}`));
+      await deleteDoc(doc(db, 'applications', id));
       toast.success('Application deleted permanently');
       router.push('/dashboard/applications');
     } catch (error) {
@@ -552,8 +534,8 @@ export default function ApplicationDetailsPage() {
         application.data?.briefDescription || application.data?.ideaDetails || ""
       );
 
-      await update(ref(db, `applications/${id}`), {
-        'data/sector': sector,
+      await updateDoc(doc(db, 'applications', id), {
+        'data.sector': sector,
         updatedAt: Date.now()
       });
 
@@ -584,7 +566,7 @@ export default function ApplicationDetailsPage() {
       ];
       updates.timeline = newTimeline;
 
-      await update(ref(db, `applications/${id}`), updates);
+      await updateDoc(doc(db, 'applications', id), updates);
       toast.success('Revision submitted successfully! Your application is back in the review queue.');
     } catch (error) {
       toast.error('Failed to submit revision');

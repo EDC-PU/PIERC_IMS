@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { rtdb as db } from '@/lib/firebase';
-import { ref, onValue, push, set, serverTimestamp, query, limitToLast } from 'firebase/database';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, query, orderBy, limit, addDoc } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -67,13 +67,10 @@ function MessagesContent() {
 
   // Load all users
   useEffect(() => {
-    const usersRef = ref(db, 'users');
-    return onValue(usersRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const userList = Object.values(data) as UserProfile[];
-        setUsers(userList.filter(u => u.uid !== user?.uid));
-      }
+    const usersCol = collection(db, 'users');
+    return onSnapshot(usersCol, (snapshot) => {
+      const userList = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() })) as UserProfile[];
+      setUsers(userList.filter(u => u.uid !== user?.uid));
     });
   }, [user]);
 
@@ -83,15 +80,15 @@ function MessagesContent() {
     
     const unsubscribes = users.map(u => {
       const chatId = [user.uid, u.uid].sort().join('_');
-      const lastMsgRef = query(ref(db, `messages/${chatId}`), limitToLast(1));
+      const messagesCol = collection(db, 'messages', chatId, 'messages');
+      const lastMsgQuery = query(messagesCol, orderBy('timestamp', 'desc'), limit(1));
       
-      return onValue(lastMsgRef, (snapshot) => {
-        const data = snapshot.val();
+      return onSnapshot(lastMsgQuery, (snapshot) => {
         let lastMsg = 'Start a conversation...';
         let ts = Date.now();
         
-        if (data) {
-          const msg = Object.values(data)[0] as any;
+        if (!snapshot.empty) {
+          const msg = snapshot.docs[0].data() as any;
           lastMsg = msg.text;
           ts = msg.timestamp;
         }
@@ -116,22 +113,18 @@ function MessagesContent() {
   useEffect(() => {
     if (!user || !selectedChat) return;
     const chatId = [user.uid, selectedChat.uid].sort().join('_');
-    const messagesRef = query(ref(db, `messages/${chatId}`), limitToLast(50));
+    const messagesCol = collection(db, 'messages', chatId, 'messages');
+    const messagesQuery = query(messagesCol, orderBy('timestamp', 'asc'), limit(50));
 
-    return onValue(messagesRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const msgList = Object.entries(data).map(([id, msg]: any) => ({
-          id,
-          ...msg,
-        }));
-        setMessages(msgList);
-        setTimeout(() => {
-          scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-      } else {
-        setMessages([]);
-      }
+    return onSnapshot(messagesQuery, (snapshot) => {
+      const msgList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Message));
+      setMessages(msgList);
+      setTimeout(() => {
+        scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     });
   }, [selectedChat, user]);
 
@@ -140,13 +133,12 @@ function MessagesContent() {
     if (!user || !selectedChat || !newMessage.trim()) return;
 
     const chatId = [user.uid, selectedChat.uid].sort().join('_');
-    const messagesRef = ref(db, `messages/${chatId}`);
-    const newMsgRef = push(messagesRef);
+    const messagesCol = collection(db, 'messages', chatId, 'messages');
 
-    await set(newMsgRef, {
+    await addDoc(messagesCol, {
       senderId: user.uid,
       text: newMessage,
-      timestamp: serverTimestamp(),
+      timestamp: Date.now(),
     });
 
     setNewMessage('');

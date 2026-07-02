@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ref, onValue } from 'firebase/database';
-import { rtdb as db } from '@/lib/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { UserProfile, Meeting, Application } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,30 +31,17 @@ export default function MentorDashboard({ user }: MentorDashboardProps) {
 
   useEffect(() => {
     // 1. Fetch applications
-    const appsRef = ref(db, 'applications');
-    const unsubscribeApps = onValue(appsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const appsList = Object.entries(data).map(([id, val]: [string, any]) => ({
-          id,
-          ...val
-        })) as Application[];
-        setApplications(appsList);
-      } else {
-        setApplications([]);
-      }
+    const appsCol = collection(db, 'applications');
+    const unsubscribeApps = onSnapshot(appsCol, (snapshot) => {
+      const appsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Application[];
+      setApplications(appsList);
     });
 
     // 2. Fetch meetings
-    const meetingsRef = ref(db, 'meetings');
-    const unsubscribeMeetings = onValue(meetingsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const list = Object.values(data) as Meeting[];
-        setMeetings(list);
-      } else {
-        setMeetings([]);
-      }
+    const meetingsCol = collection(db, 'meetings');
+    const unsubscribeMeetings = onSnapshot(meetingsCol, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Meeting[];
+      setMeetings(list);
       setLoading(false);
     });
 

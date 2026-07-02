@@ -56,6 +56,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { exportToCSV } from '@/lib/export';
 
 export default function EvaluatePage() {
   const { user: currentUser } = useAuthStore();
@@ -266,6 +267,44 @@ export default function EvaluatePage() {
     };
   });
 
+  const handleExportEvaluations = () => {
+    const headers = [
+      'Application ID',
+      'Startup Title',
+      'Phase',
+      'Recommendation',
+      'Marks',
+      'Remarks',
+      'Date Evaluated'
+    ];
+    const keys = [
+      'applicationId',
+      'startupTitle',
+      'phase',
+      'recommendation',
+      'marks',
+      'remarks',
+      'submittedAt'
+    ];
+
+    const evaluationsToExport: any[] = [];
+    evaluatedApps.forEach(app => {
+      app.evals.forEach((e: any) => {
+        evaluationsToExport.push({
+          applicationId: app.id,
+          startupTitle: app.data?.startupTitle || app.programmeTitle,
+          phase: e.phase || 'N/A',
+          recommendation: e.recommendation || 'N/A',
+          marks: e.marks !== undefined && e.marks !== null ? e.marks : 'N/A',
+          remarks: e.remarks || 'N/A',
+          submittedAt: e.submittedAt ? format(new Date(e.submittedAt), 'yyyy-MM-dd HH:mm:ss') : 'N/A'
+        });
+      });
+    });
+
+    exportToCSV(evaluationsToExport, 'my_evaluations_report.csv', headers, keys);
+  };
+
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-[600px] space-y-4">
       <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -288,6 +327,9 @@ export default function EvaluatePage() {
             </div>
 
             <div className="flex items-center gap-4">
+              <Button variant="outline" onClick={handleExportEvaluations} className="rounded-2xl h-14 px-6 font-bold flex items-center gap-2 border-slate-200 shadow-sm bg-white hover:bg-slate-50">
+                <Download className="h-4 w-4" /> Export CSV
+              </Button>
               <TabsList className="bg-slate-100/50 p-1 rounded-2xl border border-slate-200 h-14">
                 <TabsTrigger value="pipeline" className="rounded-xl px-8 h-12 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md font-black text-[10px] uppercase tracking-widest text-slate-500">
                   Project Pipeline ({filteredApps.length})

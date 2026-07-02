@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ref, onValue } from 'firebase/database';
-import { rtdb as db } from '@/lib/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Programme } from '@/types';
 import { programmeDefaults } from '@/lib/programmes';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,15 +15,15 @@ export default function ProgrammesPage() {
   const [programmes, setProgrammes] = useState<Programme[]>(programmeDefaults);
 
   useEffect(() => {
-    const programmesRef = ref(db, 'programmes');
-    const unsubscribe = onValue(programmesRef, (snapshot) => {
-      const data = snapshot.val();
-      if (!data) {
+    const programmesCol = collection(db, 'programmes');
+    const unsubscribe = onSnapshot(programmesCol, (snapshot) => {
+      if (snapshot.empty) {
         return;
       }
 
-      const loadedProgrammes = Object.entries(data).map(([id, value]) => {
-        const programme = value as any;
+      const loadedProgrammes = snapshot.docs.map((doc) => {
+        const id = doc.id;
+        const programme = doc.data() as any;
         const defaultProgramme = programmeDefaults.find((p) => p.id === id);
         return {
           id,

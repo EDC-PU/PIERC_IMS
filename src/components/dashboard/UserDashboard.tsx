@@ -29,8 +29,8 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
-import { ref, onValue } from 'firebase/database';
-import { rtdb as db } from '@/lib/firebase';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -56,45 +56,60 @@ export default function UserDashboard({ user }: UserDashboardProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch user's meetings
-    const meetingsRef = ref(db, 'meetings');
-    const unsubscribeMeetings = onValue(meetingsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const list = Object.values(data) as Meeting[];
-        const userMeetings = list.filter(m => m && m.attendees && m.attendees.includes(user.uid));
-        setMeetings(userMeetings.sort((a, b) => (a.startTime || 0) - (b.startTime || 0)));
-      }
+    // 1. Fetch user's meetings
+    const meetingsCol = collection(db, 'meetings');
+    const unsubscribeMeetings = onSnapshot(meetingsCol, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Meeting[];
+      const userMeetings = list.filter(m => m && m.attendees && m.attendees.includes(user.uid));
+      setMeetings(userMeetings.sort((a, b) => (a.startTime || 0) - (b.startTime || 0)));
     });
 
-    // Fetch user's applications
-    const appsRef = ref(db, 'applications');
-    const unsubscribeApps = onValue(appsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const list = Object.entries(data).map(([id, val]: [string, any]) => ({ id, ...val })) as Application[];
-        const userApps = list.filter(a => a && a.userId === user.uid);
-        setApplications(userApps);
+    // 2. Fetch user's applications
+    const appsCol = collection(db, 'applications');
+    const q = query(appsCol, where('userId', '==', user.uid));
+    
+    // Track eval listeners for cleanup
+    const evalUnsubscribes: (() => void)[] = [];
 
-        // Fetch evaluations for these apps
-        userApps.forEach(app => {
-          if (app && app.id) {
-            const evalRef = ref(db, `evaluations/${app.id}`);
-            onValue(evalRef, (evalSnap) => {
-              const evalData = evalSnap.val();
-              if (evalData) {
-                setEvaluations(prev => [...prev.filter(e => e.appId !== app.id), { appId: app.id, data: evalData }]);
+    const unsubscribeApps = onSnapshot(q, (snapshot) => {
+      const userApps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Application[];
+      setApplications(userApps);
+
+      // Clean up previous eval listeners
+      evalUnsubscribes.forEach(unsub => unsub());
+      evalUnsubscribes.length = 0;
+
+      // 3. Fetch evaluations for these apps
+      userApps.forEach(app => {
+        if (app && app.id) {
+          const evalCol = collection(db, 'evaluations');
+          const evalQuery = query(evalCol, where('applicationId', '==', app.id));
+          const unsubEval = onSnapshot(evalQuery, (evalSnap) => {
+            const evalData: Record<string, any> = {};
+            evalSnap.docs.forEach(doc => {
+              const evalRec = doc.data();
+              const uid = evalRec.evaluatorId;
+              const phaseKey = evalRec.phase?.replace(/ /g, '_');
+              if (phaseKey) {
+                evalData[phaseKey] = true;
+              }
+              if (uid && phaseKey) {
+                if (!evalData[uid]) evalData[uid] = {};
+                evalData[uid][phaseKey] = evalRec;
               }
             });
-          }
-        });
-      }
+            setEvaluations(prev => [...prev.filter(e => e.appId !== app.id), { appId: app.id, data: evalData }]);
+          });
+          evalUnsubscribes.push(unsubEval);
+        }
+      });
       setLoading(false);
     });
 
     return () => {
       unsubscribeMeetings();
       unsubscribeApps();
+      evalUnsubscribes.forEach(unsub => unsub());
     };
   }, [user.uid]);
 

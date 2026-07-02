@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ref, onValue } from 'firebase/database';
-import { rtdb as db } from '@/lib/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Application, UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,16 +44,10 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const appsRef = ref(db, 'applications');
-    return onValue(appsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const appsList = Object.keys(data).map(key => ({
-          id: key,
-          ...data[key]
-        }));
-        setApplications(appsList);
-      }
+    const appsCol = collection(db, 'applications');
+    return onSnapshot(appsCol, (snapshot) => {
+      const appsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Application[];
+      setApplications(appsList);
       setLoading(false);
     });
   }, []);

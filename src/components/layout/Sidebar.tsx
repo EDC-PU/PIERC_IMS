@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { UserProfile } from '@/types';
+import { UserProfile, Meeting } from '@/types';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -19,12 +19,12 @@ import {
   ClipboardList,
   X
 } from 'lucide-react';
-import { auth, rtdb as db } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { toast } from 'sonner';
 
 import { useState, useEffect } from 'react';
-import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 interface SidebarProps {
   user: UserProfile;
@@ -50,22 +50,22 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
 
     // 1. Applications Count (Admins only)
     if (userRole === 'admin' || userRole === 'super_admin') {
-      const appsRef = ref(db, 'applications');
-      const unsub = onValue(appsRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const pending = Object.values(data).filter((a: any) => a.status === 'Submitted' || a.status === 'Under Review').length;
-          setCounts(prev => ({ ...prev, applications: pending }));
-        }
+      const appsCol = collection(db, 'applications');
+      const unsub = onSnapshot(appsCol, (snapshot) => {
+        const pending = snapshot.docs.filter((d) => {
+          const status = d.data().status;
+          return status === 'Submitted' || status === 'Under Review';
+        }).length;
+        setCounts(prev => ({ ...prev, applications: pending }));
       });
       unsubscribes.push(unsub);
     }
 
     // 2. Evaluate Count (Admins/Mentors)
     if (userRole !== 'user') {
-      const appsRef = ref(db, 'applications');
-      const meetingsRef = ref(db, 'meetings');
-      const evalsRef = ref(db, 'evaluations');
+      const appsCol = collection(db, 'applications');
+      const meetingsCol = collection(db, 'meetings');
+      const evalsCol = collection(db, 'evaluations');
 
       let currentApps: any[] = [];
       let currentMeetings: any[] = [];
@@ -132,63 +132,55 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
         }));
       };
 
-      const unsubApps = onValue(appsRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          currentApps = Object.entries(data).map(([id, val]: [string, any]) => ({
-            id,
-            ...val
-          }));
-        } else {
-          currentApps = [];
-        }
+      const unsubApps = onSnapshot(appsCol, (snapshot) => {
+        currentApps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         calculateEvaluateCount();
       });
       unsubscribes.push(unsubApps);
 
-      const unsubMeetings = onValue(meetingsRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          currentMeetings = Object.values(data);
-        } else {
-          currentMeetings = [];
-        }
+      const unsubMeetings = onSnapshot(meetingsCol, (snapshot) => {
+        currentMeetings = snapshot.docs.map(doc => doc.data());
         calculateEvaluateCount();
       });
       unsubscribes.push(unsubMeetings);
 
-      const unsubEvals = onValue(evalsRef, (snapshot) => {
-        const data = snapshot.val();
-        currentEvals = data || {};
+      const unsubEvals = onSnapshot(evalsCol, (snapshot) => {
+        const evals: Record<string, any> = {};
+        snapshot.docs.forEach(doc => {
+          const data = doc.data();
+          const appId = data.applicationId;
+          const evaluatorId = data.evaluatorId;
+          const phaseKey = data.phase?.replace(/ /g, '_');
+          if (appId && evaluatorId && phaseKey) {
+            if (!evals[appId]) evals[appId] = {};
+            if (!evals[appId][evaluatorId]) evals[appId][evaluatorId] = {};
+            evals[appId][evaluatorId][phaseKey] = data;
+          }
+        });
+        currentEvals = evals;
         calculateEvaluateCount();
       });
       unsubscribes.push(unsubEvals);
     }
 
     // 3. Unread Notifications (Dashboard)
-    const notifRef = ref(db, `notifications/${user.uid}`);
-    const unsubNotif = onValue(notifRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const unread = Object.values(data).filter((n: any) => !n.read).length;
-        setCounts(prev => ({ ...prev, notifications: unread }));
-      }
+    const notifCol = collection(db, 'notifications', user.uid, 'items');
+    const unsubNotif = onSnapshot(notifCol, (snapshot) => {
+      const list = snapshot.docs.map(doc => doc.data()) as Notification[];
+      const unread = list.filter((n: any) => !n.read).length;
+      setCounts(prev => ({ ...prev, notifications: unread }));
     });
     unsubscribes.push(unsubNotif);
 
     // 4. Total Pending Meetings (Meetings page - Phase 1 + Phase 2)
     if (userRole !== 'admin' && userRole !== 'super_admin') {
-      const centralMeetingsRef = ref(db, 'meetings');
-      const unsubCentralMeetings = onValue(centralMeetingsRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const pendingMeetings = Object.values(data).filter((m: any) =>
-            m.status === 'Scheduled' && m.attendees?.includes(user.uid)
-          ).length;
-          setCounts(prev => ({ ...prev, totalMeetings: pendingMeetings }));
-        } else {
-          setCounts(prev => ({ ...prev, totalMeetings: 0 }));
-        }
+      const centralMeetingsCol = collection(db, 'meetings');
+      const unsubCentralMeetings = onSnapshot(centralMeetingsCol, (snapshot) => {
+        const list = snapshot.docs.map(doc => doc.data()) as Meeting[];
+        const pendingMeetings = list.filter((m: any) =>
+          m.status === 'Scheduled' && m.attendees?.includes(user.uid)
+        ).length;
+        setCounts(prev => ({ ...prev, totalMeetings: pendingMeetings }));
       });
       unsubscribes.push(unsubCentralMeetings);
     }

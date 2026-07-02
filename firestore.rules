@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is admin or super admin
+    function isAdmin() {
+      return request.auth != null && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin');
+    }
+
+    // Helper function to check if user is mentor
+    function isMentor() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'mentor';
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Applications collection
+    match /applications/{appId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && (
+        isAdmin() || 
+        (resource.data.userId == request.auth.uid && (
+          request.resource.data.status == 'Submitted' ||
+          request.resource.data.status == 'Under Review' ||
+          request.resource.data.status == 'Revision Needed' ||
+          request.resource.data.status == 'Revision Submitted' ||
+          request.resource.data.status == 'Phase 2 Selected' ||
+          request.resource.data.status == 'Draft'
+        ))
+      );
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // Programmes collection
+    match /programmes/{programmeId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // Meetings collection
+    match /meetings/{meetingId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // Evaluations collection
+    match /evaluations/{evalId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (isAdmin() || isMentor());
+    }
+
+    // Notifications subcollection: notifications/{userId}/items/{itemId}
+    match /notifications/{userId}/items/{itemId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null;
+    }
+
+    // Messages subcollection: messages/{chatId}/messages/{messageId}
+    match /messages/{chatId}/messages/{messageId} {
+      allow read, write: if request.auth != null && (
+        chatId.split('_')[0] == request.auth.uid || 
+        chatId.split('_')[1] == request.auth.uid
+      );
+    }
+  }
+}

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { ref, onValue, query, orderByChild, equalTo, get } from 'firebase/database';
-import { rtdb as db } from '@/lib/firebase';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Application, UserProfile } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,35 +33,45 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndApps = async () => {
       setLoading(true);
       try {
-        const directRef = ref(db, `users/${id}`);
-        const directSnap = await get(directRef);
+        const userDocRef = doc(db, 'users', id);
+        const userSnap = await getDoc(userDocRef);
         
-        if (directSnap.exists()) {
-          setProfile({ uid: directSnap.key, ...directSnap.val() } as UserProfile);
+        let foundProfile: UserProfile | null = null;
+        if (userSnap.exists()) {
+          foundProfile = { uid: userSnap.id, ...userSnap.data() } as UserProfile;
         } else {
-          const usersRef = ref(db, 'users');
-          const q = query(usersRef, orderByChild('enrollmentNumber'), equalTo(id));
-          const slugSnap = await get(q);
+          const usersCol = collection(db, 'users');
+          const q = query(usersCol, where('enrollmentNumber', '==', id));
+          const slugSnap = await getDocs(q);
           
-          if (slugSnap.exists()) {
-            const data = slugSnap.val();
-            const uid = Object.keys(data)[0];
-            setProfile({ uid, ...data[uid] } as UserProfile);
-          } else {
-            setProfile(null);
+          if (!slugSnap.empty) {
+            const docSnap = slugSnap.docs[0];
+            foundProfile = { uid: docSnap.id, ...docSnap.data() } as UserProfile;
           }
         }
+
+        setProfile(foundProfile);
+
+        if (foundProfile) {
+          const appsCol = collection(db, 'applications');
+          const appsQ = query(appsCol, where('userId', '==', foundProfile.uid));
+          const appsSnap = await getDocs(appsQ);
+          const list = appsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Application[];
+          setUserApps(list);
+        } else {
+          setUserApps([]);
+        }
       } catch (error) {
-        console.error("Profile lookup error:", error);
+        console.error("Profile lookup/apps error:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUser();
+    fetchUserAndApps();
   }, [id]);
 
   if (loading) return <div className="p-8 text-center animate-pulse text-slate-400 font-bold">Loading Identity...</div>;
