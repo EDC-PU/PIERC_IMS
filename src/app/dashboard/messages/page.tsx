@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { db } from '@/lib/firebase';
+import { rtdb as db } from '@/lib/firebase';
 import { ref, onValue, push, set, serverTimestamp, query, limitToLast } from 'firebase/database';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

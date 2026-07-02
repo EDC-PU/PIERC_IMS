@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ref, onValue, update, push, remove, set, get } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { rtdb as db, storage } from '@/lib/firebase';
 import { Application, UserProfile } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { triggerEmailNotification } from '@/lib/email-client';
@@ -408,7 +408,7 @@ export default function ApplicationDetailsPage() {
   };
 
   const handleUpdateIdea = async () => {
-    if (!id || !user) return;
+    if (!id || !user || !application) return;
     setIsUpdating(true);
     try {
       const updates: any = {

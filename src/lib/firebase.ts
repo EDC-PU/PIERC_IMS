@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getDatabase } from "firebase/database";
 import { getStorage } from "firebase/storage";
 import { getMessaging, isSupported } from "firebase/messaging";
 
@@ -18,6 +19,7 @@ const firebaseConfig = {
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const rtdb = getDatabase(app);
 const storage = getStorage(app);
 
 // Messaging initialization
@@ -26,4 +28,4 @@ const messaging = async () => {
   return supported ? getMessaging(app) : null;
 };
 
-export { app, auth, db, storage, messaging };
+export { app, auth, db, rtdb, storage, messaging };

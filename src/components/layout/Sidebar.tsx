@@ -19,12 +19,11 @@ import {
   ClipboardList,
   X
 } from 'lucide-react';
-import { auth } from '@/lib/firebase';
+import { auth, rtdb as db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { toast } from 'sonner';
 
 import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
 import { ref, onValue, query, orderByChild, equalTo } from 'firebase/database';
 
 interface SidebarProps {

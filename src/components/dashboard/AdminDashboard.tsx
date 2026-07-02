@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ref, onValue } from 'firebase/database';
-import { db } from '@/lib/firebase';
+import { rtdb as db } from '@/lib/firebase';
 import { Application, UserProfile, Meeting } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

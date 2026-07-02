@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ref, onValue, update } from 'firebase/database';
-import { db } from '@/lib/firebase';
+import { rtdb as db } from '@/lib/firebase';
 import { Notification } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { 

@@ -30,7 +30,7 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 import { ref, onValue } from 'firebase/database';
-import { db } from '@/lib/firebase';
+import { rtdb as db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';

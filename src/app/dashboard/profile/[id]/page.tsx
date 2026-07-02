@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ref, onValue, query, orderByChild, equalTo, get } from 'firebase/database';
-import { db } from '@/lib/firebase';
+import { rtdb as db } from '@/lib/firebase';
 import { Application, UserProfile } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
