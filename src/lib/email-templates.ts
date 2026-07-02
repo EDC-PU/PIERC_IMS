@@ -22,14 +22,14 @@ interface EmailTemplateOptions {
 export function getEmailHtmlTemplate(options: EmailTemplateOptions): string {
   const logoUrl = options.logoUrl || 'https://www.pierc.org/_next/static/media/PIERC.959ad75d.svg';
   const headerColor = options.headerColor || '#d40924'; // PIERC Red
-  
+
   let alertBoxHtml = '';
   if (options.alertContent) {
     let bgColor = '#eff6ff'; // info blue
     let borderLeftColor = '#3b82f6';
     let textColor = '#1e40af';
     let titleColor = '#1d4ed8';
-    
+
     if (options.alertType === 'success') {
       bgColor = '#f0fdf4'; // green
       borderLeftColor = '#16a34a';
@@ -46,7 +46,7 @@ export function getEmailHtmlTemplate(options: EmailTemplateOptions): string {
       textColor = '#991b1b';
       titleColor = '#b91c1c';
     }
-    
+
     alertBoxHtml = `
       <div style="background-color: ${bgColor}; border-left: 4px solid ${borderLeftColor}; padding: 16px; margin: 20px 0; border-radius: 8px;">
         ${options.alertTitle ? `<h4 style="margin: 0 0 6px 0; color: ${titleColor}; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">${options.alertTitle}</h4>` : ''}
@@ -85,8 +85,7 @@ export function getEmailHtmlTemplate(options: EmailTemplateOptions): string {
                 <!-- Logo Header -->
                 <tr>
                   <td align="center" style="padding: 32px 32px 24px 32px; border-bottom: 1px solid #f1f5f9;">
-                    <img src="${logoUrl}" alt="PIERC Logo" style="height: 48px; width: auto; display: block;" height="48" />
-                    <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.15em; margin-top: 8px;">Innovation Management Portal</div>
+                    <img src="${logoUrl}" alt="PIERC Logo" style="height: 64px; width: auto; display: block;" height="48" />
                   </td>
                 </tr>
                 
