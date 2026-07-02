@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, orderBy, limit, addDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, limit, addDoc, where } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -67,10 +67,23 @@ function MessagesContent() {
 
   // Load all users
   useEffect(() => {
-    const usersCol = collection(db, 'users');
-    return onSnapshot(usersCol, (snapshot) => {
+    if (!user) return;
+    
+    let usersQuery;
+    if (user.role === 'admin' || user.role === 'super_admin' || user.role === 'mentor') {
+      // Admins and mentors can load all users
+      usersQuery = collection(db, 'users');
+    } else {
+      // Standard users can only load admins, super_admins, and mentors (to respect firestore read rules)
+      const usersCol = collection(db, 'users');
+      usersQuery = query(usersCol, where('role', 'in', ['admin', 'super_admin', 'mentor']));
+    }
+
+    return onSnapshot(usersQuery, (snapshot) => {
       const userList = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() })) as UserProfile[];
       setUsers(userList.filter(u => u.uid !== user?.uid));
+    }, (error) => {
+      console.error('Failed to load chat users:', error);
     });
   }, [user]);
 

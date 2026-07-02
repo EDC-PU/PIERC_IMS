@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { UserProfile, UserRole } from '@/types';
+import RoleGuard from '@/components/auth/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { 
   Table, 
@@ -59,68 +60,70 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">System Administration</h1>
-        <p className="text-slate-500">Manage user roles and system-wide permissions.</p>
-      </div>
+    <RoleGuard allowedRoles={['super_admin']} fallbackMessage="Only Super Administrators can access System Administration.">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">System Administration</h1>
+          <p className="text-slate-500">Manage user roles and system-wide permissions.</p>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>User Management</CardTitle>
-          <CardDescription>Assign roles and manage access for all registered users.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Current Role</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={5} className="text-center">Loading users...</TableCell></TableRow>
-              ) : (
-                users.map((u) => (
-                  <TableRow key={u.uid}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={u.photoURL} />
-                          <AvatarFallback>{(u.displayName || u.email || 'U')[0].toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{u.displayName || u.email || 'User'}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-slate-500">{u.email}</TableCell>
-                    <TableCell>{getRoleBadge(u.role)}</TableCell>
-                    <TableCell className="text-xs text-slate-500">
-                      {new Date(u.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Select onValueChange={(val) => changeRole(u.uid, val as UserRole)} value={u.role}>
-                        <SelectTrigger className="w-[130px] h-8 ml-auto">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="user">User</SelectItem>
-                          <SelectItem value="mentor">Mentor</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="super_admin">Super Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>User Management</CardTitle>
+            <CardDescription>Assign roles and manage access for all registered users.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Current Role</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow><TableCell colSpan={5} className="text-center">Loading users...</TableCell></TableRow>
+                ) : (
+                  users.map((u) => (
+                    <TableRow key={u.uid}>
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={u.photoURL} alt={u.displayName} />
+                            <AvatarFallback>{u.displayName?.[0] || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{u.displayName}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs font-mono">{u.email}</TableCell>
+                      <TableCell>{getRoleBadge(u.role)}</TableCell>
+                      <TableCell className="text-xs text-slate-500">
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Select onValueChange={(val) => changeRole(u.uid, val as UserRole)} value={u.role}>
+                          <SelectTrigger className="w-[130px] h-8 ml-auto">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="mentor">Mentor</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="super_admin">Super Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    </RoleGuard>
   );
 }

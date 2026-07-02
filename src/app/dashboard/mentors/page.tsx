@@ -35,6 +35,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
+import RoleGuard from '@/components/auth/RoleGuard';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -157,7 +158,8 @@ export default function MentorsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <RoleGuard allowedRoles={['admin', 'super_admin']} fallbackMessage="Only Administrators and Managers can access the Mentors Management page.">
+      <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">PIERC Mentors</h1>
@@ -336,6 +338,7 @@ export default function MentorsPage() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </RoleGuard>
   );
 }

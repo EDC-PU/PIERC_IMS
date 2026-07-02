@@ -1,8 +1,32 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
 import OnboardingForm from '@/components/forms/OnboardingForm';
 
 export default function OnboardingPage() {
+  const { user, loading } = useAuthStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        router.push('/login');
+      } else if (user.onboardingCompleted) {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user || user.onboardingCompleted) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50/50 flex items-center justify-center p-6 relative overflow-hidden">
       {/* Background Decor */}

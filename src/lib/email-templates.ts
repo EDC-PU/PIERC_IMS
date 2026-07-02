@@ -111,14 +111,14 @@ export function getEmailHtmlTemplate(options: EmailTemplateOptions): string {
                 <tr>
                   <td style="padding: 32px; background-color: #fafafa; border-top: 1px solid #f1f5f9; text-align: center;">
                     <p style="margin: 0 0 8px 0; color: #64748b; font-size: 12px; font-weight: 600;">
-                      PIERC Portal • Parul University
+                      Parul Innovation & Entrepreneurship Research Center• Parul University
                     </p>
                     <p style="margin: 0 0 16px 0; color: #94a3b8; font-size: 11px;">
                       Limda, Waghodia, Vadodara, Gujarat 391760
                     </p>
                     <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 16px 0;" />
                     <p style="margin: 0; color: #94a3b8; font-size: 11px; line-height: 1.4;">
-                      This is an automated notification from the PIERC Innovation Management System.<br />Please do not reply directly to this email.
+                      This is an automated notification from the PIERC Website.<br />Please do not reply directly to this email.
                     </p>
                   </td>
                 </tr>
