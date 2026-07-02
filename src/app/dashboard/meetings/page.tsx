@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import { collection, onSnapshot, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { Application, Meeting, UserProfile } from '@/types';
 import { triggerEmailNotification } from '@/lib/email-client';
+import { getMeetingScheduledEmailHtml, getMeetingCancelledEmailHtml } from '@/lib/email-templates';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -253,39 +254,20 @@ export default function MeetingsPage() {
           const formattedDate = format(startTimestamp, 'MMMM dd, yyyy');
           const formattedTime = format(startTimestamp, 'hh:mm a');
           const locationDetails = mode === 'Offline' ? venue : 'Online';
-          const linkHtml = mode === 'Online' ? `<p><strong>Join URL:</strong> <a href="${meetingLink}">${meetingLink}</a></p>` : '';
 
           triggerEmailNotification({
             to: allRecipientEmails,
             subject: `📅 Session Scheduled: ${phaseTitle} - ${startupName}`,
-            html: `
-              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-                <h2 style="color: #0f172a; margin-top: 0; font-size: 20px;">Evaluation Meeting Scheduled</h2>
-                <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                  Dear Team,
-                </p>
-                <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                  A new meeting has been scheduled for your startup project <strong>${startupName}</strong>.
-                </p>
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; margin: 20px 0; border-radius: 8px;">
-                  <p style="margin: 0 0 8px 0; color: #334155;"><strong>Session:</strong> ${phaseTitle}</p>
-                  <p style="margin: 0 0 8px 0; color: #334155;"><strong>Date:</strong> ${formattedDate}</p>
-                  <p style="margin: 0 0 8px 0; color: #334155;"><strong>Time:</strong> ${formattedTime}</p>
-                  <p style="margin: 0 0 8px 0; color: #334155;"><strong>Mode:</strong> ${mode} (${locationDetails})</p>
-                  ${linkHtml}
-                </div>
-                <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-                  Please mark your calendars and join the session on time.
-                </p>
-                <div style="text-align: center; margin-bottom: 24px;">
-                  <a href="${window.location.origin}/dashboard/meetings" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">View in Calendar</a>
-                </div>
-                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-                <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
-                  This is an automated notification from the PIERC Innovation Management System.
-                </p>
-              </div>
-            `,
+            html: getMeetingScheduledEmailHtml({
+              startupName,
+              phaseTitle,
+              formattedDate,
+              formattedTime,
+              mode,
+              locationDetails,
+              meetingLink: meetingLink || undefined,
+              viewLink: `${window.location.origin}/dashboard/meetings`,
+            }),
           }).catch(err => console.error('Failed to send meeting scheduling email:', err));
         }
       });
@@ -310,36 +292,17 @@ export default function MeetingsPage() {
         const allRecipientEmails = Array.from(new Set([...teamEmails, ...attendeeEmails])).filter(Boolean);
 
         if (allRecipientEmails.length > 0) {
-          const startupName = app?.data?.startupName || app?.data?.startupTitle || 'Innovation Project';
           const formattedDate = format(meeting.startTime, 'MMMM dd, yyyy');
           const formattedTime = format(meeting.startTime, 'hh:mm a');
 
           triggerEmailNotification({
             to: allRecipientEmails,
             subject: `❌ Meeting Cancelled: ${meeting.title}`,
-            html: `
-              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-                <h2 style="color: #e11d48; margin-top: 0; font-size: 20px;">Meeting Cancelled</h2>
-                <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                  Dear Founders and Mentors,
-                </p>
-                <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                  Please note that the meeting <strong>${meeting.title}</strong> has been <strong>Cancelled</strong>.
-                </p>
-                <div style="background-color: #fff1f2; border: 1px solid #fda4af; padding: 16px; margin: 20px 0; border-radius: 8px;">
-                  <p style="margin: 0 0 8px 0; color: #334155;"><strong>Session:</strong> ${meeting.title}</p>
-                  <p style="margin: 0 0 8px 0; color: #334155;"><strong>Scheduled Date:</strong> ${formattedDate}</p>
-                  <p style="margin: 0 0 8px 0; color: #334155;"><strong>Scheduled Time:</strong> ${formattedTime}</p>
-                </div>
-                <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-                  If a reschedule is necessary, administrative staff will coordinate and schedule a new time shortly.
-                </p>
-                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-                <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
-                  This is an automated notification from the PIERC Innovation Management System.
-                </p>
-              </div>
-            `,
+            html: getMeetingCancelledEmailHtml({
+              meetingTitle: meeting.title,
+              formattedDate,
+              formattedTime,
+            }),
           }).catch(err => console.error('Failed to send meeting cancellation email:', err));
         }
       }

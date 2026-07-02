@@ -8,6 +8,7 @@ import { db, storage } from '@/lib/firebase';
 import { Application, UserProfile } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { triggerEmailNotification } from '@/lib/email-client';
+import { getStatusUpdateEmailHtml, getApplicationUpdatedEmailHtml, getApplicationRemovedEmailHtml } from '@/lib/email-templates';
 import {
   Select,
   SelectContent,
@@ -259,125 +260,24 @@ export default function ApplicationDetailsPage() {
       if (recipientEmails.length > 0) {
         const startupName = application.data?.startupName || application.data?.startupTitle || 'Your Innovation Project';
         let emailSubject = `Update regarding your idea: ${startupName}`;
-        let emailHtml = '';
 
         if (newStatus === 'Revision Needed') {
           emailSubject = `⚠️ Action Required: Revision requested for ${startupName}`;
-          emailHtml = `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-              <h2 style="color: #e11d48; margin-top: 0; font-size: 22px;">Revision Requested</h2>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                Dear Founders,
-              </p>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                The review panel has requested changes to your application for <strong>${startupName}</strong> under the program <strong>${application.programmeTitle}</strong>.
-              </p>
-              <div style="background-color: #fff1f2; border-left: 4px solid #e11d48; padding: 16px; margin: 20px 0; border-radius: 8px;">
-                <h4 style="margin: 0 0 8px 0; color: #9f1239; font-size: 14px; font-weight: 700; text-transform: uppercase;">Reviewer Remarks:</h4>
-                <p style="margin: 0; color: #4c0519; font-style: italic; font-size: 15px;">"${remarks || 'Please check the portal for details.'}"</p>
-              </div>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-                Please update your application form with the requested changes as soon as possible.
-              </p>
-              <div style="text-align: center; margin-bottom: 24px;">
-                <a href="${window.location.origin}/dashboard/applications/${id}" style="background-color: #e11d48; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Edit Application</a>
-              </div>
-              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-              <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
-                This is an automated notification from the PIERC Innovation Management System.
-              </p>
-            </div>
-          `;
         } else if (newStatus.includes('Selected') || newStatus === 'Incubated' || newStatus === 'Funding Approved') {
           emailSubject = `🎉 Congratulations! ${startupName} status: ${newStatus}`;
-          emailHtml = `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-              <h2 style="color: #16a34a; margin-top: 0; font-size: 22px;">Congratulations!</h2>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                Dear Founders,
-              </p>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                Great news! Your application status for <strong>${startupName}</strong> has been updated to <strong>${newStatus}</strong> for the program <strong>${application.programmeTitle}</strong>.
-              </p>
-              ${newStatus === 'Phase 2 Selected' ? `
-                <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-                  Please upload your Phase 2 PPT in the application portal to proceed.
-                </p>
-              ` : ''}
-              ${remarks ? `
-                <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px; margin: 20px 0; border-radius: 8px;">
-                  <h4 style="margin: 0 0 8px 0; color: #166534; font-size: 14px; font-weight: 700; text-transform: uppercase;">Remarks:</h4>
-                  <p style="margin: 0; color: #14532d; font-size: 15px;">${remarks}</p>
-                </div>
-              ` : ''}
-              <div style="text-align: center; margin-bottom: 24px;">
-                <a href="${window.location.origin}/dashboard/applications/${id}" style="background-color: #16a34a; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">View Application Details</a>
-              </div>
-              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-              <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
-                This is an automated notification from the PIERC Innovation Management System.
-              </p>
-            </div>
-          `;
         } else if (newStatus.includes('Rejected')) {
           emailSubject = `Update regarding your application: ${startupName}`;
-          emailHtml = `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-              <h2 style="color: #475569; margin-top: 0; font-size: 22px;">Application Status Update</h2>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                Dear Founders,
-              </p>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                Thank you for applying to the <strong>${application.programmeTitle}</strong> with your idea <strong>${startupName}</strong>.
-              </p>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                We regret to inform you that your application was not selected during this round of evaluations (Status: <strong>${newStatus}</strong>).
-              </p>
-              ${remarks ? `
-                <div style="background-color: #f8fafc; border-left: 4px solid #94a3b8; padding: 16px; margin: 20px 0; border-radius: 8px;">
-                  <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px; font-weight: 700; text-transform: uppercase;">Feedback from Review Panel:</h4>
-                  <p style="margin: 0; color: #334155; font-size: 15px;">${remarks}</p>
-                </div>
-              ` : ''}
-              <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-                We appreciate your dedication and encourage you to refine your business model or technology and apply to our future cohorts.
-              </p>
-              <div style="text-align: center; margin-bottom: 24px;">
-                <a href="${window.location.origin}/dashboard/applications/${id}" style="background-color: #475569; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">View Portal</a>
-              </div>
-              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-              <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
-                This is an automated notification from the PIERC Innovation Management System.
-              </p>
-            </div>
-          `;
         } else {
           emailSubject = `🔄 Application Update: ${startupName} status is ${newStatus}`;
-          emailHtml = `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-              <h2 style="color: #2563eb; margin-top: 0; font-size: 22px;">Application Status Updated</h2>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                Dear Founders,
-              </p>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                The status of your application for <strong>${startupName}</strong> under the program <strong>${application.programmeTitle}</strong> has been updated to <strong>${newStatus}</strong>.
-              </p>
-              ${remarks ? `
-                <div style="background-color: #eff6ff; border-left: 4px solid #2563eb; padding: 16px; margin: 20px 0; border-radius: 8px;">
-                  <h4 style="margin: 0 0 8px 0; color: #1e40af; font-size: 14px; font-weight: 700; text-transform: uppercase;">Remarks:</h4>
-                  <p style="margin: 0; color: #1e3a8a; font-size: 15px;">${remarks}</p>
-                </div>
-              ` : ''}
-              <div style="text-align: center; margin-bottom: 24px;">
-                <a href="${window.location.origin}/dashboard/applications/${id}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">View Application Portal</a>
-              </div>
-              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-              <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
-                This is an automated notification from the PIERC Innovation Management System.
-              </p>
-            </div>
-          `;
         }
+
+        const emailHtml = getStatusUpdateEmailHtml({
+          startupName,
+          newStatus,
+          programmeTitle: application.programmeTitle,
+          remarks: remarks || undefined,
+          viewLink: `${window.location.origin}/dashboard/applications/${id}`,
+        });
 
         triggerEmailNotification({
           to: recipientEmails,
@@ -426,27 +326,11 @@ export default function ApplicationDetailsPage() {
         triggerEmailNotification({
           to: recipientEmails,
           subject: `📝 Application Details Updated: ${startupName}`,
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-              <h2 style="color: #0f172a; margin-top: 0; font-size: 20px;">Application Updated</h2>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                Dear Founders,
-              </p>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                Your application details for <strong>${startupName}</strong> under the program <strong>${application.programmeTitle}</strong> have been successfully updated.
-              </p>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-                You can review your updated details on the PIERC Portal at any time.
-              </p>
-              <div style="text-align: center; margin-bottom: 24px;">
-                <a href="${window.location.origin}/dashboard/applications/${id}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">View Application Portal</a>
-              </div>
-              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-              <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
-                This is an automated notification from the PIERC Innovation Management System.
-              </p>
-            </div>
-          `,
+          html: getApplicationUpdatedEmailHtml({
+            startupName,
+            programmeTitle: application.programmeTitle,
+            viewLink: `${window.location.origin}/dashboard/applications/${id}`,
+          }),
         }).catch(err => console.error('Failed to send update confirmation email:', err));
       }
 
@@ -495,24 +379,10 @@ export default function ApplicationDetailsPage() {
         triggerEmailNotification({
           to: recipientEmails,
           subject: `⚠️ Application Permanently Removed: ${startupName}`,
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-              <h2 style="color: #e11d48; margin-top: 0; font-size: 20px;">Application Removed</h2>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                Dear Founders,
-              </p>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6;">
-                Please be notified that your application for <strong>${startupName}</strong> under the program <strong>${application.programmeTitle}</strong> has been permanently removed from the PIERC Portal by an administrator.
-              </p>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-                If you believe this was done in error or would like more information, please contact the PIERC Administration Desk.
-              </p>
-              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-              <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
-                This is an automated notification from the PIERC Innovation Management System.
-              </p>
-            </div>
-          `,
+          html: getApplicationRemovedEmailHtml({
+            startupName,
+            programmeTitle: application.programmeTitle,
+          }),
         }).catch(err => console.error('Failed to send deletion confirmation email:', err));
       }
 

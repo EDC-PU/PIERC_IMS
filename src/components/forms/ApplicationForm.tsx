@@ -49,6 +49,7 @@ import { ref as sRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import { triggerEmailNotification } from '@/lib/email-client';
+import { getSubmissionEmailHtml } from '@/lib/email-templates';
 
 const incubationSchema = z.object({
   teamMembers: z.array(z.object({
@@ -183,30 +184,11 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
         triggerEmailNotification({
           to: recipientEmails,
           subject: `🚀 Submission Received: ${startupName} - ${programmeTitle}`,
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-              <div style="text-align: center; margin-bottom: 20px;">
-                <h2 style="color: #0f172a; margin: 0; font-size: 24px; font-weight: 800;">Application Received</h2>
-                <p style="color: #64748b; margin: 5px 0 0 0;">PIERC Innovation Management System</p>
-              </div>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
-                Dear Founders,
-              </p>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
-                Your application for your idea <strong>${startupName}</strong> under the program <strong>${programmeTitle}</strong> has been successfully submitted and is now <strong>Under Review</strong>.
-              </p>
-              <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-                You and your team members will receive status updates, revision requests, and meeting invitations directly at your registered email addresses and in the portal notifications center.
-              </p>
-              <div style="text-align: center; margin-bottom: 24px;">
-                <a href="${window.location.origin}/dashboard/applications/${newAppDoc.id}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">View Application Portal</a>
-              </div>
-              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-              <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
-                This is an automated notification from the PIERC Innovation Management System. Please do not reply directly to this email.
-              </p>
-            </div>
-          `,
+          html: getSubmissionEmailHtml({
+            startupName,
+            programmeTitle,
+            viewLink: `${window.location.origin}/dashboard/applications/${newAppDoc.id}`,
+          }),
         }).catch(err => console.error('Failed to dispatch submission email:', err));
       }
 
