@@ -277,6 +277,7 @@ export default function ApplicationDetailsPage() {
           programmeTitle: application.programmeTitle,
           remarks: remarks || undefined,
           viewLink: `${window.location.origin}/dashboard/applications/${id}`,
+          mentorName: newStatus === 'Cohort Selected' ? mentorName : undefined,
         });
 
         triggerEmailNotification({

@@ -210,8 +210,9 @@ export function getStatusUpdateEmailHtml(options: {
   programmeTitle: string;
   remarks?: string;
   viewLink: string;
+  mentorName?: string;
 }): string {
-  const { startupName, newStatus, programmeTitle, remarks, viewLink } = options;
+  const { startupName, newStatus, programmeTitle, remarks, viewLink, mentorName } = options;
 
   if (newStatus === 'Revision Needed') {
     return getEmailHtmlTemplate({
@@ -239,6 +240,12 @@ export function getStatusUpdateEmailHtml(options: {
       additionalInfo = `
         <p style="margin-bottom: 16px; line-height: 1.6;">
           Please upload your Phase 2 PPT in the application portal to proceed.
+        </p>
+      `;
+    } else if (newStatus === 'Cohort Selected' && mentorName) {
+      additionalInfo = `
+        <p style="margin-bottom: 16px; line-height: 1.6;">
+          You have been assigned <strong>${mentorName}</strong> as your mentor for the duration of this program.
         </p>
       `;
     }
