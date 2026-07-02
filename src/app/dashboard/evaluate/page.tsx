@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import { db } from '@/lib/firebase';
-import { ref, onValue, set, push } from 'firebase/database';
+import { collection, onSnapshot, doc, setDoc, updateDoc, addDoc } from 'firebase/firestore';
 import { Application, Meeting, UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -74,39 +74,43 @@ export default function EvaluatePage() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const appsRef = ref(db, 'applications');
-    const unsubscribeApps = onValue(appsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const list = Object.entries(data).map(([id, val]: [string, any]) => ({
-          id,
-          ...val
-        })) as Application[];
-        setApplications(list.filter(app => app.status !== 'Draft'));
-
-        // Extract Meetings
-        const allMeetings: Meeting[] = [];
-        list.forEach(app => {
-          if (app.meetings) {
-            Object.values(app.meetings).forEach((m: any) => {
-              allMeetings.push(m);
-            });
-          }
-        });
-        setMeetings(allMeetings);
-      }
+    const appsCol = collection(db, 'applications');
+    const unsubscribeApps = onSnapshot(appsCol, (snapshot) => {
+      const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Application[];
+      setApplications(list.filter(app => app.status !== 'Draft'));
       setLoading(false);
     });
 
-    const userEvalRef = ref(db, `evaluations`);
-    const unsubscribeUserEval = onValue(userEvalRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) setUserEvaluations(data);
+    // Load meetings from top-level meetings collection
+    const meetingsCol = collection(db, 'meetings');
+    const unsubscribeMeetings = onSnapshot(meetingsCol, (snapshot) => {
+      setMeetings(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Meeting[]);
+    });
+
+    // Load evaluations: `evaluations/{appId}/results/{evalDocId}`
+    const evalsCol = collection(db, 'evaluations');
+    const unsubscribeEvals = onSnapshot(evalsCol, (snapshot) => {
+      // Each document IS an evaluation grouped by appId subcollection
+      // For simplicity read from flat `evaluations` collection where doc id = `{appId}_{uid}_{phase}`
+      const evMap: Record<string, any> = {};
+      snapshot.docs.forEach(d => {
+        const evalData = d.data();
+        const appId = evalData.applicationId;
+        const uid = evalData.evaluatorId;
+        const phase = evalData.phase?.replace(' ', '_');
+        if (appId && uid && phase) {
+          if (!evMap[appId]) evMap[appId] = {};
+          if (!evMap[appId][uid]) evMap[appId][uid] = {};
+          evMap[appId][uid][phase] = evalData;
+        }
+      });
+      setUserEvaluations(evMap);
     });
 
     return () => {
       unsubscribeApps();
-      unsubscribeUserEval();
+      unsubscribeMeetings();
+      unsubscribeEvals();
     };
   }, [currentUser]);
 
@@ -148,9 +152,11 @@ export default function EvaluatePage() {
     }
 
     try {
-      const evalRef = ref(db, `evaluations/${selectedApp.id}/${currentUser.uid}/${currentPhase.replace(' ', '_')}`);
-
+      // Store evaluation in flat `evaluations` collection with composite doc ID
+      const phaseKey = currentPhase.replace(/ /g, '_');
+      const evalDocId = `${selectedApp.id}_${currentUser.uid}_${phaseKey}`;
       const evaluationData: any = {
+        applicationId: selectedApp.id,
         evaluatorId: currentUser.uid,
         evaluatorName: currentUser.displayName,
         recommendation,
@@ -163,7 +169,7 @@ export default function EvaluatePage() {
         evaluationData.remarks = remarks;
       }
 
-      await set(evalRef, evaluationData);
+      await setDoc(doc(db, 'evaluations', evalDocId), evaluationData);
 
       // Notify the Scheduler/Admin
       const currentMeeting = meetings.find(m =>
@@ -173,10 +179,7 @@ export default function EvaluatePage() {
 
       const schedulerId = currentMeeting?.attendees?.[0];
       if (schedulerId && schedulerId !== currentUser.uid) {
-        const notifRef = ref(db, `notifications/${schedulerId}`);
-        const newNotifRef = push(notifRef);
-        await set(newNotifRef, {
-          id: newNotifRef.key!,
+        await addDoc(collection(db, 'notifications', schedulerId, 'items'), {
           userId: schedulerId,
           title: 'New Evaluation Recorded',
           message: `${currentUser.displayName} has submitted the ${phase} review for ${selectedApp.data?.startupTitle || selectedApp.programmeTitle}.`,
@@ -190,8 +193,7 @@ export default function EvaluatePage() {
       toast.success('Evaluation submitted successfully');
 
       if (recommendation === 'Recommended') {
-        const statusRef = ref(db, `applications/${selectedApp.id}/status`);
-        await set(statusRef, 'Shortlisted');
+        await updateDoc(doc(db, 'applications', selectedApp.id), { status: 'Shortlisted' });
       }
 
       setMarks('');
@@ -224,12 +226,7 @@ export default function EvaluatePage() {
     }
 
     try {
-      const appMeetingRef = ref(db, `applications/${selectedApp.id}/meetings/${currentMeeting.id}/status`);
-      const centralMeetingRef = ref(db, `meetings/${currentMeeting.id}/status`);
-      
-      await set(appMeetingRef, 'Absent');
-      await set(centralMeetingRef, 'Absent');
-      
+      await updateDoc(doc(db, 'meetings', currentMeeting.id), { status: 'Absent' });
       toast.success('Marked candidate as absent. The application has been returned to the scheduling queue.');
       setSelectedApp(null);
     } catch (error) {

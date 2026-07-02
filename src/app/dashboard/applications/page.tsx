@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ref, onValue } from 'firebase/database';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { Application } from '@/types';
@@ -51,23 +51,15 @@ export default function ApplicationsPage() {
     if (user.role === 'mentor') return;
 
     const isAdmin = user.role === 'admin' || user.role === 'super_admin';
-    const appsRef = ref(db, 'applications');
-    const unsubscribe = onValue(appsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const allApps = Object.entries(data).map(([id, val]: [string, any]) => ({
-          id,
-          ...val
-        })) as Application[];
+    const appsCol = collection(db, 'applications');
+    const unsubscribe = onSnapshot(appsCol, (snapshot) => {
+      const allApps = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Application[];
 
-        const filteredApps = isAdmin
-          ? allApps
-          : allApps.filter(app => app.userId === user.uid);
+      const filteredApps = isAdmin
+        ? allApps
+        : allApps.filter(app => app.userId === user.uid);
 
-        setApplications(filteredApps.sort((a, b) => b.submittedAt - a.submittedAt));
-      } else {
-        setApplications([]);
-      }
+      setApplications(filteredApps.sort((a, b) => b.submittedAt - a.submittedAt));
       setLoading(false);
     });
 

@@ -36,7 +36,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { ref, update, onValue } from 'firebase/database';
+import { doc, updateDoc, collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { institutes } from '@/lib/constants';
@@ -156,21 +156,20 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       const isParulEmail = values.email?.toLowerCase().endsWith('@paruluniversity.ac.in');
-      const userRef = ref(db, `users/${user.uid}`);
       const updates = {
         displayName: values.name,
         contactNumber: values.contactNumber,
-        enrollmentNumber: isParulEmail ? (values.enrollmentNumber || "") : "",
-        category: isParulEmail ? (values.category || "") : "",
-        othersSpecify: (isParulEmail && values.category === "Others") ? (values.othersSpecify || "") : "",
-        institute: values.institute || "",
-        linkedin: values.linkedin || "",
-        socialCategory: values.socialCategory || "",
-        gender: values.gender || "",
-        caste: values.caste || "",
+        enrollmentNumber: isParulEmail ? (values.enrollmentNumber || '') : '',
+        category: isParulEmail ? (values.category || '') : '',
+        othersSpecify: (isParulEmail && values.category === 'Others') ? (values.othersSpecify || '') : '',
+        institute: values.institute || '',
+        linkedin: values.linkedin || '',
+        socialCategory: values.socialCategory || '',
+        gender: values.gender || '',
+        caste: values.caste || '',
         updatedAt: Date.now(),
       };
-      await update(userRef, updates);
+      await updateDoc(doc(db, 'users', user.uid), updates);
       setUser({ ...user, ...updates });
       toast.success('Profile updated successfully');
     } catch (error) {
@@ -185,8 +184,7 @@ export default function SettingsPage() {
     if (!user) return;
     setLoading(true);
     try {
-      const userRef = ref(db, `users/${user.uid}`);
-      await update(userRef, {
+      await updateDoc(doc(db, 'users', user.uid), {
         notifications: notifPrefs,
         updatedAt: Date.now(),
       });
@@ -206,18 +204,18 @@ export default function SettingsPage() {
     }
 
     setProgrammeLoading(true);
-    const programmesRef = ref(db, 'programmes');
-    const unsubscribe = onValue(programmesRef, (snapshot) => {
-      const data = snapshot.val();
+    const programmesCol = collection(db, 'programmes');
+    const unsubscribe = onSnapshot(programmesCol, (snapshot) => {
+      const data: Record<string, any> = {};
+      snapshot.docs.forEach(d => { data[d.id] = d.data(); });
       const programmeList = programmeDefaults.map((defaultProgramme) => {
-        const programmeData = data?.[defaultProgramme.id] as any;
+        const programmeData = data[defaultProgramme.id];
         return {
           id: defaultProgramme.id,
           name: programmeData?.title || programmeData?.name || defaultProgramme.title,
           isApplicationOpen: programmeData?.isApplicationOpen ?? defaultProgramme.active,
         };
       });
-
       setProgrammes(programmeList);
       setProgrammeLoading(false);
     }, (error) => {
@@ -244,7 +242,7 @@ export default function SettingsPage() {
     setProgrammes((prev) => prev.map((prog) => prog.id === programmeId ? { ...prog, isApplicationOpen: newStatus } : prog));
 
     try {
-      await update(ref(db, `programmes/${programmeId}`), { isApplicationOpen: newStatus });
+      await updateDoc(doc(db, 'programmes', programmeId), { isApplicationOpen: newStatus });
       toast.success(`Programme ${newStatus ? 'opened' : 'closed'} successfully`);
     } catch (error) {
       setProgrammes((prev) => prev.map((prog) => prog.id === programmeId ? { ...prog, isApplicationOpen: currentStatus } : prog));

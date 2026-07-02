@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ref, onValue } from 'firebase/database';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Application } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -33,18 +33,12 @@ export default function StartupsDirectory() {
   const [selectedSector, setSelectedSector] = useState<string>('All Sectors');
 
   useEffect(() => {
-    const appsRef = ref(db, 'applications');
-    return onValue(appsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const list = Object.keys(data).map(key => ({
-          id: key,
-          ...data[key]
-        }));
-        setStartups(list);
-      }
+    const appsCol = collection(db, 'applications');
+    const unsubscribe = onSnapshot(appsCol, (snapshot) => {
+      setStartups(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Application[]);
       setLoading(false);
     });
+    return unsubscribe;
   }, []);
 
   const sectors = ['All Sectors', ...Array.from(new Set(startups.map(s => s.data?.sector || 'Other')))];

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import { db } from '@/lib/firebase';
-import { ref, onValue, update } from 'firebase/database';
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { 
   Card, 
   CardContent, 
@@ -59,19 +59,13 @@ export default function ManageUsersPage() {
     }
 
     setLoading(true);
-    const usersRef = ref(db, 'users');
-    const unsubscribe = onValue(usersRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const userList = Object.values(data) as UserProfile[];
-        setUsers(userList);
-      } else {
-        setUsers([]);
-      }
+    const usersCol = collection(db, 'users');
+    const unsubscribe = onSnapshot(usersCol, (snapshot) => {
+      setUsers(snapshot.docs.map(d => d.data()) as UserProfile[]);
       setLoading(false);
     }, (error) => {
-      console.error("User management fetch error:", error);
-      toast.error("Failed to load users. Please check permissions.");
+      console.error('User management fetch error:', error);
+      toast.error('Failed to load users. Please check permissions.');
       setLoading(false);
     });
 
@@ -80,7 +74,7 @@ export default function ManageUsersPage() {
 
   const updateUserRole = async (uid: string, newRole: UserRole) => {
     try {
-      await update(ref(db, `users/${uid}`), {
+      await updateDoc(doc(db, 'users', uid), {
         role: newRole,
         updatedAt: Date.now(),
       });

@@ -43,11 +43,12 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { ref, push, set } from 'firebase/database';
+import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref as sRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
+import { triggerEmailNotification } from '@/lib/email-client';
 
 const incubationSchema = z.object({
   teamMembers: z.array(z.object({
@@ -131,11 +132,9 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
         pitchDeckUrl = await getDownloadURL(uploadResult.ref);
       }
 
-      const applicationsRef = ref(db, 'applications');
-      const newAppRef = push(applicationsRef);
+      const applicationsCol = collection(db, 'applications');
       
       const applicationData = {
-        id: newAppRef.key,
         userId: user.uid,
         userName: user.displayName,
         userEmail: user.email,
@@ -161,14 +160,13 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
         ]
       };
 
-      await set(newAppRef, applicationData);
+      const newAppDoc = await addDoc(applicationsCol, applicationData);
       
-      const userAppsRef = ref(db, `users/${user.uid}/applications/${newAppRef.key}`);
-      await set(userAppsRef, true);
+      // Update the application document with its own Firestore ID
+      await setDoc(doc(db, 'applications', newAppDoc.id), { id: newAppDoc.id }, { merge: true });
 
-      const notifRef = ref(db, `notifications/${user.uid}/${Date.now()}`);
-      await set(notifRef, {
-        id: Date.now().toString(),
+      // Add submission notification
+      await addDoc(collection(db, 'notifications', user.uid, 'items'), {
         userId: user.uid,
         title: 'Application Submitted',
         message: `Your application for ${programmeTitle} has been received.`,
@@ -176,6 +174,41 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
         read: false,
         timestamp: Date.now(),
       });
+
+      // Send email notifications to applicant and team members
+      const startupName = isGrowthPad ? values.startupName : values.startupTitle;
+      const recipientEmails = [user.email, ...(values.teamMembers || []).map((m: any) => m.email)].filter(Boolean);
+      
+      if (recipientEmails.length > 0) {
+        triggerEmailNotification({
+          to: recipientEmails,
+          subject: `🚀 Submission Received: ${startupName} - ${programmeTitle}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+              <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="color: #0f172a; margin: 0; font-size: 24px; font-weight: 800;">Application Received</h2>
+                <p style="color: #64748b; margin: 5px 0 0 0;">PIERC Innovation Management System</p>
+              </div>
+              <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
+                Dear Founders,
+              </p>
+              <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
+                Your application for your idea <strong>${startupName}</strong> under the program <strong>${programmeTitle}</strong> has been successfully submitted and is now <strong>Under Review</strong>.
+              </p>
+              <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+                You and your team members will receive status updates, revision requests, and meeting invitations directly at your registered email addresses and in the portal notifications center.
+              </p>
+              <div style="text-align: center; margin-bottom: 24px;">
+                <a href="${window.location.origin}/dashboard/applications/${newAppDoc.id}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">View Application Portal</a>
+              </div>
+              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+              <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
+                This is an automated notification from the PIERC Innovation Management System. Please do not reply directly to this email.
+              </p>
+            </div>
+          `,
+        }).catch(err => console.error('Failed to dispatch submission email:', err));
+      }
 
       toast.success('Application submitted successfully!');
       router.push('/dashboard/applications');

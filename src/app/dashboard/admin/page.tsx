@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ref, onValue, update } from 'firebase/database';
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { UserProfile, UserRole } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -31,12 +31,9 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const usersRef = ref(db, 'users');
-    const unsubscribe = onValue(usersRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        setUsers(Object.values(data) as UserProfile[]);
-      }
+    const usersCol = collection(db, 'users');
+    const unsubscribe = onSnapshot(usersCol, (snapshot) => {
+      setUsers(snapshot.docs.map(d => d.data()) as UserProfile[]);
       setLoading(false);
     });
 
@@ -45,7 +42,7 @@ export default function AdminSettingsPage() {
 
   const changeRole = async (uid: string, newRole: UserRole) => {
     try {
-      await update(ref(db, `users/${uid}`), { role: newRole });
+      await updateDoc(doc(db, 'users', uid), { role: newRole });
       toast.success(`Role updated to ${newRole}`);
     } catch (error) {
       toast.error('Failed to update role');

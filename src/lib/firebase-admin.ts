@@ -16,7 +16,6 @@ export function getFirebaseAdmin() {
   if (!admin.apps.length) {
     admin.initializeApp({
       credential: admin.credential.cert(firebaseAdminConfig),
-      databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
   }
@@ -24,5 +23,5 @@ export function getFirebaseAdmin() {
 }
 
 export const adminAuth = () => getFirebaseAdmin().auth();
-export const adminDb = () => getFirebaseAdmin().database();
+export const adminDb = () => getFirebaseAdmin().firestore();
 export const adminStorage = () => getFirebaseAdmin().storage();

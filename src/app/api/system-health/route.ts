@@ -10,31 +10,27 @@ export async function GET() {
         FIREBASE_CLIENT_EMAIL: !!process.env.FIREBASE_CLIENT_EMAIL,
         FIREBASE_PRIVATE_KEY: !!process.env.FIREBASE_PRIVATE_KEY,
         NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: !!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-        NEXT_PUBLIC_FIREBASE_DATABASE_URL: !!process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
       }
     },
-    rtdb: { status: 'PENDING', canRead: false, canWrite: false, message: '' },
+    firestore: { status: 'PENDING', canRead: false, canWrite: false, message: '' },
     auth: { status: 'PENDING', canListUsers: false, message: '' },
     storage: { status: 'PENDING', bucketExists: false, bucket: '', message: '' },
     timestamp: new Date().toLocaleString(),
   };
 
   try {
-    // 1. Check Realtime Database
+    // 1. Check Firestore
     const db = adminDb();
-    const testRef = db.ref('.info/connected');
-    const connected = await testRef.once('value');
-    results.rtdb.canRead = true;
-    
-    // Attempt a test write
-    const healthRef = db.ref('system_health_check');
+    const healthRef = db.collection('_health').doc('ping');
     await healthRef.set({ last_check: Date.now() });
-    results.rtdb.canWrite = true;
-    results.rtdb.status = 'SUCCESS';
-    results.rtdb.message = 'Realtime Database connection successful - can read and write.';
+    results.firestore.canWrite = true;
+    const snap = await healthRef.get();
+    results.firestore.canRead = snap.exists;
+    results.firestore.status = 'SUCCESS';
+    results.firestore.message = 'Firestore connection successful - can read and write.';
   } catch (error: any) {
-    results.rtdb.status = 'ERROR';
-    results.rtdb.message = error.message;
+    results.firestore.status = 'ERROR';
+    results.firestore.message = error.message;
   }
 
   try {
@@ -63,7 +59,7 @@ export async function GET() {
     results.storage.message = error.message;
   }
 
-  const overallStatus = [results.rtdb.status, results.auth.status, results.storage.status].every(s => s === 'SUCCESS') ? 'success' : 'warning';
+  const overallStatus = [results.firestore.status, results.auth.status, results.storage.status].every(s => s === 'SUCCESS') ? 'success' : 'warning';
 
   return NextResponse.json({ ...results, overallStatus });
 }

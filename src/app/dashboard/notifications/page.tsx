@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ref, onValue, update } from 'firebase/database';
+import { collection, onSnapshot, doc, updateDoc, writeBatch, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Notification } from '@/types';
 import { useAuthStore } from '@/store/authStore';
@@ -30,15 +30,10 @@ export default function NotificationsPage() {
   useEffect(() => {
     if (!user) return;
 
-    const notifRef = ref(db, `notifications/${user.uid}`);
-    const unsubscribe = onValue(notifRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const list = Object.values(data) as Notification[];
-        setNotifications(list.sort((a, b) => b.timestamp - a.timestamp));
-      } else {
-        setNotifications([]);
-      }
+    const notifCol = collection(db, 'notifications', user.uid, 'items');
+    const notifQuery = query(notifCol, orderBy('timestamp', 'desc'));
+    const unsubscribe = onSnapshot(notifQuery, (snapshot) => {
+      setNotifications(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Notification[]);
       setLoading(false);
     });
 
@@ -47,24 +42,21 @@ export default function NotificationsPage() {
 
   const markAsRead = async (id: string) => {
     if (!user) return;
-    await update(ref(db, `notifications/${user.uid}/${id}`), { read: true });
+    await updateDoc(doc(db, 'notifications', user.uid, 'items', id), { read: true });
   };
 
   const markAllAsRead = async () => {
     if (!user || notifications.length === 0) return;
-    const updates: any = {};
-    notifications.forEach(n => {
-      if (!n.read) updates[`notifications/${user.uid}/${n.id}/read`] = true;
+    const batch = writeBatch(db);
+    notifications.filter(n => !n.read).forEach(n => {
+      batch.update(doc(db, 'notifications', user.uid, 'items', n.id), { read: true });
     });
-    await update(ref(db), updates);
+    await batch.commit();
   };
 
   const deleteNotification = async (id: string) => {
     if (!user) return;
-    await update(ref(db, `notifications/${user.uid}/${id}`), { read: true }); // In a real app we'd remove it
-    // For this demo let's actually remove it
-    const nRef = ref(db, `notifications/${user.uid}/${id}`);
-    // But wait, remove is not imported. I'll use set(..., null)
+    await deleteDoc(doc(db, 'notifications', user.uid, 'items', id));
   };
 
   const getIcon = (type: string) => {

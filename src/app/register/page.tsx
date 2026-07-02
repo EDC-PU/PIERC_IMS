@@ -9,7 +9,7 @@ import {
   GoogleAuthProvider 
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { ref, set, get } from 'firebase/database';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,7 +31,7 @@ export default function RegisterPage() {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(user, { displayName: name });
       
-      await set(ref(db, `users/${user.uid}`), {
+      await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         email: user.email,
         displayName: name,
@@ -56,11 +56,11 @@ export default function RegisterPage() {
       const { user } = await signInWithPopup(auth, provider);
       
       // Check if user profile exists
-      const userRef = ref(db, `users/${user.uid}`);
-      const snapshot = await get(userRef);
+      const userDocRef = doc(db, 'users', user.uid);
+      const snapshot = await getDoc(userDocRef);
       
       if (!snapshot.exists()) {
-        await set(userRef, {
+        await setDoc(userDocRef, {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName || 'User',

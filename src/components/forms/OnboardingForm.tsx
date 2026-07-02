@@ -23,7 +23,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ref, update, get } from 'firebase/database';
+import { doc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
@@ -116,35 +116,37 @@ export default function OnboardingForm() {
       // Step 1: Check for uniqueness of enrollment number (only if email ends with @paruluniversity.ac.in)
       const isParulEmail = values.email?.toLowerCase().endsWith('@paruluniversity.ac.in');
       if (isParulEmail && values.enrollmentNumber && values.enrollmentNumber.trim() !== '') {
-        const slugRef = ref(db, `enrollment_slugs/${values.enrollmentNumber}`);
-        const slugSnap = await get(slugRef);
+        const slugDocRef = doc(db, 'enrollment_slugs', values.enrollmentNumber);
+        const slugSnap = await getDoc(slugDocRef);
         
-        if (slugSnap.exists() && slugSnap.val() !== user.uid) {
+        if (slugSnap.exists() && slugSnap.data()?.uid !== user.uid) {
           toast.error('This Enrollment Number is already registered with another account.');
           setLoading(false);
           return;
         }
       }
 
-      // Step 2: Atomic update for user profile and unique slug
-      const updates: Record<string, any> = {
-        [`users/${user.uid}`]: {
-          ...user,
-          ...values,
-          displayName: values.name,
-          enrollmentNumber: isParulEmail ? (values.enrollmentNumber || '') : '',
-          category: isParulEmail ? (values.category || '') : '',
-          othersSpecify: (isParulEmail && values.category === 'Others') ? (values.othersSpecify || '') : '',
-          onboardingCompleted: true,
-          updatedAt: Date.now(),
-        }
-      };
+      // Step 2: Atomic batch update for user profile and unique slug
+      const batch = writeBatch(db);
+
+      const userDocRef = doc(db, 'users', user.uid);
+      batch.set(userDocRef, {
+        ...user,
+        ...values,
+        displayName: values.name,
+        enrollmentNumber: isParulEmail ? (values.enrollmentNumber || '') : '',
+        category: isParulEmail ? (values.category || '') : '',
+        othersSpecify: (isParulEmail && values.category === 'Others') ? (values.othersSpecify || '') : '',
+        onboardingCompleted: true,
+        updatedAt: Date.now(),
+      }, { merge: true });
 
       if (isParulEmail && values.enrollmentNumber && values.enrollmentNumber.trim() !== '') {
-        updates[`enrollment_slugs/${values.enrollmentNumber}`] = user.uid;
+        const slugDocRef = doc(db, 'enrollment_slugs', values.enrollmentNumber);
+        batch.set(slugDocRef, { uid: user.uid });
       }
 
-      await update(ref(db), updates);
+      await batch.commit();
 
       toast.success('Onboarding complete! Welcome to PIERC.');
       router.push('/dashboard');

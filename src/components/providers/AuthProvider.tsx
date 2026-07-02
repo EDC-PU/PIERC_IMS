@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { ref, onValue, update } from 'firebase/database';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { UserProfile } from '@/types';
@@ -18,21 +18,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
     }, 5000);
 
-    let unsubscribeOnValue: (() => void) | undefined;
+    let unsubscribeSnapshot: (() => void) | undefined;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-      // Clean up previous onValue listener if it exists
-      if (unsubscribeOnValue) {
-        unsubscribeOnValue();
-        unsubscribeOnValue = undefined;
+      // Clean up previous snapshot listener if it exists
+      if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
+        unsubscribeSnapshot = undefined;
       }
 
       if (firebaseUser) {
-        const userRef = ref(db, `users/${firebaseUser.uid}`);
-        
-        // Use onValue with cleanup and error handling
-        unsubscribeOnValue = onValue(userRef, (snapshot) => {
-          const profile = snapshot.val() as UserProfile;
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+
+        // Use onSnapshot for real-time profile updates
+        unsubscribeSnapshot = onSnapshot(userDocRef, (snapshot) => {
+          const profile = snapshot.data() as UserProfile | undefined;
           if (profile) {
             // Safeguard: Ensure role, uid, displayName, and email are always present
             const updatedProfile = {
@@ -42,17 +42,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               email: profile.email || firebaseUser.email || '',
               uid: profile.uid || firebaseUser.uid,
             } as UserProfile;
-            
-            // If the database is missing these properties, patch them back to the database atomically so it's clean
+
+            // If the database is missing these properties, patch them back so it's clean
             if (!profile.role || !profile.uid || !profile.displayName) {
               const patchUpdates: any = {};
               if (!profile.role) patchUpdates.role = 'user';
               if (!profile.uid) patchUpdates.uid = firebaseUser.uid;
               if (!profile.displayName) patchUpdates.displayName = profile.displayName || (profile as any).name || firebaseUser.displayName || 'User';
               if (!profile.email) patchUpdates.email = firebaseUser.email || '';
-              update(userRef, patchUpdates).catch(console.error);
+              updateDoc(userDocRef, patchUpdates).catch(console.error);
             }
-            
+
             setAuth(updatedProfile, false);
           } else {
             // If profile doesn't exist yet, set basic info but don't hang
@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }, false);
           }
         }, (error) => {
-          console.error("RTDB Profile Fetch Error:", error);
+          console.error('Firestore Profile Fetch Error:', error);
           // Set a fallback profile to prevent redirect loops
           setAuth({
             uid: firebaseUser.uid,
@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => {
       unsubscribeAuth();
-      if (unsubscribeOnValue) unsubscribeOnValue();
+      if (unsubscribeSnapshot) unsubscribeSnapshot();
       clearTimeout(timeoutId);
     };
   }, [setAuth, setLoading]);

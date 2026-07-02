@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import { db } from '@/lib/firebase';
-import { ref, onValue, push, set } from 'firebase/database';
+import { collection, onSnapshot, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { Application, Meeting, UserProfile } from '@/types';
+import { triggerEmailNotification } from '@/lib/email-client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -77,62 +78,44 @@ export default function MeetingsPage() {
   useEffect(() => {
     if (!currentUser) return;
 
-    // Fetch Evaluations
-    const evalsRef = ref(db, 'evaluations');
-    onValue(evalsRef, (snapshot) => {
-      setEvaluations(snapshot.val() || {});
-    });
+    // Fetch Evaluations (subcollection approach: collectionGroup)
+    // For simplicity, we load evaluations per application when needed.
+    // Skipping global evaluation load here; evaluate page handles it.
 
     const isAdmin = currentUser.role === 'admin' || currentUser.role === 'super_admin';
 
-    // Fetch Applications and Extract Meetings
-    const appsRef = ref(db, 'applications');
-    const unsubscribeApps = onValue(appsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const appList = Object.entries(data).map(([id, val]: [string, any]) => ({
-          id,
-          ...val
-        })) as Application[];
-        setApplications(appList);
-
-        // Aggregate Meetings from all applications
-        const allMeetings: Meeting[] = [];
-        appList.forEach(app => {
-          if (app.meetings) {
-            Object.values(app.meetings).forEach((m: any) => {
-              allMeetings.push(m);
-            });
-          }
-        });
-
-        const filtered = currentUser.role === 'user'
-          ? allMeetings.filter(m => m.attendees.includes(currentUser.uid))
-          : allMeetings;
-
-        setMeetings(filtered.sort((a, b) => a.startTime - b.startTime));
-      } else {
-        setApplications([]);
-        setMeetings([]);
-      }
+    // Fetch Applications
+    const appsCol = collection(db, 'applications');
+    const unsubscribeApps = onSnapshot(appsCol, (snapshot) => {
+      const appList = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Application[];
+      setApplications(appList);
       setLoading(false);
     });
 
+    // Fetch Meetings from top-level meetings collection
+    const meetingsCol = collection(db, 'meetings');
+    const unsubscribeMeetings = onSnapshot(meetingsCol, (snapshot) => {
+      const allMeetings = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Meeting[];
+      const filtered = currentUser.role === 'user'
+        ? allMeetings.filter(m => m.attendees?.includes(currentUser.uid))
+        : allMeetings;
+      setMeetings(filtered.sort((a, b) => a.startTime - b.startTime));
+    });
+
     if (isAdmin) {
-      // Fetch Evaluators
-      const usersRef = ref(db, 'users');
-      onValue(usersRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const userMap = data as Record<string, UserProfile>;
-          setAllUsers(userMap);
-          const list = Object.values(data) as UserProfile[];
-          setEvaluators(list.filter(u => u.role === 'mentor' || u.role === 'admin' || u.role === 'super_admin'));
-        }
+      const usersCol = collection(db, 'users');
+      onSnapshot(usersCol, (snapshot) => {
+        const userMap: Record<string, UserProfile> = {};
+        const list = snapshot.docs.map(d => { const u = d.data() as UserProfile; userMap[u.uid] = u; return u; });
+        setAllUsers(userMap);
+        setEvaluators(list.filter(u => u.role === 'mentor' || u.role === 'admin' || u.role === 'super_admin'));
       });
     }
 
-    return () => unsubscribeApps();
+    return () => {
+      unsubscribeApps();
+      unsubscribeMeetings();
+    };
   }, [currentUser]);
 
   // Categorization Logic
@@ -207,9 +190,6 @@ export default function MeetingsPage() {
           return;
         }
 
-        const meetingsRef = ref(db, `applications/${appId}/meetings`);
-        const newRef = push(meetingsRef);
-
         const phaseTitle = activePhase === 'phase1' ? 'Phase 1 Evaluation' :
           activePhase === 'phase2' ? 'Phase 2 Evaluation' : 'Final Review Meeting';
 
@@ -220,8 +200,7 @@ export default function MeetingsPage() {
           app.userId
         ]));
 
-        const meetingData: Meeting = {
-          id: newRef.key!,
+        const meetingData = {
           applicationId: appId,
           title: `${phaseTitle}: ${app.data?.startupTitle || app.programmeTitle || 'Project'}`,
           startTime: startTimestamp,
@@ -234,11 +213,10 @@ export default function MeetingsPage() {
           description: `${phaseTitle} session bulk-scheduled.`
         };
 
-        await set(newRef, meetingData);
-
-        // Also write to top-level meetings node for central access
-        const centralMeetingsRef = ref(db, `meetings/${newRef.key}`);
-        await set(centralMeetingsRef, meetingData);
+        // Single write to top-level meetings collection
+        const newMeetingDoc = await addDoc(collection(db, 'meetings'), meetingData);
+        // Patch the id field back onto the document
+        await updateDoc(doc(db, 'meetings', newMeetingDoc.id), { id: newMeetingDoc.id });
 
         // Push Notifications to all attendees
         const attendees = Array.from(new Set([
@@ -246,21 +224,68 @@ export default function MeetingsPage() {
           ...(!isPhase1 && selectedEvaluator ? [selectedEvaluator] : []),
           currentUser!.uid
         ]));
-        const notifyPromises = attendees.map(uid => {
-          const notifRef = ref(db, `notifications/${uid}`);
-          const newNotifRef = push(notifRef);
-          return set(newNotifRef, {
-            id: newNotifRef.key!,
+        const notifyPromises = attendees.map(uid =>
+          addDoc(collection(db, 'notifications', uid, 'items'), {
             userId: uid,
-            title: `New Meeting Scheduled`,
+            title: 'New Meeting Scheduled',
             message: `Your ${phaseTitle} session for ${app.data?.startupTitle || app.programmeTitle} is scheduled for ${format(startTimestamp, 'MMM dd, hh:mm a')}.`,
             type: 'info',
             read: false,
             timestamp: Date.now(),
             link: '/dashboard/meetings'
-          });
-        });
+          })
+        );
         await Promise.all(notifyPromises);
+
+        // Send email invitations to attendees
+        const startupName = app.data?.startupName || app.data?.startupTitle || 'Innovation Project';
+        const teamEmails = [
+          app.userEmail,
+          ...(app.data?.teamMembers || []).map((m: any) => m.email)
+        ].filter(Boolean);
+
+        const mentorEmail = !isPhase1 && selectedEvaluator ? allUsers[selectedEvaluator]?.email : null;
+        const allRecipientEmails = [...teamEmails, ...(mentorEmail ? [mentorEmail] : [])].filter(Boolean);
+
+        if (allRecipientEmails.length > 0) {
+          const formattedDate = format(startTimestamp, 'MMMM dd, yyyy');
+          const formattedTime = format(startTimestamp, 'hh:mm a');
+          const locationDetails = mode === 'Offline' ? venue : 'Online';
+          const linkHtml = mode === 'Online' ? `<p><strong>Join URL:</strong> <a href="${meetingLink}">${meetingLink}</a></p>` : '';
+
+          triggerEmailNotification({
+            to: allRecipientEmails,
+            subject: `📅 Session Scheduled: ${phaseTitle} - ${startupName}`,
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+                <h2 style="color: #0f172a; margin-top: 0; font-size: 20px;">Evaluation Meeting Scheduled</h2>
+                <p style="color: #334155; font-size: 16px; line-height: 1.6;">
+                  Dear Team,
+                </p>
+                <p style="color: #334155; font-size: 16px; line-height: 1.6;">
+                  A new meeting has been scheduled for your startup project <strong>${startupName}</strong>.
+                </p>
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; margin: 20px 0; border-radius: 8px;">
+                  <p style="margin: 0 0 8px 0; color: #334155;"><strong>Session:</strong> ${phaseTitle}</p>
+                  <p style="margin: 0 0 8px 0; color: #334155;"><strong>Date:</strong> ${formattedDate}</p>
+                  <p style="margin: 0 0 8px 0; color: #334155;"><strong>Time:</strong> ${formattedTime}</p>
+                  <p style="margin: 0 0 8px 0; color: #334155;"><strong>Mode:</strong> ${mode} (${locationDetails})</p>
+                  ${linkHtml}
+                </div>
+                <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+                  Please mark your calendars and join the session on time.
+                </p>
+                <div style="text-align: center; margin-bottom: 24px;">
+                  <a href="${window.location.origin}/dashboard/meetings" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">View in Calendar</a>
+                </div>
+                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+                <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
+                  This is an automated notification from the PIERC Innovation Management System.
+                </p>
+              </div>
+            `,
+          }).catch(err => console.error('Failed to send meeting scheduling email:', err));
+        }
       });
       await Promise.all(promises);
       toast.success(`Scheduled meetings for ${selectedApps.length} project(s)`);
@@ -273,13 +298,49 @@ export default function MeetingsPage() {
 
   const handleUpdateMeetingStatus = async (meeting: Meeting, newStatus: 'Scheduled' | 'Completed' | 'Cancelled' | 'Absent') => {
     try {
-      const appMeetingRef = ref(db, `applications/${meeting.applicationId}/meetings/${meeting.id}/status`);
-      const centralMeetingRef = ref(db, `meetings/${meeting.id}/status`);
-      
-      await set(appMeetingRef, newStatus);
-      await set(centralMeetingRef, newStatus);
-      
+      await updateDoc(doc(db, 'meetings', meeting.id), { status: newStatus });
       toast.success(`Meeting status updated to ${newStatus}`);
+
+      if (newStatus === 'Cancelled') {
+        const app = applications.find(a => a.id === meeting.applicationId);
+        const teamEmails = app ? [app.userEmail, ...(app.data?.teamMembers || []).map((m: any) => m.email)] : [];
+        const attendeeEmails = (meeting.attendees || []).map(uid => allUsers[uid]?.email);
+        const allRecipientEmails = Array.from(new Set([...teamEmails, ...attendeeEmails])).filter(Boolean);
+
+        if (allRecipientEmails.length > 0) {
+          const startupName = app?.data?.startupName || app?.data?.startupTitle || 'Innovation Project';
+          const formattedDate = format(meeting.startTime, 'MMMM dd, yyyy');
+          const formattedTime = format(meeting.startTime, 'hh:mm a');
+
+          triggerEmailNotification({
+            to: allRecipientEmails,
+            subject: `❌ Meeting Cancelled: ${meeting.title}`,
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+                <h2 style="color: #e11d48; margin-top: 0; font-size: 20px;">Meeting Cancelled</h2>
+                <p style="color: #334155; font-size: 16px; line-height: 1.6;">
+                  Dear Founders and Mentors,
+                </p>
+                <p style="color: #334155; font-size: 16px; line-height: 1.6;">
+                  Please note that the meeting <strong>${meeting.title}</strong> has been <strong>Cancelled</strong>.
+                </p>
+                <div style="background-color: #fff1f2; border: 1px solid #fda4af; padding: 16px; margin: 20px 0; border-radius: 8px;">
+                  <p style="margin: 0 0 8px 0; color: #334155;"><strong>Session:</strong> ${meeting.title}</p>
+                  <p style="margin: 0 0 8px 0; color: #334155;"><strong>Scheduled Date:</strong> ${formattedDate}</p>
+                  <p style="margin: 0 0 8px 0; color: #334155;"><strong>Scheduled Time:</strong> ${formattedTime}</p>
+                </div>
+                <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+                  If a reschedule is necessary, administrative staff will coordinate and schedule a new time shortly.
+                </p>
+                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+                <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
+                  This is an automated notification from the PIERC Innovation Management System.
+                </p>
+              </div>
+            `,
+          }).catch(err => console.error('Failed to send meeting cancellation email:', err));
+        }
+      }
     } catch (error) {
       console.error('Failed to update meeting status:', error);
       toast.error('Failed to update meeting status');

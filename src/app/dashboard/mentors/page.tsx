@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ref, onValue } from 'firebase/database';
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { UserProfile, Application } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -29,7 +29,7 @@ import {
   DialogDescription
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { update } from 'firebase/database';
+// updateDoc is already imported above
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
@@ -72,7 +72,7 @@ export default function MentorsPage() {
 
   const removeMentorRole = async (uid: string) => {
     try {
-      await update(ref(db, `users/${uid}`), {
+      await updateDoc(doc(db, 'users', uid), {
         role: 'user',
         updatedAt: Date.now()
       });
@@ -83,26 +83,16 @@ export default function MentorsPage() {
   };
 
   useEffect(() => {
-    const usersRef = ref(db, 'users');
-    const unsubscribeUsers = onValue(usersRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const userList = Object.values(data) as UserProfile[];
-        setAllUsers(userList);
-        const mentorList = userList.filter((user: any) => user.role === 'mentor');
-        setMentors(mentorList);
-      }
+    const usersCol = collection(db, 'users');
+    const unsubscribeUsers = onSnapshot(usersCol, (snapshot) => {
+      const userList = snapshot.docs.map(d => d.data()) as UserProfile[];
+      setAllUsers(userList);
+      setMentors(userList.filter((u: any) => u.role === 'mentor'));
     });
 
-    const appsRef = ref(db, 'applications');
-    const unsubscribeApps = onValue(appsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const appsList = Object.values(data) as Application[];
-        setApplications(appsList);
-      } else {
-        setApplications([]);
-      }
+    const appsCol = collection(db, 'applications');
+    const unsubscribeApps = onSnapshot(appsCol, (snapshot) => {
+      setApplications(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Application[]);
       setLoading(false);
     });
 
@@ -114,7 +104,7 @@ export default function MentorsPage() {
 
   const assignAsMentor = async (uid: string) => {
     try {
-      await update(ref(db, `users/${uid}`), {
+      await updateDoc(doc(db, 'users', uid), {
         role: 'mentor',
         updatedAt: Date.now()
       });
