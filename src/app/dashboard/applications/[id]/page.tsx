@@ -51,7 +51,11 @@ import {
   Sparkles,
   BrainCircuit,
   Plus,
-  ArrowLeft
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  KeyRound,
+  ShieldCheck
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -106,10 +110,90 @@ export default function ApplicationDetailsPage() {
   const [phase2PPT, setPhase2PPT] = useState<File | null>(null);
   const [isUploadingPPT, setIsUploadingPPT] = useState(false);
 
+  // Yukti Portal Credential states
+  const [yuktiId, setYuktiId] = useState('');
+  const [yuktiPassword, setYuktiPassword] = useState('');
+  const [isSavingYukti, setIsSavingYukti] = useState(false);
+  const [showYuktiPassword, setShowYuktiPassword] = useState(false);
+
   // Mentor Assignment states
   const [mentors, setMentors] = useState<UserProfile[]>([]);
   const [showCohortDialog, setShowCohortDialog] = useState(false);
   const [cohortMentorId, setCohortMentorId] = useState('');
+
+  // Incubation states
+  const [showIncubationDialog, setShowIncubationDialog] = useState(false);
+  const [incubationType, setIncubationType] = useState<'Only Incubation' | 'Selected for Funding' | 'On Hold'>('Only Incubation');
+  const [fundingPhases, setFundingPhases] = useState<{ phaseName: string; amount: number }[]>([
+    { phaseName: 'Phase 1', amount: 0 },
+    { phaseName: 'Phase 2', amount: 0 },
+    { phaseName: 'Phase 3', amount: 0 },
+  ]);
+
+  // Monthly report states (for editing)
+  const [activeReportMonth, setActiveReportMonth] = useState<'month1' | 'month2' | 'month3'>('month1');
+  const [reportProgress, setReportProgress] = useState('');
+  const [reportMarketVal, setReportMarketVal] = useState('');
+  const [isSavingReport, setIsSavingReport] = useState(false);
+
+  const handleSaveYuktiCredentials = async () => {
+    if (!yuktiId.trim() || !yuktiPassword.trim()) {
+      toast.error('Please enter both your Yukti Portal ID and password.');
+      return;
+    }
+    setIsSavingYukti(true);
+    try {
+      await updateDoc(doc(db, 'applications', id), {
+        'documents.yuktiPortalId': yuktiId.trim(),
+        'documents.yuktiPortalPassword': yuktiPassword.trim(),
+        updatedAt: Date.now(),
+      });
+
+      // Notify super admins and assigned mentor
+      try {
+        // Notify programme manager / super admin via programme
+        const progSnap = await getDoc(doc(db, 'programmes', application!.programmeId));
+        if (progSnap.exists()) {
+          const managerId = progSnap.data().managerId;
+          if (managerId) {
+            await addDoc(collection(db, 'notifications', managerId, 'items'), {
+              userId: managerId,
+              title: 'Yukti Portal Credentials Submitted',
+              message: `${application!.userName} has submitted their Yukti Portal credentials for ${application!.programmeTitle}.`,
+              type: 'info',
+              read: false,
+              timestamp: Date.now(),
+              link: `/dashboard/applications/${id}`,
+            });
+          }
+        }
+
+        // Notify assigned mentor if any
+        if (application!.mentorId) {
+          await addDoc(collection(db, 'notifications', application!.mentorId, 'items'), {
+            userId: application!.mentorId,
+            title: 'Yukti Portal Credentials Submitted',
+            message: `${application!.userName} has submitted their Yukti Portal credentials. Please review.`,
+            type: 'info',
+            read: false,
+            timestamp: Date.now(),
+            link: `/dashboard/applications/${id}`,
+          });
+        }
+      } catch (notifErr) {
+        console.warn('Could not send Yukti notification:', notifErr);
+      }
+
+      toast.success('Yukti Portal credentials saved successfully!');
+      setYuktiId('');
+      setYuktiPassword('');
+    } catch (err) {
+      console.error('Yukti Save Error:', err);
+      toast.error('Failed to save credentials. Please try again.');
+    } finally {
+      setIsSavingYukti(false);
+    }
+  };
 
   const handleUploadPhase2PPT = async () => {
     if (!phase2PPT || !id || !application) return;
@@ -204,17 +288,76 @@ export default function ApplicationDetailsPage() {
     };
   }, [id]);
 
-  const updateStatus = async (newStatus: string, remarks?: string, mentorId?: string, mentorName?: string) => {
+  useEffect(() => {
+    if (application?.monthlyReports?.[activeReportMonth]) {
+      setReportProgress(application.monthlyReports[activeReportMonth].progressReport || '');
+      setReportMarketVal(application.monthlyReports[activeReportMonth].marketValidationUpdate || '');
+    } else {
+      setReportProgress('');
+      setReportMarketVal('');
+    }
+  }, [application, activeReportMonth]);
+
+  const handleSaveMonthlyReport = async () => {
+    if (!reportProgress.trim() || !reportMarketVal.trim()) {
+      toast.error('Please fill out both the Progress Report and Market Validation Update.');
+      return;
+    }
+
+    const today = new Date();
+    const day = today.getDate();
+    if (day < 1 || day > 8) {
+      toast.error('Submission window is locked. Updates are only allowed between the 1st and 8th of every month.');
+      return;
+    }
+
+    setIsSavingReport(true);
+    try {
+      const reports = application?.monthlyReports || {};
+      const updatedReports = {
+        ...reports,
+        [activeReportMonth]: {
+          progressReport: reportProgress.trim(),
+          marketValidationUpdate: reportMarketVal.trim(),
+          updatedAt: Date.now(),
+        }
+      };
+
+      await updateDoc(doc(db, 'applications', id), {
+        monthlyReports: updatedReports,
+        updatedAt: Date.now(),
+      });
+
+      toast.success('Monthly progress report saved successfully!');
+    } catch (err) {
+      console.error('Save Report Error:', err);
+      toast.error('Failed to save monthly report. Please try again.');
+    } finally {
+      setIsSavingReport(false);
+    }
+  };
+
+  const updateStatus = async (newStatus: string, remarks?: string, mentorId?: string, mentorName?: string, extraUpdates?: any) => {
     if (!application || !user || user.role === 'user') return;
 
     try {
       const updates: any = {
         status: newStatus,
         updatedAt: Date.now(),
+        ...extraUpdates
       };
 
       if (newStatus === 'Revision Needed') {
         updates.revisionRemarks = remarks;
+        updates.preRevisionData = {
+          startupName: application.data?.startupName || application.data?.startupTitle || '',
+          problemStatement: application.data?.problemStatement || '',
+          solution: application.data?.solution || '',
+          currentStage: application.data?.currentStage || '',
+          teamMembers: application.data?.teamMembers || [],
+          pitchDeck: application.documents?.pitchDeck || ''
+        };
+        updates.revisedFields = [];
       }
 
       if (newStatus === 'Cohort Selected' && mentorId && mentorName) {
@@ -297,6 +440,26 @@ export default function ApplicationDetailsPage() {
     if (!id || !user || !application) return;
     setIsUpdating(true);
     try {
+      const changedFields: string[] = [];
+      if (newStartupName !== (application.data?.startupName || application.data?.startupTitle || '')) {
+        changedFields.push('Startup Name');
+      }
+      if (newIdea !== (application.data?.problemStatement || '')) {
+        changedFields.push('Problem Statement / Idea');
+      }
+      if (newSolution !== (application.data?.solution || '')) {
+        changedFields.push('Solution');
+      }
+      if (newCurrentStage !== (application.data?.currentStage || '')) {
+        changedFields.push('Current Stage');
+      }
+      if (JSON.stringify(newTeamMembers) !== JSON.stringify(application.data?.teamMembers || [])) {
+        changedFields.push('Team Members');
+      }
+      if (newPitchDeck) {
+        changedFields.push('Pitch Deck');
+      }
+
       const updates: any = {
         'data.problemStatement': newIdea,
         'data.solution': newSolution,
@@ -306,6 +469,11 @@ export default function ApplicationDetailsPage() {
         'data.teamMembers': newTeamMembers,
         updatedAt: Date.now()
       };
+
+      if (changedFields.length > 0 && application.status === 'Revision Needed') {
+        const existingRevisedFields = application.revisedFields || [];
+        updates.revisedFields = Array.from(new Set([...existingRevisedFields, ...changedFields]));
+      }
 
       if (newPitchDeck) {
         const fileRef = storageRef(storage, `applications/${id}/pitch_deck_${Date.now()}`);
@@ -545,8 +713,8 @@ export default function ApplicationDetailsPage() {
               </div>
             )}
 
-            {application.status === 'Cohort Selected' && (
-              <Button className="rounded-xl h-11 bg-primary font-black" onClick={() => updateStatus('Incubated')}>
+            {application.status === 'Cohort Selected' && user?.role === 'super_admin' && (
+              <Button className="rounded-xl h-11 bg-primary font-black" onClick={() => setShowIncubationDialog(true)}>
                 🚀 Mark Incubated
               </Button>
             )}
@@ -648,6 +816,130 @@ export default function ApplicationDetailsPage() {
               </DialogContent>
             </Dialog>
 
+            {/* Incubation Type and Funding Phase Selection Dialog */}
+            <Dialog open={showIncubationDialog} onOpenChange={setShowIncubationDialog}>
+              <DialogContent className="rounded-[2rem] border-none shadow-2xl bg-white max-w-lg w-full p-6">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-black text-slate-900">Mark as Incubated</DialogTitle>
+                  <DialogDescription className="text-slate-500 font-medium pt-2">
+                    Select the incubation model for this startup and set any funding grants if applicable.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="py-6 space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Incubation Option</Label>
+                    <Select
+                      value={incubationType}
+                      onValueChange={(val: any) => setIncubationType(val)}
+                    >
+                      <SelectTrigger className="w-full h-12 rounded-xl bg-slate-50 border-none focus:ring-primary/20 font-bold flex justify-between items-center px-4">
+                        <SelectValue placeholder="Select option..." />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl shadow-2xl border-none ring-1 ring-slate-100 bg-white p-1">
+                        <SelectItem value="Only Incubation" className="cursor-pointer hover:bg-slate-50 rounded-lg py-2 px-3">
+                          Only Incubation
+                        </SelectItem>
+                        <SelectItem value="Selected for Funding" className="cursor-pointer hover:bg-slate-50 rounded-lg py-2 px-3">
+                          Selected for Funding
+                        </SelectItem>
+                        <SelectItem value="On Hold" className="cursor-pointer hover:bg-slate-50 rounded-lg py-2 px-3">
+                          On Hold
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* If Selected for Funding: Phase-wise Grant Amount Setup */}
+                  {incubationType === 'Selected for Funding' && (
+                    <div className="space-y-4 pt-2 border-t">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Phase-wise Grants</Label>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[9px] font-black uppercase tracking-widest rounded-lg"
+                          onClick={() => setFundingPhases([...fundingPhases, { phaseName: `Phase ${fundingPhases.length + 1}`, amount: 0 }])}
+                        >
+                          <Plus className="h-3 w-3 mr-1" /> Add Phase
+                        </Button>
+                      </div>
+
+                      <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+                        {fundingPhases.map((phase, idx) => (
+                          <div key={idx} className="flex items-center gap-3">
+                            <Input
+                              value={phase.phaseName}
+                              onChange={(e) => {
+                                const updated = [...fundingPhases];
+                                updated[idx].phaseName = e.target.value;
+                                setFundingPhases(updated);
+                              }}
+                              className="rounded-xl bg-slate-50 border-none h-11 font-bold flex-1"
+                              placeholder="Phase Name"
+                            />
+                            <Input
+                              type="number"
+                              value={phase.amount || ''}
+                              onChange={(e) => {
+                                const updated = [...fundingPhases];
+                                updated[idx].amount = Number(e.target.value);
+                                setFundingPhases(updated);
+                              }}
+                              className="rounded-xl bg-slate-50 border-none h-11 font-bold w-32"
+                              placeholder="Amount"
+                            />
+                            {fundingPhases.length > 1 && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-9 w-9 p-0 text-rose-500 hover:bg-rose-50 rounded-lg flex-shrink-0"
+                                onClick={() => {
+                                  const updated = [...fundingPhases];
+                                  updated.splice(idx, 1);
+                                  setFundingPhases(updated);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <DialogFooter className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    className="rounded-xl"
+                    onClick={() => {
+                      setShowIncubationDialog(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="rounded-xl bg-primary hover:bg-primary/95 font-bold text-white px-6"
+                    onClick={async () => {
+                      const extraUpdates: any = {
+                        incubationType,
+                      };
+                      if (incubationType === 'Selected for Funding') {
+                        extraUpdates.fundingPhases = fundingPhases;
+                      }
+
+                      await updateStatus('Incubated', `Startup marked as Incubated (${incubationType})`, undefined, undefined, extraUpdates);
+                      setShowIncubationDialog(false);
+                    }}
+                  >
+                    Confirm Incubation
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             {user?.role === 'super_admin' && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -694,6 +986,8 @@ export default function ApplicationDetailsPage() {
         </div>
       )}
 
+
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
           {/* Applicant Profile Snapshot */}
@@ -732,7 +1026,7 @@ export default function ApplicationDetailsPage() {
               <InfoBlock label="Enrollment" value={application.userEnrollment} />
               <InfoBlock label="Gender" value={application.userGender} />
               <InfoBlock label="Social Category" value={application.userSocialCategory} />
-              <InfoBlock label="Caste" value={application.userCaste} />
+              {application.userCaste && <InfoBlock label="Caste" value={application.userCaste} />}
               {(application.status === 'Cohort Selected' || application.status === 'Incubated') && (
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2 text-slate-400">
@@ -759,10 +1053,24 @@ export default function ApplicationDetailsPage() {
 
           {/* Startup Details */}
           <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center">
-                <Building2 className="h-4 w-4 mr-2 text-primary" /> {isGrowthPad ? 'Startup Profile' : 'Innovation Details'}
-              </CardTitle>
+            <CardHeader className="bg-slate-50/50 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-4 space-y-0">
+              <div className="flex flex-wrap items-center gap-3">
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center">
+                  <Building2 className="h-4 w-4 mr-2 text-primary" /> {isGrowthPad ? 'Startup Profile' : 'Innovation Details'}
+                </CardTitle>
+                {isAdmin && application.status === 'Revision Submitted' && application.revisedFields && application.revisedFields.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                      Revised:
+                    </span>
+                    {application.revisedFields.map((field, idx) => (
+                      <Badge key={idx} variant="outline" className="text-[8px] font-black uppercase tracking-tight bg-indigo-50 border-indigo-200 text-indigo-700 px-2 py-0.5">
+                        {field}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
               {canEdit && !editingIdea && (
                 <Button
                   variant="outline"
@@ -885,7 +1193,26 @@ export default function ApplicationDetailsPage() {
                   </>
                 ) : (
                   <>
-                    <InfoBlock label="Startup Name" value={data.startupName || data.startupTitle} icon={Building2} />
+                    {/* Startup Name Field */}
+                    {isAdmin && application.status === 'Revision Submitted' && application.revisedFields?.includes('Startup Name') ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2 text-slate-400">
+                          <Building2 className="h-3 w-3" />
+                          <span className="text-[10px] font-black uppercase tracking-wider">Startup Name</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-xs font-medium text-rose-500 line-through">
+                            {application.preRevisionData?.startupName || 'N/A'}
+                          </p>
+                          <p className="text-sm font-bold text-emerald-600">
+                            {data.startupName || data.startupTitle || 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <InfoBlock label="Startup Name" value={data.startupName || data.startupTitle} icon={Building2} />
+                    )}
+
                     {isGrowthPad ? (
                       <>
                         <InfoBlock label="Studio" value={data.startupStudio} icon={MapPin} />
@@ -896,10 +1223,67 @@ export default function ApplicationDetailsPage() {
                       </>
                     ) : (
                       <>
-                        <InfoBlock label="Current Stage" value={data.currentStage} icon={Activity} />
-                        <div className="md:col-span-2">
-                          <InfoBlock label="Team Members" value={data.teamMembers} icon={Users} />
-                        </div>
+                        {/* Current Stage Field */}
+                        {isAdmin && application.status === 'Revision Submitted' && application.revisedFields?.includes('Current Stage') ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2 text-slate-400">
+                              <Activity className="h-3 w-3" />
+                              <span className="text-[10px] font-black uppercase tracking-wider">Current Stage</span>
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                              <p className="text-xs font-medium text-rose-500 line-through">
+                                {application.preRevisionData?.currentStage || 'N/A'}
+                              </p>
+                              <p className="text-sm font-bold text-emerald-600">
+                                {data.currentStage || 'N/A'}
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <InfoBlock label="Current Stage" value={data.currentStage} icon={Activity} />
+                        )}
+
+                        {/* Team Members Field */}
+                        {isAdmin && application.status === 'Revision Submitted' && application.revisedFields?.includes('Team Members') ? (
+                          <div className="space-y-1 md:col-span-2">
+                            <div className="flex items-center space-x-2 text-slate-400">
+                              <Users className="h-3.5 w-3.5" />
+                              <span className="text-[10px] font-black uppercase tracking-wider">Team Members</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                              <div className="space-y-2 p-3 bg-rose-50/20 border border-rose-100/50 rounded-2xl">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-rose-500 mb-1">Original Team</p>
+                                <div className="space-y-2 opacity-70">
+                                  {(application.preRevisionData?.teamMembers || []).map((m: any, i: number) => (
+                                    <div key={i} className="bg-rose-50/50 p-2 rounded-xl border border-rose-100 flex flex-col line-through text-rose-500">
+                                      <span className="text-xs font-black">{m.name}</span>
+                                      <span className="text-[10px] font-bold mt-0.5">{m.email}</span>
+                                      <span className="text-[10px] font-bold">{m.phone}</span>
+                                    </div>
+                                  ))}
+                                  {(application.preRevisionData?.teamMembers || []).length === 0 && <p className="text-xs text-slate-400 italic">None</p>}
+                                </div>
+                              </div>
+                              <div className="space-y-2 p-3 bg-emerald-50/20 border border-emerald-100 rounded-2xl">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 mb-1">Revised Team</p>
+                                <div className="space-y-2">
+                                  {(data.teamMembers || []).map((m: any, i: number) => (
+                                    <div key={i} className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100 flex flex-col text-emerald-700">
+                                      <span className="text-xs font-black">{m.name}</span>
+                                      <span className="text-[10px] font-bold mt-0.5">{m.email}</span>
+                                      <span className="text-[10px] font-bold">{m.phone}</span>
+                                    </div>
+                                  ))}
+                                  {(data.teamMembers || []).length === 0 && <p className="text-xs text-slate-400 italic">None</p>}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="md:col-span-2">
+                            <InfoBlock label="Team Members" value={data.teamMembers} icon={Users} />
+                          </div>
+                        )}
                       </>
                     )}
                   </>
@@ -946,10 +1330,50 @@ export default function ApplicationDetailsPage() {
                   </div>
                 ) : (
                   <>
-                    <InfoBlock label="Detailed Description / Problem Statement" value={data.description || data.problemStatement} />
+                    {/* Problem Statement Field */}
+                    {isAdmin && application.status === 'Revision Submitted' && application.revisedFields?.includes('Problem Statement / Idea') ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2 text-slate-400">
+                          <span className="text-[10px] font-black uppercase tracking-wider">Detailed Description / Problem Statement</span>
+                        </div>
+                        <div className="space-y-2 pt-1">
+                          <div className="p-4 bg-rose-50/20 border border-rose-100/50 rounded-2xl line-through text-rose-500/80 text-xs whitespace-pre-wrap">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-rose-500 mb-2">Original Submission</p>
+                            {application.preRevisionData?.problemStatement || 'N/A'}
+                          </div>
+                          <div className="p-4 bg-emerald-50/20 border border-emerald-100 rounded-2xl text-emerald-700 font-bold text-sm whitespace-pre-wrap">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 mb-2 font-black">Revised Submission</p>
+                            {data.description || data.problemStatement || 'N/A'}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <InfoBlock label="Detailed Description / Problem Statement" value={data.description || data.problemStatement} />
+                    )}
+
                     {!isGrowthPad && (
                       <>
-                        <InfoBlock label="Solution" value={data.solution} />
+                        {/* Solution Field */}
+                        {isAdmin && application.status === 'Revision Submitted' && application.revisedFields?.includes('Solution') ? (
+                          <div className="space-y-1 pt-2">
+                            <div className="flex items-center space-x-2 text-slate-400">
+                              <span className="text-[10px] font-black uppercase tracking-wider">Solution</span>
+                            </div>
+                            <div className="space-y-2 pt-1">
+                              <div className="p-4 bg-rose-50/20 border border-rose-100/50 rounded-2xl line-through text-rose-500/80 text-xs whitespace-pre-wrap">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-rose-500 mb-2">Original Solution</p>
+                                {application.preRevisionData?.solution || 'N/A'}
+                              </div>
+                              <div className="p-4 bg-emerald-50/20 border border-emerald-100 rounded-2xl text-emerald-700 font-bold text-sm whitespace-pre-wrap">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 mb-2 font-black">Revised Solution</p>
+                                {data.solution || 'N/A'}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <InfoBlock label="Solution" value={data.solution} />
+                        )}
+
                         <InfoBlock label="Uniqueness" value={data.uniqueness} />
                       </>
                     )}
@@ -966,6 +1390,182 @@ export default function ApplicationDetailsPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Incubation Status Details Section */}
+          {application.status === 'Incubated' && (
+            <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden">
+              <CardHeader className="bg-slate-50/50 border-b flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center">
+                  <Rocket className="h-4 w-4 mr-2 text-primary" /> Incubation Details
+                </CardTitle>
+                <Badge className="bg-emerald-100 text-emerald-800 border-none font-bold">
+                  {application.incubationType || 'Incubated'}
+                </Badge>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-6">
+                
+                {/* 1. Selected for Funding: Phase-wise Grants Display */}
+                {application.incubationType === 'Selected for Funding' && (
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Approved Grant Phases</h3>
+                    <div className="border rounded-2xl overflow-hidden bg-slate-50/50">
+                      <Table>
+                        <TableHeader className="bg-slate-100/50">
+                          <TableRow className="border-slate-100">
+                            <TableHead className="text-[9px] font-black uppercase tracking-widest py-2">Phase Name</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase tracking-widest py-2 text-right">Grant Amount</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {application.fundingPhases && application.fundingPhases.length > 0 ? (
+                            application.fundingPhases.map((phase, idx) => (
+                              <TableRow key={idx} className="border-slate-100">
+                                <TableCell className="py-3 text-xs font-bold text-slate-900">{phase.phaseName}</TableCell>
+                                <TableCell className="py-3 text-xs font-bold text-slate-900 text-right">
+                                  ₹{phase.amount?.toLocaleString('en-IN') || '0'}
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={2} className="py-4 text-center text-xs text-slate-400 font-bold italic">
+                                No funding phases defined.
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. On Hold: Monthly Progress Reports Submission & Viewing */}
+                {application.incubationType === 'On Hold' && (
+                  <div className="space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
+                      <div>
+                        <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Monthly Progress Tracking</h3>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide mt-1">
+                          Required for applicant & team members between 1st - 8th of every month
+                        </p>
+                      </div>
+
+                      {/* Month Switcher Tabs */}
+                      <div className="flex bg-slate-100 p-1 rounded-xl">
+                        {(['month1', 'month2', 'month3'] as const).map((mKey) => (
+                          <button
+                            key={mKey}
+                            onClick={() => setActiveReportMonth(mKey)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
+                              activeReportMonth === mKey
+                                ? "bg-white text-slate-900 shadow-sm"
+                                : "text-slate-500 hover:text-slate-900"
+                            )}
+                          >
+                            {mKey === 'month1' ? 'Month 1' : mKey === 'month2' ? 'Month 2' : 'Month 3'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Window Status Banner */}
+                    {(isOwner || application.data?.teamMembers?.some((m: any) => m.email === user?.email)) && (
+                      <div className={cn(
+                        "p-4 rounded-2xl border text-xs font-medium flex items-start gap-3",
+                        (new Date().getDate() >= 1 && new Date().getDate() <= 8)
+                          ? "bg-emerald-50 border-emerald-100 text-emerald-800"
+                          : "bg-amber-50 border-amber-100 text-amber-800"
+                      )}>
+                        <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                        <div>
+                          <p className="font-bold">
+                            {(new Date().getDate() >= 1 && new Date().getDate() <= 8)
+                              ? "Submission window is open!"
+                              : "Submission window is locked."}
+                          </p>
+                          <p className="text-[11px] opacity-90 mt-0.5">
+                            Submissions and updates are only permitted between the 1st and 8th of every month. Currently, it is day {new Date().getDate()} of the month.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Report Form / Details */}
+                    <div className="space-y-4">
+                      {/* For editing (Owners/Team members) */}
+                      {(isOwner || application.data?.teamMembers?.some((m: any) => m.email === user?.email)) ? (
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Progress Report</Label>
+                            <Textarea
+                              value={reportProgress}
+                              onChange={(e) => setReportProgress(e.target.value)}
+                              placeholder="Describe your progress during this month..."
+                              className="rounded-2xl min-h-[100px] bg-slate-50 border-none focus:ring-primary/20 p-4"
+                              disabled={!(new Date().getDate() >= 1 && new Date().getDate() <= 8)}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Market Validation Update</Label>
+                            <Textarea
+                              value={reportMarketVal}
+                              onChange={(e) => setReportMarketVal(e.target.value)}
+                              placeholder="Detail any market validation activities or updates..."
+                              className="rounded-2xl min-h-[100px] bg-slate-50 border-none focus:ring-primary/20 p-4"
+                              disabled={!(new Date().getDate() >= 1 && new Date().getDate() <= 8)}
+                            />
+                          </div>
+
+                          {new Date().getDate() >= 1 && new Date().getDate() <= 8 && (
+                            <Button
+                              onClick={handleSaveMonthlyReport}
+                              disabled={isSavingReport}
+                              className="w-full h-11 rounded-xl bg-primary text-white font-bold"
+                            >
+                              {isSavingReport ? 'Saving Report...' : 'Save Progress & Validation Update'}
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        // For Admin / Mentors viewing reports
+                        <div className="space-y-4">
+                          {application.monthlyReports?.[activeReportMonth] ? (
+                            <div className="space-y-4">
+                              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Progress Report</h4>
+                                <p className="text-xs font-medium text-slate-700 whitespace-pre-line">
+                                  {application.monthlyReports[activeReportMonth].progressReport}
+                                </p>
+                              </div>
+
+                              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Market Validation Update</h4>
+                                <p className="text-xs font-medium text-slate-700 whitespace-pre-line">
+                                  {application.monthlyReports[activeReportMonth].marketValidationUpdate}
+                                </p>
+                              </div>
+
+                              <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider text-right">
+                                Last Updated: {format(application.monthlyReports[activeReportMonth].updatedAt, 'MMM dd, yyyy • HH:mm')}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                              <p className="text-xs text-slate-400 font-bold italic">
+                                No report has been submitted for {activeReportMonth === 'month1' ? 'Month 1' : activeReportMonth === 'month2' ? 'Month 2' : 'Month 3'} yet.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Documents Section */}
           <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden">
@@ -1061,6 +1661,131 @@ export default function ApplicationDetailsPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Yukti Portal Credentials — Phase 2 requirement */}
+          {hasBeenSelectedForPhase2 && (
+            <Card className="border-none shadow-sm ring-1 ring-violet-200 overflow-hidden bg-gradient-to-br from-violet-50/60 to-white">
+              <CardHeader className="bg-violet-50/80 border-b border-violet-100 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-violet-800 flex items-center">
+                  <ShieldCheck className="h-4 w-4 mr-2 text-violet-600" /> Yukti Portal Credentials
+                </CardTitle>
+                {application.documents?.yuktiPortalId && (
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Submitted
+                  </span>
+                )}
+              </CardHeader>
+              <CardContent className="pt-6 space-y-6">
+
+                {/* Instruction banner for owner */}
+                {isOwner && (
+                  <div className="flex items-start gap-4 p-4 bg-violet-100/60 rounded-2xl border border-violet-200">
+                    <div className="h-9 w-9 rounded-xl bg-violet-600 flex items-center justify-center flex-shrink-0 shadow">
+                      <KeyRound className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-black text-violet-900">Action Required — Yukti Innovation Portal</p>
+                      <p className="text-[11px] text-violet-700 font-medium leading-relaxed">
+                        Congratulations on being selected for Phase 2! You are required to create an account on the{' '}
+                        <a
+                          href="https://yukti.mic.gov.in"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline font-black hover:text-violet-900"
+                        >
+                          Yukti Innovation Portal
+                        </a>{' '}
+                        and submit your login credentials below. These will be shared only with PIERC administrators and your assigned mentor.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Submission form — visible to owner only */}
+                {isOwner && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Yukti Portal User ID</Label>
+                      <Input
+                        placeholder="Enter your Yukti Portal User ID"
+                        value={yuktiId || application.documents?.yuktiPortalId || ''}
+                        onChange={(e) => setYuktiId(e.target.value)}
+                        className="rounded-xl bg-slate-50 border-none focus:ring-violet-300 h-11 font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Yukti Portal Password</Label>
+                      <div className="relative">
+                        <Input
+                          type={showYuktiPassword ? 'text' : 'password'}
+                          placeholder="Enter your Yukti Portal Password"
+                          value={yuktiPassword || application.documents?.yuktiPortalPassword || ''}
+                          onChange={(e) => setYuktiPassword(e.target.value)}
+                          className="rounded-xl bg-slate-50 border-none focus:ring-violet-300 h-11 font-bold pr-12"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
+                          onClick={() => setShowYuktiPassword(!showYuktiPassword)}
+                          aria-label={showYuktiPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showYuktiPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <Button
+                      className="w-full h-12 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-violet-200 transition-all"
+                      onClick={handleSaveYuktiCredentials}
+                      disabled={isSavingYukti}
+                    >
+                      {isSavingYukti ? 'Saving...' : application.documents?.yuktiPortalId ? 'Update Credentials' : 'Submit Credentials'}
+                    </Button>
+                    <p className="text-[9px] text-slate-400 font-medium italic text-center">
+                      Your credentials are stored securely and visible only to PIERC administrators and your assigned mentor.
+                    </p>
+                  </div>
+                )}
+
+                {/* View credentials — visible to super_admin and assigned mentor only */}
+                {(user?.role === 'super_admin' || (user?.role === 'mentor' && user?.uid === application.mentorId)) && (
+                  <div className="space-y-4">
+                    {application.documents?.yuktiPortalId ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1 p-4 bg-white rounded-2xl border border-violet-100 shadow-sm">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Yukti User ID</p>
+                          <p className="text-sm font-black text-slate-900 break-all">{application.documents.yuktiPortalId}</p>
+                        </div>
+                        <div className="space-y-2 p-4 bg-white rounded-2xl border border-violet-100 shadow-sm">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Password</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-black text-slate-900 break-all flex-1">
+                              {showYuktiPassword
+                                ? application.documents.yuktiPortalPassword
+                                : '•'.repeat(Math.min(application.documents.yuktiPortalPassword?.length ?? 8, 12))}
+                            </p>
+                            <button
+                              type="button"
+                              className="text-slate-400 hover:text-slate-700 transition-colors flex-shrink-0"
+                              onClick={() => setShowYuktiPassword(!showYuktiPassword)}
+                              aria-label={showYuktiPassword ? 'Hide password' : 'Reveal password'}
+                            >
+                              {showYuktiPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <KeyRound className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                        <p className="text-xs text-slate-400 font-bold">The startup has not yet submitted their Yukti Portal credentials.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              </CardContent>
+            </Card>
+          )}
 
           {/* Meetings Section */}
           <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden">

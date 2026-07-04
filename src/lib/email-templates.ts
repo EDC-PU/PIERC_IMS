@@ -241,6 +241,9 @@ export function getStatusUpdateEmailHtml(options: {
         <p style="margin-bottom: 16px; line-height: 1.6;">
           Please upload your Phase 2 PPT in the application portal to proceed.
         </p>
+        <p style="margin-bottom: 16px; line-height: 1.6;">
+          Additionally, you are required to create an account on the <strong>Yukti Innovation Portal</strong> (<a href="https://yukti.mic.gov.in" target="_blank" style="color: #d40924; text-decoration: underline;">yukti.mic.gov.in</a>) and submit your login ID and password in the application portal under the "Yukti Portal Credentials" section.
+        </p>
       `;
     } else if (newStatus === 'Cohort Selected' && mentorName) {
       additionalInfo = `

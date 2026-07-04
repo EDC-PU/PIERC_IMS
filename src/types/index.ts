@@ -84,6 +84,8 @@ export interface Application {
     panGst?: string;
     phase2PPT?: string;
     other?: string[];
+    yuktiPortalId?: string;
+    yuktiPortalPassword?: string;
   };
   evaluations?: {
     phase1?: EvaluationRecord;
@@ -92,6 +94,22 @@ export interface Application {
   };
   mentorId?: string;
   mentorName?: string;
+  incubationType?: 'Only Incubation' | 'Selected for Funding' | 'On Hold';
+  fundingPhases?: { phaseName: string; amount: number }[];
+  monthlyReports?: Record<string, {
+    progressReport: string;
+    marketValidationUpdate: string;
+    updatedAt: number;
+  }>;
+  revisedFields?: string[];
+  preRevisionData?: {
+    startupName?: string;
+    problemStatement?: string;
+    solution?: string;
+    currentStage?: string;
+    teamMembers?: any[];
+    pitchDeck?: string;
+  };
 }
 
 export interface EvaluationRecord {

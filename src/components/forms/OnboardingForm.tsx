@@ -41,7 +41,6 @@ const onboardingSchema = z.object({
   institute: z.string().optional(),
   socialCategory: z.string().min(1, "Please select a category"),
   gender: z.string().min(1, "Please select a gender"),
-  caste: z.string().min(1, "Caste is required"),
 }).superRefine((data, ctx) => {
   const isParulEmail = data.email?.toLowerCase().endsWith('@paruluniversity.ac.in');
   if (isParulEmail) {
@@ -86,7 +85,6 @@ export default function OnboardingForm() {
       institute: "",
       socialCategory: "",
       gender: "",
-      caste: "",
     },
   });
 
@@ -104,7 +102,6 @@ export default function OnboardingForm() {
         institute: "",
         socialCategory: "",
         gender: "",
-        caste: "",
       });
     }
   }, [user, form]);
@@ -357,20 +354,6 @@ export default function OnboardingForm() {
                 )}
               />
             </div>
-
-            <FormField
-              control={form.control}
-              name="caste"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Caste</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter your caste" {...field} className="h-12 rounded-xl" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <Button type="submit" className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20" disabled={loading}>
               {loading ? "Saving..." : "Start My Journey"}

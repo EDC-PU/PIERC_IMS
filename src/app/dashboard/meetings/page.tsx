@@ -135,20 +135,44 @@ export default function MeetingsPage() {
     });
   };
 
-  const phase1Apps = applications.filter(app =>
-    (app.status === 'Submitted' || app.status === 'Under Review' || app.status === 'Revision Submitted' || app.status === 'Phase 1 Evaluation' || app.status === 'Revision Needed' || app.status === 'Shortlisted')
-    && !hasScheduledMeeting(app.id, 'phase1')
-  );
+  const getPreRevisionStatus = (app: Application) => {
+    if (!app.timeline) return 'Submitted';
+    const reversedTimeline = [...app.timeline].reverse();
+    const found = reversedTimeline.find(
+      (event: any) => event.status !== 'Revision Needed' && event.status !== 'Revision Submitted'
+    );
+    return found ? found.status : 'Submitted';
+  };
 
-  const phase2Apps = applications.filter(app =>
-    (app.status === 'Phase 2 Selected' || app.status === 'Phase 2 Evaluation')
-    && !hasScheduledMeeting(app.id, 'phase2')
-  );
+  const phase1Apps = applications.filter(app => {
+    if (app.status === 'Revision Submitted') {
+      const preStatus = getPreRevisionStatus(app);
+      const isPhase1 = preStatus === 'Submitted' || preStatus === 'Under Review' || preStatus === 'Shortlisted' || preStatus === 'Phase 1 Evaluation' || preStatus === 'Revision Needed';
+      return isPhase1 && !hasScheduledMeeting(app.id, 'phase1');
+    }
+    return (app.status === 'Submitted' || app.status === 'Under Review' || app.status === 'Phase 1 Evaluation' || app.status === 'Revision Needed' || app.status === 'Shortlisted')
+      && !hasScheduledMeeting(app.id, 'phase1');
+  });
 
-  const reviewApps = applications.filter(app =>
-    (app.status === 'Cohort Selected' || app.status === 'Final Review')
-    && !hasScheduledMeeting(app.id, 'review')
-  );
+  const phase2Apps = applications.filter(app => {
+    if (app.status === 'Revision Submitted') {
+      const preStatus = getPreRevisionStatus(app);
+      const isPhase2 = preStatus === 'Phase 2 Selected' || preStatus === 'Phase 2 Evaluation';
+      return isPhase2 && !hasScheduledMeeting(app.id, 'phase2');
+    }
+    return (app.status === 'Phase 2 Selected' || app.status === 'Phase 2 Evaluation')
+      && !hasScheduledMeeting(app.id, 'phase2');
+  });
+
+  const reviewApps = applications.filter(app => {
+    if (app.status === 'Revision Submitted') {
+      const preStatus = getPreRevisionStatus(app);
+      const isReview = preStatus === 'Cohort Selected' || preStatus === 'Final Review';
+      return isReview && !hasScheduledMeeting(app.id, 'review');
+    }
+    return (app.status === 'Cohort Selected' || app.status === 'Final Review')
+      && !hasScheduledMeeting(app.id, 'review');
+  });
 
   const historyMeetings = meetings.filter(m => isPast(m.startTime));
 
