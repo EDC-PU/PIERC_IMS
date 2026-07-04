@@ -188,7 +188,7 @@ export default function LandingPage() {
               <Button variant="ghost" className="font-bold text-slate-600" asChild>
                 <Link href="/login">Login</Link>
               </Button>
-              <Button className="rounded-xl shadow-lg shadow-primary/20 font-bold px-6" asChild>
+              <Button className="rounded-xl shadow-lg shadow-red-200/50 font-bold px-6 border-none text-white" style={{ backgroundColor: '#D91A2A', color: '#FFFFFF' }} asChild>
                 <Link href="/register">Apply Now</Link>
               </Button>
             </>
@@ -228,7 +228,7 @@ export default function LandingPage() {
                 <Link href="/dashboard">Return to Dashboard <LayoutDashboard className="ml-2 h-5 w-5" /></Link>
               </Button>
             ) : (
-              <Button size="lg" className="h-16 px-10 text-lg shadow-2xl shadow-primary/30 rounded-2xl font-bold" asChild>
+              <Button size="lg" className="h-16 px-10 text-lg shadow-2xl shadow-red-200/50 rounded-2xl font-bold border-none text-white" style={{ backgroundColor: '#D91A2A', color: '#FFFFFF' }} asChild>
                 <Link href="/register">Apply for Startup Support <ChevronRight className="ml-2 h-5 w-5" /></Link>
               </Button>
             )}

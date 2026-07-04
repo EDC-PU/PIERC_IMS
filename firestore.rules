@@ -1,90 +1,112 @@
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Helper function to check if user is admin or super admin
-    function isAdmin() {
-      return request.auth != null && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin');
-    }
+  rules_version = '2';
+  service cloud.firestore {
+    match /databases/{database}/documents {
+      // Helper function to check if user is admin or super admin
+      function isAdmin() {
+        return request.auth != null && 
+          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin');
+      }
 
-    // Helper function to check if user is mentor
-    function isMentor() {
-      return request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'mentor';
-    }
+      // Helper function to check if user is mentor
+      function isMentor() {
+        return request.auth != null && 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'mentor';
+      }
 
-    // Users collection
-    match /users/{userId} {
-      allow read: if request.auth != null && (
-        request.auth.uid == userId || 
-        isAdmin() || 
-        isMentor() ||
-        resource.data.role == 'admin' ||
-        resource.data.role == 'super_admin' ||
-        resource.data.role == 'mentor'
-      );
-      allow create: if request.auth != null && request.auth.uid == userId && (
-        !request.resource.data.keys().hasAll(['role']) || 
-        request.resource.data.role == 'user'
-      );
-      allow update: if request.auth != null && (
-        isAdmin() || 
-        (request.auth.uid == userId && (
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
-        ))
-      );
-      allow delete: if request.auth != null && isAdmin();
-    }
+      // Helper function to check if user is team member of the application
+      function isTeamMember(appData) {
+        return request.auth != null && (
+          ('email' in request.auth.token && 
+           appData.get('data', {}).get('teamMembers', []).any(m, m.get('email', '') == request.auth.token.email || string(m.get('email', '')).lower() == string(request.auth.token.email).lower())) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           appData.get('data', {}).get('teamMembers', []).any(m, m.get('email', '') == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('email', '') || 
+             string(m.get('email', '')).lower() == string(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('email', '')).lower()
+           ))
+        );
+      }
 
-    // Applications collection
-    match /applications/{appId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && (
-        isAdmin() || 
-        (resource.data.userId == request.auth.uid && (
-          request.resource.data.status == 'Submitted' ||
-          request.resource.data.status == 'Under Review' ||
-          request.resource.data.status == 'Revision Needed' ||
-          request.resource.data.status == 'Revision Submitted' ||
-          request.resource.data.status == 'Phase 2 Selected' ||
-          request.resource.data.status == 'Draft'
-        ))
-      );
-      allow delete: if request.auth != null && isAdmin();
-    }
+      // Users collection
+      match /users/{userId} {
+        allow read: if request.auth != null && (
+          request.auth.uid == userId || 
+          isAdmin() || 
+          isMentor() ||
+          resource.data.role == 'admin' ||
+          resource.data.role == 'super_admin' ||
+          resource.data.role == 'mentor'
+        );
+        allow create: if request.auth != null && request.auth.uid == userId && (
+          !request.resource.data.keys().hasAll(['role']) || 
+          request.resource.data.role == 'user'
+        );
+        allow update: if request.auth != null && (
+          isAdmin() || 
+          (request.auth.uid == userId && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
+          ))
+        );
+        allow delete: if request.auth != null && isAdmin();
+      }
 
-    // Programmes collection
-    match /programmes/{programmeId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && isAdmin();
-    }
+      // Applications collection
+      match /applications/{appId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update: if request.auth != null && (
+          isAdmin() || 
+          ((resource.data.userId == request.auth.uid || isTeamMember(resource.data)) && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status']) ||
+            request.resource.data.status == 'Submitted' ||
+            request.resource.data.status == 'Revision Submitted' ||
+            request.resource.data.status == 'Draft'
+          ))
+        );
+        allow delete: if request.auth != null && isAdmin();
+      }
 
-    // Meetings collection
-    match /meetings/{meetingId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && isAdmin();
-    }
+      // Programmes collection
+      match /programmes/{programmeId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && isAdmin();
+      }
 
-    // Evaluations collection
-    match /evaluations/{evalId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (isAdmin() || isMentor());
-    }
+      // Meetings collection
+      match /meetings/{meetingId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && isAdmin();
+      }
 
-    // Notifications subcollection: notifications/{userId}/items/{itemId}
-    match /notifications/{userId}/items/{itemId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null;
-    }
+      // Cohorts collection
+      match /cohorts/{cohortId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && isAdmin();
+      }
 
-    // Messages subcollection: messages/{chatId}/messages/{messageId}
-    match /messages/{chatId}/messages/{messageId} {
-      allow read, write: if request.auth != null && (
-        chatId.split('_')[0] == request.auth.uid || 
-        chatId.split('_')[1] == request.auth.uid
-      );
+      // Enrollment slugs collection
+      match /enrollment_slugs/{enrollmentId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && (resource == null || resource.data.uid == request.auth.uid);
+      }
+
+      // Evaluations collection
+      match /evaluations/{evalId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && (isAdmin() || isMentor());
+      }
+
+      // Notifications subcollection: notifications/{userId}/items/{itemId}
+      match /notifications/{userId}/items/{itemId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if request.auth != null;
+      }
+
+      // Messages subcollection: messages/{chatId}/messages/{messageId}
+      match /messages/{chatId}/messages/{messageId} {
+        allow read, write: if request.auth != null && (
+          chatId.split('_')[0] == request.auth.uid || 
+          chatId.split('_')[1] == request.auth.uid
+        );
+      }
     }
   }
-}

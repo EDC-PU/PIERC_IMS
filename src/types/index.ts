@@ -94,6 +94,8 @@ export interface Application {
   };
   mentorId?: string;
   mentorName?: string;
+  cohortId?: string;
+  cohortName?: string;
   incubationType?: 'Only Incubation' | 'Selected for Funding' | 'On Hold';
   fundingPhases?: { phaseName: string; amount: number }[];
   monthlyReports?: Record<string, {
@@ -145,3 +147,13 @@ export interface Notification {
   timestamp: number;
   link?: string;
 }
+
+export interface Cohort {
+  id: string;
+  name: string;
+  createdAt: number;
+  startDate?: string;
+  endDate?: string;
+  whatsappLink?: string;
+}
+

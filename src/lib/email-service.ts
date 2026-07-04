@@ -1,9 +1,11 @@
 import nodemailer from 'nodemailer';
+import path from 'path';
 
 interface SendEmailOptions {
   to: string | string[];
   subject: string;
   html: string;
+  attachPhase2Template?: boolean;
 }
 
 // Initialize nodemailer transporter with Gmail SMTP configuration
@@ -19,7 +21,7 @@ const transporter = nodemailer.createTransport({
  * Sends a transactional email using Gmail SMTP.
  * Supports single or multiple recipients.
  */
-export async function sendEmail({ to, subject, html }: SendEmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+export async function sendEmail({ to, subject, html, attachPhase2Template }: SendEmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     const recipient = Array.isArray(to) ? to.filter(Boolean).join(', ') : to;
 
@@ -27,12 +29,21 @@ export async function sendEmail({ to, subject, html }: SendEmailOptions): Promis
       throw new Error('No valid recipients specified.');
     }
 
-    const mailOptions = {
+    const mailOptions: any = {
       from: `"PIERC Portal" <${process.env.GMAIL_EMAIL}>`,
       to: recipient,
       subject: subject,
       html: html,
     };
+
+    if (attachPhase2Template) {
+      mailOptions.attachments = [
+        {
+          filename: 'PHASE-2 PPT Template.pptx',
+          path: path.join(process.cwd(), 'public', 'PHASE-2 PPT Template.pptx'),
+        }
+      ];
+    }
 
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent successfully:', info.messageId);

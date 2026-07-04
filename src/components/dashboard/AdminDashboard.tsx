@@ -124,14 +124,14 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-[#D91A2A] text-white border-none shadow-xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-            <Users className="h-4 w-4 text-slate-500" />
+            <CardTitle className="text-sm font-medium opacity-80">Total Applications</CardTitle>
+            <Users className="h-4 w-4 opacity-80" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalApps}</div>
-            <p className="text-xs text-green-600 mt-1">Live from database</p>
+            <p className="text-xs text-green-400 mt-1">Live from database</p>
           </CardContent>
         </Card>
         <Card>

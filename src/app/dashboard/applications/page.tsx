@@ -58,7 +58,10 @@ export default function ApplicationsPage() {
 
       const filteredApps = isAdmin
         ? allApps
-        : allApps.filter(app => app.userId === user.uid);
+        : allApps.filter(app => 
+            app.userId === user.uid || 
+            (Array.isArray(app.data?.teamMembers) && app.data.teamMembers.some((m: any) => m.email?.toLowerCase() === user.email?.toLowerCase()))
+          );
 
       setApplications(filteredApps.sort((a, b) => b.submittedAt - a.submittedAt));
       setLoading(false);
@@ -187,9 +190,13 @@ export default function ApplicationsPage() {
             <Download className="h-4 w-4" /> Export CSV
           </Button>
           {!isAdmin && (
-            <Button asChild>
-              <Link href="/dashboard/programmes">Apply for Programme</Link>
-            </Button>
+            <Link
+              href="/dashboard/programmes"
+              style={{ backgroundColor: '#d40924', color: '#ffffff' }}
+              className="font-bold shadow-lg shadow-red-200/50 rounded-xl h-11 px-6 flex items-center justify-center transition-all hover:opacity-90"
+            >
+              Apply Now
+            </Link>
           )}
         </div>
       </div>
@@ -257,7 +264,32 @@ export default function ApplicationsPage() {
         </div>
       )}
 
-      {filteredApplications.length === 0 ? (
+      {applications.length === 0 ? (
+        <Card className="p-12 text-center border-dashed rounded-[2rem] bg-slate-50/50">
+          <CardContent className="space-y-4">
+            <div className="mx-auto w-16 h-16 bg-white rounded-3xl shadow-sm flex items-center justify-center text-primary">
+              <Rocket className="h-8 w-8" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-black text-xl text-slate-900 tracking-tight">No Applications Yet</h3>
+              <p className="text-slate-500 max-w-sm mx-auto font-medium">
+                {isAdmin ? 'No startup applications have been submitted to the portal yet.' : 'You have not submitted any applications yet. Select a programme to get started.'}
+              </p>
+              {!isAdmin && (
+                <div className="pt-4 flex justify-center">
+                  <Link
+                    href="/dashboard/programmes"
+                    style={{ backgroundColor: '#d40924', color: '#ffffff' }}
+                    className="font-bold shadow-lg shadow-red-200/50 rounded-xl h-11 px-6 flex items-center justify-center transition-all hover:opacity-90"
+                  >
+                    Apply Now
+                  </Link>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : filteredApplications.length === 0 ? (
         <Card className="p-12 text-center border-dashed rounded-[2rem] bg-slate-50/50">
           <CardContent className="space-y-4">
             <div className="mx-auto w-16 h-16 bg-white rounded-3xl shadow-sm flex items-center justify-center text-slate-300">
@@ -278,7 +310,10 @@ export default function ApplicationsPage() {
               <TableHeader className="bg-slate-50/50">
                 <TableRow className="border-slate-100">
                   <TableHead className="py-6 px-8 text-[10px] font-black tracking-widest text-slate-500">Innovation / Project</TableHead>
-                  {isAdmin && <TableHead className="py-6 text-[10px] font-black tracking-widest text-slate-500">Applicant Details</TableHead>}
+                  <TableHead className="py-6 text-[10px] font-black tracking-widest text-slate-500">Name</TableHead>
+                  <TableHead className="py-6 text-[10px] font-black tracking-widest text-slate-500">Email</TableHead>
+                  <TableHead className="py-6 text-[10px] font-black tracking-widest text-slate-500">Phone</TableHead>
+                  <TableHead className="py-6 text-[10px] font-black tracking-widest text-slate-500">Institute</TableHead>
                   <TableHead className="py-6 text-[10px] font-black tracking-widest text-slate-500">Timeline</TableHead>
                   <TableHead className="py-6 text-[10px] font-black tracking-widest text-slate-500">Status</TableHead>
                   <TableHead className="py-6 text-right pr-8 text-[10px] font-black tracking-widest text-slate-500">Actions</TableHead>
@@ -298,14 +333,10 @@ export default function ApplicationsPage() {
                         </div>
                       </div>
                     </TableCell>
-                    {isAdmin && (
-                      <TableCell className="py-6 max-w-[200px] whitespace-normal break-words">
-                        <div className="flex flex-col">
-                          <span className="font-black text-slate-900 text-xs tracking-tight break-words whitespace-normal">{app.userName}</span>
-                          <span className="text-[10px] text-slate-400 font-black tracking-widest mt-0.5 break-all whitespace-normal">{app.userEmail}</span>
-                        </div>
-                      </TableCell>
-                    )}
+                    <TableCell className="py-6 font-black text-slate-900 text-xs tracking-tight whitespace-nowrap">{app.userName}</TableCell>
+                    <TableCell className="py-6 text-[10px] text-slate-500 font-bold tracking-widest break-all whitespace-normal">{app.userEmail}</TableCell>
+                    <TableCell className="py-6 text-xs text-slate-600 font-bold tracking-tight whitespace-nowrap">{app.userContact || 'N/A'}</TableCell>
+                    <TableCell className="py-6 text-xs text-slate-600 font-bold tracking-tight whitespace-nowrap">{app.userInstitute || 'N/A'}</TableCell>
                     <TableCell className="py-6">
                       <div className="flex flex-col">
                         <span className="text-xs font-black text-slate-700 tracking-tight">{format(app.submittedAt, 'MMM dd, yyyy')}</span>

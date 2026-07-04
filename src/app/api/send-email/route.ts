@@ -4,7 +4,7 @@ import { sendEmail } from '@/lib/email-service';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { to, subject, html } = body;
+    const { to, subject, html, attachPhase2Template } = body;
 
     if (!to || !subject || !html) {
       return NextResponse.json(
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await sendEmail({ to, subject, html });
+    const result = await sendEmail({ to, subject, html, attachPhase2Template });
 
     if (result.success) {
       return NextResponse.json({ success: true, messageId: result.messageId });

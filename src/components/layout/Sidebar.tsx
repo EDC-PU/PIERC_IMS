@@ -17,6 +17,7 @@ import {
   BarChart3,
   UserCog,
   ClipboardList,
+  Layers,
   X
 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase';
@@ -85,10 +86,8 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
           const isEvaluated = currentEvals[app.id]?.[user.uid]?.[phase.replace(' ', '_')];
 
           const isCommitteeMember = currentMeetings.some(m =>
-            m.applicationId === app.id && m.status === 'Scheduled' && (
-              m.attendees?.includes(user.uid) ||
-              (phase === 'Phase 1' && m.title?.toLowerCase().includes('phase 1'))
-            )
+            m.applicationId === app.id && m.status === 'Scheduled' &&
+            m.attendees?.includes(user.uid)
           );
 
           return isCommitteeMember && (!isEvaluated || app.status === 'Revision Submitted');
@@ -210,6 +209,7 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
     { name: 'Analytics', icon: BarChart3, href: '/dashboard/analytics', roles: ['admin', 'super_admin'] },
     { name: 'Messages', icon: MessageSquare, href: '/dashboard/messages', roles: ['user', 'admin', 'mentor', 'super_admin'], badge: counts.messages },
     { name: 'Manage Users', icon: UserCog, href: '/dashboard/manage-users', roles: ['super_admin'] },
+    { name: 'Manage Cohorts', icon: Layers, href: '/dashboard/cohorts', roles: ['super_admin'] },
     { name: 'System Admin', icon: Shield, href: '/dashboard/admin', roles: ['super_admin'] },
     { name: 'Settings', icon: Settings, href: '/dashboard/settings', roles: ['user', 'admin', 'mentor', 'super_admin'] },
   ];

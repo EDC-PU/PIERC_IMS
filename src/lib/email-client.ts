@@ -5,6 +5,7 @@ export async function triggerEmailNotification(options: {
   to: string | string[];
   subject: string;
   html: string;
+  attachPhase2Template?: boolean;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const response = await fetch('/api/send-email', {

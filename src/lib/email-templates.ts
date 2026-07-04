@@ -211,8 +211,10 @@ export function getStatusUpdateEmailHtml(options: {
   remarks?: string;
   viewLink: string;
   mentorName?: string;
+  mentorEmail?: string;
+  mentorContact?: string;
 }): string {
-  const { startupName, newStatus, programmeTitle, remarks, viewLink, mentorName } = options;
+  const { startupName, newStatus, programmeTitle, remarks, viewLink, mentorName, mentorEmail, mentorContact } = options;
 
   if (newStatus === 'Revision Needed') {
     return getEmailHtmlTemplate({
@@ -250,6 +252,23 @@ export function getStatusUpdateEmailHtml(options: {
         <p style="margin-bottom: 16px; line-height: 1.6;">
           You have been assigned <strong>${mentorName}</strong> as your mentor for the duration of this program.
         </p>
+        <div style="margin-top: 24px; padding: 20px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+          <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 13px; font-weight: 800; text-transform: uppercase; color: #0f172a; letter-spacing: 0.05em; border-bottom: 2px solid #d40924; padding-bottom: 6px;">Next Steps</h3>
+          <ul style="padding-left: 20px; margin: 0; color: #334155; font-size: 13px; line-height: 1.6;">
+            <li style="margin-bottom: 12px;">
+              <strong>Market Research Survey:</strong> Please conduct a detailed market research survey to gather insights on your target audience, industry trends, and competitors. This will be a crucial component in validating your business idea and planning your go-to-market strategy.
+            </li>
+            <li style="margin-bottom: 12px;">
+              <strong>Submission:</strong> Once your market research survey is complete, kindly submit the findings to PIERC. Our team will review the submission to ensure it meets the required standards.
+            </li>
+            <li style="margin-bottom: 12px;">
+              <strong>Pre-Incubation Program Selection:</strong> If the market research survey is satisfactory, your start-up will be formally selected for the Pre-Incubation Program. This program will provide you with access to mentorship, resources, and a supportive ecosystem to help you develop your idea further.
+            </li>
+          </ul>
+          <p style="margin-top: 16px; margin-bottom: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+            If you have any questions or need further guidance on the market research process, please do not hesitate to reach out to your mentor <strong>${mentorName}</strong> ${mentorEmail ? `at <a href="mailto:${mentorEmail}" style="color: #d40924; text-decoration: underline;">${mentorEmail}</a>` : ''} ${mentorContact ? `or <strong>${mentorContact}</strong>` : ''}.
+          </p>
+        </div>
       `;
     }
 
@@ -386,5 +405,59 @@ export function getMeetingCancelledEmailHtml(options: {
     alertType: 'danger',
     alertTitle: 'Cancelled Session Info',
     alertContent: alertContent,
+  });
+}
+
+/**
+ * 7. Cohort Schedule Confirmed Email Template
+ */
+export function getCohortScheduleEmailHtml(options: {
+  cohortName: string;
+  startDate: string;
+  endDate: string;
+  whatsappLink?: string;
+  viewLink: string;
+}): string {
+  const whatsappBlock = options.whatsappLink ? `
+    <p style="margin-top: 20px; margin-bottom: 12px; line-height: 1.6;">
+      An official WhatsApp group has also been created for cohort updates and coordination. Please click the button below to join the group:
+    </p>
+    <div style="text-align: center; margin: 20px 0 25px 0;">
+      <a href="${options.whatsappLink}" target="_blank" style="background-color: #25D366; color: #ffffff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(37, 211, 102, 0.15); border: 1px solid #25D366;">
+        💬 Join WhatsApp Group
+      </a>
+    </div>
+  ` : '';
+
+  return getEmailHtmlTemplate({
+    headerTitle: 'Cohort Schedule Confirmed',
+    bodyHtml: `
+      <p style="margin-top: 0; margin-bottom: 16px;">Dear Founder / Team Member,</p>
+      <p style="margin-bottom: 16px; line-height: 1.6;">
+        We are pleased to inform you that the schedule duration for your cohort <strong>${options.cohortName}</strong> has been finalized.
+      </p>
+      <p style="margin-bottom: 24px; line-height: 1.6;">
+        Please note the active timeline for your cohort below. Your project plan, deliverables, and progress reports should align with this timeline.
+      </p>
+      ${whatsappBlock}
+    `,
+    alertType: 'success',
+    alertTitle: 'Cohort Duration Schedule',
+    alertContent: `
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 6px 0; width: 50%; vertical-align: top;">
+            <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; display: block;">Start Date</span>
+            <strong style="font-size: 15px; color: #0f172a; display: block; margin-top: 4px;">${options.startDate}</strong>
+          </td>
+          <td style="padding: 6px 0; width: 50%; vertical-align: top; padding-left: 20px;">
+            <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; display: block;">End Date</span>
+            <strong style="font-size: 15px; color: #0f172a; display: block; margin-top: 4px;">${options.endDate}</strong>
+          </td>
+        </tr>
+      </table>
+    `,
+    ctaText: 'View Dashboard',
+    ctaLink: options.viewLink,
   });
 }

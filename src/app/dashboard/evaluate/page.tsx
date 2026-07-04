@@ -141,6 +141,11 @@ export default function EvaluatePage() {
       return;
     }
 
+    if (recommendation === 'Revision Needed' && !remarks.trim()) {
+      toast.error('Please enter comments/remarks explaining the requested revision.');
+      return;
+    }
+
     if (!isPhase1) {
       if (marks === '' || !remarks.trim()) {
         toast.error('Please provide both a score and detailed remarks.');
@@ -167,6 +172,8 @@ export default function EvaluatePage() {
 
       if (!isPhase1) {
         evaluationData.marks = marks;
+        evaluationData.remarks = remarks;
+      } else if (remarks.trim()) {
         evaluationData.remarks = remarks;
       }
 
@@ -240,13 +247,10 @@ export default function EvaluatePage() {
     const phase = getPhase(app.id);
     const isEvaluated = userEvaluations[app.id]?.[currentUser?.uid || '']?.[phase.replace(' ', '_')];
 
-    // COMMITTEE CHECK: Only show if user is an attendee in a scheduled meeting for this app,
-    // OR if it's Phase 1 and there is a Phase 1 meeting scheduled for this app (renders in all mentors' Hub)
+    // COMMITTEE CHECK: Only show if user is an attendee in a scheduled meeting for this app
     const isCommitteeMember = meetings.some(m =>
-      m.applicationId === app.id && m.status === 'Scheduled' && (
-        m.attendees?.includes(currentUser?.uid || '') ||
-        (phase === 'Phase 1' && m.title.toLowerCase().includes('phase 1'))
-      )
+      m.applicationId === app.id && m.status === 'Scheduled' &&
+      m.attendees?.includes(currentUser?.uid || '')
     );
 
     // Only show if part of committee, NOT evaluated, and matches search
@@ -678,7 +682,7 @@ export default function EvaluatePage() {
                         </div>
                       </div>
 
-                      {phase !== 'Phase 1' && (
+                      {(phase !== 'Phase 1' || recommendation === 'Revision Needed') && (
                         <div className="space-y-4">
                           <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Comments</Label>
                           <Textarea

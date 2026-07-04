@@ -105,9 +105,11 @@ export default function MeetingsPage() {
       setMeetings(filtered.sort((a, b) => a.startTime - b.startTime));
     });
 
+    let unsubscribeUsers: (() => void) | undefined;
+
     if (isAdmin) {
       const usersCol = collection(db, 'users');
-      onSnapshot(usersCol, (snapshot) => {
+      unsubscribeUsers = onSnapshot(usersCol, (snapshot) => {
         const userMap: Record<string, UserProfile> = {};
         const list = snapshot.docs.map(d => { const u = d.data() as UserProfile; userMap[u.uid] = u; return u; });
         setAllUsers(userMap);
@@ -118,6 +120,7 @@ export default function MeetingsPage() {
     return () => {
       unsubscribeApps();
       unsubscribeMeetings();
+      if (unsubscribeUsers) unsubscribeUsers();
     };
   }, [currentUser]);
 

@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { doc, onSnapshot, getDoc, updateDoc, deleteDoc, collection, query, where, addDoc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
-import { Application, UserProfile } from '@/types';
+import { Application, UserProfile, Cohort } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { triggerEmailNotification } from '@/lib/email-client';
 import { getStatusUpdateEmailHtml, getApplicationUpdatedEmailHtml, getApplicationRemovedEmailHtml } from '@/lib/email-templates';
@@ -55,7 +55,9 @@ import {
   Eye,
   EyeOff,
   KeyRound,
-  ShieldCheck
+  ShieldCheck,
+  Layers,
+  MessageSquare
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -94,6 +96,7 @@ export default function ApplicationDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [allEvaluations, setAllEvaluations] = useState<any[]>([]);
+  const [assignedCohort, setAssignedCohort] = useState<Cohort | null>(null);
 
   // Edit states
   const [editingIdea, setEditingIdea] = useState(false);
@@ -120,6 +123,8 @@ export default function ApplicationDetailsPage() {
   const [mentors, setMentors] = useState<UserProfile[]>([]);
   const [showCohortDialog, setShowCohortDialog] = useState(false);
   const [cohortMentorId, setCohortMentorId] = useState('');
+  const [cohorts, setCohorts] = useState<any[]>([]);
+  const [selectedCohortId, setSelectedCohortId] = useState('');
 
   // Incubation states
   const [showIncubationDialog, setShowIncubationDialog] = useState(false);
@@ -271,22 +276,36 @@ export default function ApplicationDetailsPage() {
       setAllEvaluations(evals.sort((a, b) => b.submittedAt - a.submittedAt));
     });
 
-    // 4. Fetch mentors from users collection
-    const usersCol = collection(db, 'users');
-    const usersUnsubscribe = onSnapshot(usersCol, (snapshot) => {
-      const mentorList = snapshot.docs
-        .map(doc => doc.data() as UserProfile)
-        .filter(u => u.role === 'mentor');
-      setMentors(mentorList);
-    });
+    // 4. Fetch mentors from users collection (Admins only)
+    let usersUnsubscribe = () => {};
+    if (user?.role === 'admin' || user?.role === 'super_admin') {
+      const usersCol = collection(db, 'users');
+      usersUnsubscribe = onSnapshot(usersCol, (snapshot) => {
+        const mentorList = snapshot.docs
+            .map(doc => doc.data() as UserProfile)
+            .filter(u => u.role === 'mentor');
+        setMentors(mentorList);
+      });
+    }
+
+    // 5. Fetch cohorts (Admins only)
+    let cohortsUnsubscribe = () => {};
+    if (user?.role === 'admin' || user?.role === 'super_admin') {
+      const cohortsCol = collection(db, 'cohorts');
+      cohortsUnsubscribe = onSnapshot(cohortsCol, (snapshot) => {
+        const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setCohorts(list);
+      });
+    }
 
     return () => {
       unsubscribe();
       unsubscribeMeetings();
       evalUnsubscribe();
       usersUnsubscribe();
+      cohortsUnsubscribe();
     };
-  }, [id]);
+  }, [id, user]);
 
   useEffect(() => {
     if (application?.monthlyReports?.[activeReportMonth]) {
@@ -297,6 +316,20 @@ export default function ApplicationDetailsPage() {
       setReportMarketVal('');
     }
   }, [application, activeReportMonth]);
+
+  useEffect(() => {
+    if (!application?.cohortId) {
+      setAssignedCohort(null);
+      return;
+    }
+    const cohortDocRef = doc(db, 'cohorts', application.cohortId);
+    const unsubscribe = onSnapshot(cohortDocRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setAssignedCohort({ id: snapshot.id, ...snapshot.data() } as Cohort);
+      }
+    });
+    return () => unsubscribe();
+  }, [application?.cohortId]);
 
   const handleSaveMonthlyReport = async () => {
     if (!reportProgress.trim() || !reportMarketVal.trim()) {
@@ -360,9 +393,23 @@ export default function ApplicationDetailsPage() {
         updates.revisedFields = [];
       }
 
+      let mentorEmail = '';
+      let mentorContact = '';
+
       if (newStatus === 'Cohort Selected' && mentorId && mentorName) {
         updates.mentorId = mentorId;
         updates.mentorName = mentorName;
+        try {
+          const mentorSnap = await getDoc(doc(db, 'users', mentorId));
+          if (mentorSnap.exists()) {
+            mentorEmail = mentorSnap.data().email || '';
+            mentorContact = mentorSnap.data().contactNumber || mentorSnap.data().phoneNumber || 'N/A';
+            updates.mentorEmail = mentorEmail;
+            updates.mentorContact = mentorContact;
+          }
+        } catch (e) {
+          console.warn('Failed to fetch mentor details:', e);
+        }
       }
 
       const timelineRemark = remarks || (newStatus === 'Cohort Selected' && mentorName
@@ -421,12 +468,15 @@ export default function ApplicationDetailsPage() {
           remarks: remarks || undefined,
           viewLink: `${window.location.origin}/dashboard/applications/${id}`,
           mentorName: newStatus === 'Cohort Selected' ? mentorName : undefined,
+          mentorEmail: newStatus === 'Cohort Selected' ? mentorEmail : undefined,
+          mentorContact: newStatus === 'Cohort Selected' ? mentorContact : undefined,
         });
 
         triggerEmailNotification({
           to: recipientEmails,
           subject: emailSubject,
           html: emailHtml,
+          attachPhase2Template: newStatus === 'Phase 2 Selected',
         }).catch(err => console.error('Failed to send status update email:', err));
       }
 
@@ -516,7 +566,8 @@ export default function ApplicationDetailsPage() {
   if (!application) return <div className="p-8 text-center text-rose-500 font-bold">Application not found</div>;
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
-  const isOwner = user?.uid === application.userId;
+  const isOwner = user?.uid === application.userId || 
+    (Array.isArray(application.data?.teamMembers) && application.data.teamMembers.some((m: any) => m.email?.toLowerCase() === user?.email?.toLowerCase()));
   const isRevisionNeeded = application.status === 'Revision Needed';
   const canEdit = isOwner && (isRevisionNeeded || (meetings.length === 0 && (application.status === 'Submitted' || application.status === 'Under Review')));
   const data = application.data || {};
@@ -763,12 +814,34 @@ export default function ApplicationDetailsPage() {
             <Dialog open={showCohortDialog} onOpenChange={setShowCohortDialog}>
               <DialogContent className="rounded-[2rem] border-none shadow-2xl bg-white max-w-md w-full p-6">
                 <DialogHeader>
-                  <DialogTitle className="text-2xl font-black text-slate-900">Assign Mentor</DialogTitle>
+                  <DialogTitle className="text-2xl font-black text-slate-900">Cohort & Mentor Assignment</DialogTitle>
                   <DialogDescription className="text-slate-500 font-medium pt-2">
-                    Before marking this startup as "Cohort Selected", please assign a mentor from the available list of active mentors.
+                    Before marking this startup as "Cohort Selected", please select a cohort and assign a mentor.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="py-6 space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Select Cohort</Label>
+                    <Select onValueChange={(val) => setSelectedCohortId(val || '')} value={selectedCohortId}>
+                      <SelectTrigger className="w-full h-12 rounded-xl bg-slate-50 border-none focus:ring-primary/20 font-bold flex justify-between items-center px-4">
+                        <SelectValue>
+                          {selectedCohortId ? cohorts.find(c => c.id === selectedCohortId)?.name : "Choose a cohort..."}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl shadow-2xl border-none ring-1 ring-slate-100 bg-white p-1">
+                        {cohorts.length === 0 ? (
+                          <SelectItem value="" disabled className="text-slate-400">No active cohorts found</SelectItem>
+                        ) : (
+                          cohorts.map(c => (
+                            <SelectItem key={c.id} value={c.id} className="cursor-pointer hover:bg-slate-50 rounded-lg py-2 px-3">
+                              {c.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Available Mentors</Label>
                     <Select onValueChange={(val) => setCohortMentorId(val || '')} value={cohortMentorId}>
@@ -795,22 +868,35 @@ export default function ApplicationDetailsPage() {
                   <Button variant="ghost" className="rounded-xl" onClick={() => {
                     setShowCohortDialog(false);
                     setCohortMentorId('');
+                    setSelectedCohortId('');
                   }}>Cancel</Button>
                   <Button
                     className="rounded-xl bg-green-600 hover:bg-green-700 font-bold text-white px-6"
                     onClick={async () => {
                       const selectedMentor = mentors.find(m => m.uid === cohortMentorId);
-                      if (selectedMentor) {
-                        await updateStatus('Cohort Selected', undefined, selectedMentor.uid, selectedMentor.displayName);
-                        setShowCohortDialog(false);
-                        setCohortMentorId('');
-                      } else {
-                        toast.error('Please select a valid mentor');
+                      const selectedCohort = cohorts.find(c => c.id === selectedCohortId);
+                      if (!selectedCohort) {
+                        toast.error('Please select a valid cohort');
+                        return;
                       }
+                      if (!selectedMentor) {
+                        toast.error('Please select a valid mentor');
+                        return;
+                      }
+                      await updateStatus(
+                        'Cohort Selected',
+                        undefined,
+                        selectedMentor.uid,
+                        selectedMentor.displayName,
+                        { cohortId: selectedCohort.id, cohortName: selectedCohort.name }
+                      );
+                      setShowCohortDialog(false);
+                      setCohortMentorId('');
+                      setSelectedCohortId('');
                     }}
-                    disabled={!cohortMentorId}
+                    disabled={!cohortMentorId || !selectedCohortId}
                   >
-                    Approve & Assign Mentor
+                    Approve & Assign Cohort
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -1044,6 +1130,32 @@ export default function ApplicationDetailsPage() {
                       >
                         <MessageCircle className="h-3.5 w-3.5" /> Chat
                       </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+              {application.cohortId && (
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2 text-slate-400">
+                    <Layers className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-[10px] font-black uppercase tracking-wider">Assigned Cohort</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-bold text-slate-900">{application.cohortName || 'None'}</p>
+                    {assignedCohort?.startDate && assignedCohort?.endDate && (
+                      <p className="text-[10px] font-semibold text-slate-500">
+                        Duration: {new Date(assignedCohort.startDate).toLocaleDateString(undefined, { dateStyle: 'medium' })} - {new Date(assignedCohort.endDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                      </p>
+                    )}
+                    {assignedCohort?.whatsappLink && (
+                      <a
+                        href={assignedCohort.whatsappLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-black text-green-600 hover:text-green-700 hover:underline flex items-center gap-1 mt-1"
+                      >
+                        <MessageSquare className="h-3.5 w-3.5" /> Join WhatsApp Group
+                      </a>
                     )}
                   </div>
                 </div>
@@ -1614,6 +1726,19 @@ export default function ApplicationDetailsPage() {
                   <div className="max-w-xs">
                     <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">Phase 2 Submission</h3>
                     <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-3">Upload your latest PPT to proceed with evaluation</p>
+                  </div>
+
+                  <div className="w-full max-w-sm">
+                    <a
+                      href="/PHASE-2 PPT Template.pptx"
+                      download="PHASE-2 PPT Template.pptx"
+                      className={cn(
+                        buttonVariants({ variant: "outline" }),
+                        "w-full h-12 rounded-xl font-bold bg-white text-orange-600 border-orange-200 hover:bg-orange-50 hover:text-orange-700 transition-all flex items-center justify-center gap-2"
+                      )}
+                    >
+                      <Download className="h-4 w-4" /> Download Phase 2 Template
+                    </a>
                   </div>
 
                   <input
