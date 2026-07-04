@@ -72,13 +72,22 @@ export default function ApplicationsPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'Submitted': return <Badge variant="secondary">Submitted</Badge>;
+      case 'Submitted': return <Badge variant="outline" className="text-slate-600 border-slate-200 bg-slate-50">Applied (Phase 1)</Badge>;
+      case 'Revision Needed': return <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Revision Needed</Badge>;
+      case 'Revision Submitted': return <Badge variant="outline" className="text-blue-500 border-blue-200 bg-blue-50/50">Revision Submitted</Badge>;
       case 'Under Review': return <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">Under Review</Badge>;
-      case 'Phase 1 Evaluation': return <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">Phase 1</Badge>;
-      case 'Phase 2 Evaluation': return <Badge variant="outline" className="text-purple-600 border-purple-200 bg-purple-50">Phase 2</Badge>;
-      case 'Phase 2 Selected': return <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">Phase 2 Selected</Badge>;
-      case 'Cohort Selected': return <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5">Cohort Selected</Badge>;
-      case 'Incubated': return <Badge variant="default" className="bg-green-600">Incubated</Badge>;
+      case 'Phase 1 Evaluation': return <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">Phase 1 Evaluation</Badge>;
+      case 'Phase 1 Selected': return <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 font-bold">Phase 1 Accepted</Badge>;
+      case 'Phase 1 Rejected': return <Badge variant="outline" className="text-red-500 border-red-200 bg-red-50/30">Phase 1 Rejected</Badge>;
+      case 'Phase 2 Evaluation': return <Badge variant="outline" className="text-purple-600 border-purple-200 bg-purple-50">Phase 2 Evaluation</Badge>;
+      case 'Phase 2 Selected': return <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50 font-bold">Phase 2 Accepted</Badge>;
+      case 'Phase 2 Rejected': return <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50/30">Phase 2 Rejected</Badge>;
+      case 'Funding Committee Review': return <Badge variant="outline" className="text-cyan-600 border-cyan-200 bg-cyan-50">Funding Review</Badge>;
+      case 'Funding Approved': return <Badge variant="outline" className="text-emerald-700 border-emerald-300 bg-emerald-100/50 font-black">Funding Approved</Badge>;
+      case 'Cohort Selected': return <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5 font-black">Cohort Selected</Badge>;
+      case 'Incubated': return <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white font-black">Incubated</Badge>;
+      case 'On Hold': return <Badge variant="outline" className="text-slate-500 border-slate-300 bg-slate-100">On Hold</Badge>;
+      case 'Shortlisted': return <Badge variant="outline" className="text-teal-600 border-teal-200 bg-teal-50 font-bold">Shortlisted</Badge>;
       case 'Rejected': return <Badge variant="destructive">Rejected</Badge>;
       default: return <Badge variant="secondary">{status}</Badge>;
     }

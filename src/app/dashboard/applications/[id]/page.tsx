@@ -134,6 +134,7 @@ export default function ApplicationDetailsPage() {
     { phaseName: 'Phase 2', amount: 0 },
     { phaseName: 'Phase 3', amount: 0 },
   ]);
+  const [fundingSource, setFundingSource] = useState('SSIP PU');
 
   // Monthly report states (for editing)
   const [activeReportMonth, setActiveReportMonth] = useState<'month1' | 'month2' | 'month3'>('month1');
@@ -470,6 +471,8 @@ export default function ApplicationDetailsPage() {
           mentorName: newStatus === 'Cohort Selected' ? mentorName : undefined,
           mentorEmail: newStatus === 'Cohort Selected' ? mentorEmail : undefined,
           mentorContact: newStatus === 'Cohort Selected' ? mentorContact : undefined,
+          fundingPhases: extraUpdates?.fundingPhases || application.fundingPhases || undefined,
+          fundingSource: extraUpdates?.fundingSource || application.fundingSource || undefined,
         });
 
         triggerEmailNotification({
@@ -939,6 +942,32 @@ export default function ApplicationDetailsPage() {
                   {/* If Selected for Funding: Phase-wise Grant Amount Setup */}
                   {incubationType === 'Selected for Funding' && (
                     <div className="space-y-4 pt-2 border-t">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Source of Funding</Label>
+                        <Select
+                          value={fundingSource}
+                          onValueChange={(val: any) => setFundingSource(val)}
+                        >
+                          <SelectTrigger className="w-full h-12 rounded-xl bg-slate-50 border-none focus:ring-primary/20 font-bold flex justify-between items-center px-4">
+                            <SelectValue placeholder="Select source..." />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl shadow-2xl border-none ring-1 ring-slate-100 bg-white p-1">
+                            <SelectItem value="SSIP PU" className="cursor-pointer hover:bg-slate-50 rounded-lg py-2 px-3">
+                              SSIP PU
+                            </SelectItem>
+                            <SelectItem value="SSIP PIET" className="cursor-pointer hover:bg-slate-50 rounded-lg py-2 px-3">
+                              SSIP PIET
+                            </SelectItem>
+                            <SelectItem value="SSIP PIT" className="cursor-pointer hover:bg-slate-50 rounded-lg py-2 px-3">
+                              SSIP PIT
+                            </SelectItem>
+                            <SelectItem value="SSIP PIMSR" className="cursor-pointer hover:bg-slate-50 rounded-lg py-2 px-3">
+                              SSIP PIMSR
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
                       <div className="flex items-center justify-between">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Phase-wise Grants</Label>
                         <Button
@@ -1014,6 +1043,7 @@ export default function ApplicationDetailsPage() {
                       };
                       if (incubationType === 'Selected for Funding') {
                         extraUpdates.fundingPhases = fundingPhases;
+                        extraUpdates.fundingSource = fundingSource;
                       }
 
                       await updateStatus('Incubated', `Startup marked as Incubated (${incubationType})`, undefined, undefined, extraUpdates);
@@ -1519,7 +1549,14 @@ export default function ApplicationDetailsPage() {
                 {/* 1. Selected for Funding: Phase-wise Grants Display */}
                 {application.incubationType === 'Selected for Funding' && (
                   <div className="space-y-4">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Approved Grant Phases</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Approved Grant Phases</h3>
+                      {application.fundingSource && (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-bold text-[10px]">
+                          Source: {application.fundingSource}
+                        </Badge>
+                      )}
+                    </div>
                     <div className="border rounded-2xl overflow-hidden bg-slate-50/50">
                       <Table>
                         <TableHeader className="bg-slate-100/50">

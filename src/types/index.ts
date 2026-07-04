@@ -98,6 +98,7 @@ export interface Application {
   cohortName?: string;
   incubationType?: 'Only Incubation' | 'Selected for Funding' | 'On Hold';
   fundingPhases?: { phaseName: string; amount: number }[];
+  fundingSource?: string;
   monthlyReports?: Record<string, {
     progressReport: string;
     marketValidationUpdate: string;

@@ -213,8 +213,10 @@ export function getStatusUpdateEmailHtml(options: {
   mentorName?: string;
   mentorEmail?: string;
   mentorContact?: string;
+  fundingPhases?: { phaseName: string; amount: number }[];
+  fundingSource?: string;
 }): string {
-  const { startupName, newStatus, programmeTitle, remarks, viewLink, mentorName, mentorEmail, mentorContact } = options;
+  const { startupName, newStatus, programmeTitle, remarks, viewLink, mentorName, mentorEmail, mentorContact, fundingPhases, fundingSource } = options;
 
   if (newStatus === 'Revision Needed') {
     return getEmailHtmlTemplate({
@@ -268,6 +270,36 @@ export function getStatusUpdateEmailHtml(options: {
           <p style="margin-top: 16px; margin-bottom: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
             If you have any questions or need further guidance on the market research process, please do not hesitate to reach out to your mentor <strong>${mentorName}</strong> ${mentorEmail ? `at <a href="mailto:${mentorEmail}" style="color: #d40924; text-decoration: underline;">${mentorEmail}</a>` : ''} ${mentorContact ? `or <strong>${mentorContact}</strong>` : ''}.
           </p>
+        </div>
+      `;
+    }
+
+    if (fundingPhases && fundingPhases.length > 0) {
+      const cleanSource = fundingSource ? fundingSource.replace(/^SSIP\s+/, '') : '';
+      const sourceText = cleanSource ? `under the <strong>${cleanSource}</strong> grant` : 'funding';
+      const phasesRows = fundingPhases.map(p => `
+        <tr>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; font-weight: bold; color: #334155;">${p.phaseName}</td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; font-weight: bold; color: #0f172a; text-align: right;">₹${p.amount?.toLocaleString('en-IN') || '0'}</td>
+        </tr>
+      `).join('');
+
+      additionalInfo += `
+        <p style="margin-top: 20px; margin-bottom: 12px; line-height: 1.6;">
+          Your start-up has been approved for funding ${sourceText}. The approved grant phases are listed below:
+        </p>
+        <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 20px 0; background-color: #f8fafc;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead style="background-color: #f1f5f9;">
+              <tr>
+                <th style="padding: 10px 12px; text-align: left; font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Phase Name</th>
+                <th style="padding: 10px 12px; text-align: right; font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Grant Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${phasesRows}
+            </tbody>
+          </table>
         </div>
       `;
     }
