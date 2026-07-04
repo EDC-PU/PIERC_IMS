@@ -86,6 +86,15 @@ export interface Application {
     other?: string[];
     yuktiPortalId?: string;
     yuktiPortalPassword?: string;
+    signedApplicationForm?: string;
+    selfAttestedIDs?: string;
+    selfAttestedAadharCards?: string;
+    passportPhotographs?: string;
+    pitchDeckPPT?: string;
+    fundBifurcationSheet?: string;
+    validationForm?: string;
+    cancelledCheque?: string;
+    signedAffidavit?: string;
   };
   evaluations?: {
     phase1?: EvaluationRecord;
@@ -157,4 +166,22 @@ export interface Cohort {
   endDate?: string;
   whatsappLink?: string;
 }
+
+export interface GrantTransaction {
+  id: string;
+  userId: string;
+  applicationId: string;
+  startupName: string;
+  vendorName: string;
+  gstNumber: string;
+  amount: number;
+  invoiceDate: number; // timestamp
+  description?: string;
+  phaseName: string; // e.g., "Phase 1"
+  invoiceUrl?: string;
+  invoiceFileName?: string;
+  status: 'Pending Review' | 'Approved' | 'Rejected';
+  createdAt: number;
+}
+
 

@@ -95,6 +95,25 @@
         allow write: if request.auth != null && (isAdmin() || isMentor());
       }
 
+      // Transactions collection
+      match /transactions/{transactionId} {
+        allow read: if request.auth != null && (
+          resource == null ||
+          resource.data.userId == request.auth.uid ||
+          isAdmin() ||
+          isMentor()
+        );
+        allow create: if request.auth != null && (
+          request.resource.data.userId == request.auth.uid ||
+          isAdmin()
+        );
+        allow update: if request.auth != null && (
+          resource.data.userId == request.auth.uid ||
+          isAdmin()
+        );
+        allow delete: if request.auth != null && isAdmin();
+      }
+
       // Notifications subcollection: notifications/{userId}/items/{itemId}
       match /notifications/{userId}/items/{itemId} {
         allow read: if request.auth != null && request.auth.uid == userId;
