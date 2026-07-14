@@ -36,7 +36,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { doc, updateDoc, collection, onSnapshot } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { institutes } from '@/lib/constants';
@@ -242,7 +242,7 @@ export default function SettingsPage() {
     setProgrammes((prev) => prev.map((prog) => prog.id === programmeId ? { ...prog, isApplicationOpen: newStatus } : prog));
 
     try {
-      await updateDoc(doc(db, 'programmes', programmeId), { isApplicationOpen: newStatus });
+      await setDoc(doc(db, 'programmes', programmeId), { isApplicationOpen: newStatus }, { merge: true });
       toast.success(`Programme ${newStatus ? 'opened' : 'closed'} successfully`);
     } catch (error) {
       setProgrammes((prev) => prev.map((prog) => prog.id === programmeId ? { ...prog, isApplicationOpen: currentStatus } : prog));

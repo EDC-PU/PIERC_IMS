@@ -94,6 +94,8 @@ export interface Application {
   };
   mentorId?: string;
   mentorName?: string;
+  mentorEmail?: string;
+  mentorContact?: string;
   cohortId?: string;
   cohortName?: string;
   incubationType?: 'Only Incubation' | 'Selected for Funding' | 'On Hold';
@@ -104,6 +106,8 @@ export interface Application {
     marketValidationUpdate: string;
     updatedAt: number;
   }>;
+  milestones?: StartupMilestone[];
+  transactions?: any[];
   revisedFields?: string[];
   preRevisionData?: {
     startupName?: string;
@@ -157,4 +161,38 @@ export interface Cohort {
   endDate?: string;
   whatsappLink?: string;
 }
+
+export interface PortalEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:MM
+  mode: 'Online' | 'Offline';
+  linkOrLocation: string;
+  targetAudience: ('all_users' | 'pu_staff' | 'pu_student' | 'cohort_leaders' | 'cohort_participants')[];
+  cohortIds?: string[];
+  cohortNames?: string[];
+  registeredUsers: string[]; // UIDs
+  createdBy: string;
+  createdAt: number;
+  flyerUrl?: string;
+  status: 'published' | 'draft';
+  allowCancellation?: boolean;
+}
+
+export interface StartupMilestone {
+  id: string;
+  title: string;
+  description: string;
+  phase?: 'Phase 1' | 'Phase 2' | 'Incubation' | 'Graduation';
+  status: 'Pending' | 'Completed' | 'Delayed';
+  dueDate?: number;      // timestamp
+  completedAt?: number; // timestamp
+  updatedBy: string;    // UID
+  completionDetails?: string;
+  documentUrl?: string;
+  documentName?: string;
+}
+
 

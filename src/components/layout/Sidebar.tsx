@@ -18,7 +18,8 @@ import {
   UserCog,
   ClipboardList,
   Layers,
-  X
+  X,
+  Megaphone
 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
@@ -204,12 +205,14 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
     { name: 'Applications', icon: FileText, href: '/dashboard/applications', roles: ['user', 'admin', 'super_admin'], badge: counts.applications },
     { name: 'Evaluate', icon: ClipboardList, href: '/dashboard/evaluate', roles: ['admin', 'mentor', 'super_admin'], badge: counts.evaluate },
     { name: 'Meetings', icon: Calendar, href: '/dashboard/meetings', roles: ['user', 'admin', 'mentor', 'super_admin'], badge: counts.totalMeetings },
+    { name: 'Events', icon: Calendar, href: '/dashboard/events', roles: ['user', 'admin', 'mentor', 'super_admin'] },
     { name: 'Mentors', icon: Users, href: '/dashboard/mentors', roles: ['admin', 'super_admin'] },
     { name: 'Startups', icon: Rocket, href: '/dashboard/startups', roles: ['admin', 'mentor', 'super_admin'] },
     { name: 'Analytics', icon: BarChart3, href: '/dashboard/analytics', roles: ['admin', 'super_admin'] },
     { name: 'Messages', icon: MessageSquare, href: '/dashboard/messages', roles: ['user', 'admin', 'mentor', 'super_admin'], badge: counts.messages },
     { name: 'Manage Users', icon: UserCog, href: '/dashboard/manage-users', roles: ['super_admin'] },
     { name: 'Manage Cohorts', icon: Layers, href: '/dashboard/cohorts', roles: ['super_admin'] },
+    { name: 'Announce Event', icon: Megaphone, href: '/dashboard/announce-event', roles: ['admin', 'super_admin'] },
     { name: 'System Admin', icon: Shield, href: '/dashboard/admin', roles: ['super_admin'] },
     { name: 'Settings', icon: Settings, href: '/dashboard/settings', roles: ['user', 'admin', 'mentor', 'super_admin'] },
   ];

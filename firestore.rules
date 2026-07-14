@@ -4,6 +4,7 @@
       // Helper function to check if user is admin or super admin
       function isAdmin() {
         return request.auth != null && 
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
           (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin');
       }
@@ -11,6 +12,7 @@
       // Helper function to check if user is mentor
       function isMentor() {
         return request.auth != null && 
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'mentor';
       }
 
@@ -55,6 +57,7 @@
         allow create: if request.auth != null;
         allow update: if request.auth != null && (
           isAdmin() || 
+          isMentor() || 
           ((resource.data.userId == request.auth.uid || isTeamMember(resource.data)) && (
             !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status']) ||
             request.resource.data.status == 'Submitted' ||
@@ -93,6 +96,14 @@
       match /evaluations/{evalId} {
         allow read: if request.auth != null;
         allow write: if request.auth != null && (isAdmin() || isMentor());
+      }
+
+      // Events collection
+      match /events/{eventId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && isAdmin();
+        allow update: if request.auth != null && (isAdmin() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['registeredUsers']));
+        allow delete: if request.auth != null && isAdmin();
       }
 
       // Notifications subcollection: notifications/{userId}/items/{itemId}

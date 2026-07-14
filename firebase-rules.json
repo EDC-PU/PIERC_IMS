@@ -67,7 +67,19 @@
 // Firebase Storage Rules
 service firebase.storage {
   match /b/{bucket}/o {
-    match /applications/{appId}/{allPaths=**} {
+    match /applications/{appId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.resource.size < 10 * 1024 * 1024); // 10MB limit
+    }
+    match /applications/{appId}/invoices/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.resource.size < 10 * 1024 * 1024); // 10MB limit
+    }
+    match /event-flyers/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.resource.size < 10 * 1024 * 1024); // 10MB limit
+    }
+    match /milestone-documents/{allPaths=**} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && (request.resource.size < 10 * 1024 * 1024); // 10MB limit
     }

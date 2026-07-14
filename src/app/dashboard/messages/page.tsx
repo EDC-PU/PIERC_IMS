@@ -3,19 +3,21 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, orderBy, limit, addDoc, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, limit, addDoc, where, getDocs, doc } from 'firebase/firestore';
+import { triggerEmailNotification } from '@/lib/email-client';
+import { getEmailHtmlTemplate } from '@/lib/email-templates';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Send, 
-  Search, 
-  MessageSquare, 
-  User, 
-  Clock, 
+import {
+  Send,
+  Search,
+  MessageSquare,
+  User,
+  Clock,
   MoreVertical,
   Phone,
   Video,
@@ -45,7 +47,7 @@ function MessagesContent() {
   const { user } = useAuthStore();
   const searchParams = useSearchParams();
   const targetUserId = searchParams.get('userId');
-  
+
   const [chats, setChats] = useState<ChatPreview[]>([]);
   const [selectedChat, setSelectedChat] = useState<UserProfile | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -68,7 +70,7 @@ function MessagesContent() {
   // Load all users
   useEffect(() => {
     if (!user) return;
-    
+
     let usersQuery;
     if (user.role === 'admin' || user.role === 'super_admin' || user.role === 'mentor') {
       // Admins and mentors can load all users
@@ -90,16 +92,16 @@ function MessagesContent() {
   // Load chat previews with real-time last messages
   useEffect(() => {
     if (!user || users.length === 0) return;
-    
+
     const unsubscribes = users.map(u => {
       const chatId = [user.uid, u.uid].sort().join('_');
       const messagesCol = collection(db, 'messages', chatId, 'messages');
       const lastMsgQuery = query(messagesCol, orderBy('timestamp', 'desc'), limit(1));
-      
+
       return onSnapshot(lastMsgQuery, (snapshot) => {
         let lastMsg = 'Start a conversation...';
         let ts = Date.now();
-        
+
         if (!snapshot.empty) {
           const msg = snapshot.docs[0].data() as any;
           lastMsg = msg.text;
@@ -145,19 +147,74 @@ function MessagesContent() {
     e.preventDefault();
     if (!user || !selectedChat || !newMessage.trim()) return;
 
+    const messageText = newMessage.trim();
+    setNewMessage('');
+
     const chatId = [user.uid, selectedChat.uid].sort().join('_');
     const messagesCol = collection(db, 'messages', chatId, 'messages');
 
+    // 1. Check if we should notify by email (not a live, continuous chat)
+    let shouldNotify = true;
+    try {
+      const lastMsgQuery = query(messagesCol, orderBy('timestamp', 'desc'), limit(1));
+      const querySnapshot = await getDocs(lastMsgQuery);
+      if (!querySnapshot.empty) {
+        const lastMsg = querySnapshot.docs[0].data();
+        const timeDiff = Date.now() - lastMsg.timestamp;
+        // If the last message was exchanged within the last 3 minutes (180000ms),
+        // we consider it a continuous chat and skip email notification.
+        if (timeDiff < 3 * 60 * 1000) {
+          shouldNotify = false;
+        }
+      }
+    } catch (err) {
+      console.warn('Error checking last message for continuous chat check:', err);
+    }
+
+    // 2. Add message to Firestore
     await addDoc(messagesCol, {
       senderId: user.uid,
-      text: newMessage,
+      text: messageText,
       timestamp: Date.now(),
     });
 
-    setNewMessage('');
+    // 3. Dispatch email if not a continuous chat
+    if (shouldNotify && selectedChat.email) {
+      try {
+        const senderName = user.displayName || user.email || 'Someone';
+        const subject = `[New Message] ${senderName} sent you a message on PIERC Portal`;
+        const emailHtml = getEmailHtmlTemplate({
+          headerTitle: 'New Message Received',
+          bodyHtml: `
+            <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
+              Hello <strong>${selectedChat.displayName || 'User'}</strong>,
+            </p>
+            <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
+              You have received a new message from <strong>${senderName}</strong> on the PIERC Portal:
+            </p>
+            <div style="background-color: #f8fafc; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0; color: #0f172a; font-size: 14px; font-weight: 500; margin-bottom: 20px;">
+              "${messageText}"
+            </div>
+            <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 0;">
+              Log in to the portal messenger to reply to this conversation.
+            </p>
+          `,
+          ctaText: 'Open Messenger',
+          ctaLink: `https://pierc-portal-9bd82.web.app/dashboard/messages?userId=${user.uid}`
+        });
+
+        triggerEmailNotification({
+          to: [selectedChat.email],
+          subject,
+          html: emailHtml
+        }).catch(err => console.error('Failed to trigger message notification email:', err));
+      } catch (emailErr) {
+        console.error('Error constructing message email:', emailErr);
+      }
+    }
   };
 
-  const filteredChats = chats.filter(c => 
+  const filteredChats = chats.filter(c =>
     (c.otherUser.displayName || c.otherUser.email || '').toLowerCase().includes(search.toLowerCase())
   );
 
@@ -174,9 +231,9 @@ function MessagesContent() {
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-            <Input 
+            <Input
               ref={searchInputRef}
-              placeholder="Search chats..." 
+              placeholder="Search chats..."
               className="pl-10 h-11 rounded-2xl bg-white border-none shadow-sm ring-1 ring-slate-100 focus:ring-2 focus:ring-primary/20 transition-all"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -190,11 +247,10 @@ function MessagesContent() {
               <button
                 key={chat.id}
                 onClick={() => setSelectedChat(chat.otherUser)}
-                className={`w-full flex items-center p-4 rounded-2xl transition-all duration-300 group ${
-                  selectedChat?.uid === chat.otherUser.uid 
-                  ? 'bg-white shadow-md ring-1 ring-slate-100' 
-                  : 'hover:bg-white/60'
-                }`}
+                className={`w-full flex items-center p-4 rounded-2xl transition-all duration-300 group ${selectedChat?.uid === chat.otherUser.uid
+                    ? 'bg-white shadow-md ring-1 ring-slate-100'
+                    : 'hover:bg-white/60'
+                  }`}
               >
                 <div className="relative">
                   <Avatar className="h-12 w-12 ring-2 ring-white">
@@ -234,8 +290,6 @@ function MessagesContent() {
                 <div className="ml-4">
                   <h2 className="font-black text-slate-900 text-sm">{selectedChat.displayName || selectedChat.email || 'User'}</h2>
                   <div className="flex items-center text-[10px] text-emerald-500 font-black uppercase tracking-widest">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse"></div>
-                    Online Now
                   </div>
                 </div>
               </div>
@@ -246,101 +300,100 @@ function MessagesContent() {
               </div>
             </div>
 
-            {/* Messages */}
-            <ScrollArea className="flex-1 p-6 bg-slate-50/30">
-              <div className="space-y-6">
-                <div className="flex justify-center">
-                  <Badge variant="secondary" className="bg-white/80 backdrop-blur-sm text-slate-400 text-[10px] px-4 py-1 border-none shadow-sm font-bold uppercase tracking-widest">
-                    Today
-                  </Badge>
+              {/* Messages */}
+              <ScrollArea className="flex-1 p-6 bg-slate-50/30">
+                <div className="space-y-6">
+                  <div className="flex justify-center">
+                    <Badge variant="secondary" className="bg-white/80 backdrop-blur-sm text-slate-400 text-[10px] px-4 py-1 border-none shadow-sm font-bold uppercase tracking-widest">
+                      Today
+                    </Badge>
+                  </div>
+                  {messages.length === 0 && (
+                    <div className="text-center py-20 space-y-4">
+                      <div className="w-16 h-16 bg-primary/5 rounded-full flex items-center justify-center mx-auto">
+                        <Hash className="h-8 w-8 text-primary/30" />
+                      </div>
+                      <p className="text-slate-400 text-sm font-medium">Start your conversation with {selectedChat.displayName || selectedChat.email || 'User'}</p>
+                    </div>
+                  )}
+                  {messages.map((msg, idx) => (
+                    <div
+                      key={msg.id}
+                      className={`flex ${msg.senderId === user?.uid ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                      style={{ animationDelay: `${idx * 50}ms` }}
+                    >
+                      <div className={`max-w-[70%] space-y-1`}>
+                        <div className={`p-4 rounded-2xl shadow-sm ${msg.senderId === user?.uid
+                            ? 'bg-primary text-white rounded-tr-none'
+                            : 'bg-white text-slate-800 rounded-tl-none ring-1 ring-slate-100'
+                          }`}>
+                          <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
+                        </div>
+                        <div className={`flex items-center space-x-2 ${msg.senderId === user?.uid ? 'justify-end' : 'justify-start'}`}>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase">
+                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          {msg.senderId === user?.uid && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={scrollRef} />
                 </div>
-                {messages.length === 0 && (
-                  <div className="text-center py-20 space-y-4">
-                    <div className="w-16 h-16 bg-primary/5 rounded-full flex items-center justify-center mx-auto">
-                      <Hash className="h-8 w-8 text-primary/30" />
-                    </div>
-                    <p className="text-slate-400 text-sm font-medium">Start your conversation with {selectedChat.displayName || selectedChat.email || 'User'}</p>
-                  </div>
-                )}
-                {messages.map((msg, idx) => (
-                  <div 
-                    key={msg.id} 
-                    className={`flex ${msg.senderId === user?.uid ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
-                    style={{ animationDelay: `${idx * 50}ms` }}
-                  >
-                    <div className={`max-w-[70%] space-y-1`}>
-                      <div className={`p-4 rounded-2xl shadow-sm ${
-                        msg.senderId === user?.uid 
-                        ? 'bg-primary text-white rounded-tr-none' 
-                        : 'bg-white text-slate-800 rounded-tl-none ring-1 ring-slate-100'
-                      }`}>
-                        <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
-                      </div>
-                      <div className={`flex items-center space-x-2 ${msg.senderId === user?.uid ? 'justify-end' : 'justify-start'}`}>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase">
-                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        {msg.senderId === user?.uid && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div ref={scrollRef} />
-              </div>
-            </ScrollArea>
+              </ScrollArea>
 
-            {/* Input */}
-            <div className="p-6 bg-white border-t">
-              <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
-                <div className="flex-1 relative">
-                  <Input 
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder={`Write to ${selectedChat.displayName || selectedChat.email || 'User'}...`} 
-                    className="h-14 rounded-2xl bg-slate-50 border-none px-6 focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                  />
-                  <div className="absolute right-4 top-4 flex items-center space-x-2 text-slate-300">
-                    <Button type="button" variant="ghost" size="icon" className="h-6 w-6 hover:text-primary"><Clock className="h-4 w-4" /></Button>
+              {/* Input */}
+              <div className="p-6 bg-white border-t">
+                <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
+                  <div className="flex-1 relative">
+                    <Input
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder={`Write to ${selectedChat.displayName || selectedChat.email || 'User'}...`}
+                      className="h-14 rounded-2xl bg-slate-50 border-none px-6 focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                    />
+                    <div className="absolute right-4 top-4 flex items-center space-x-2 text-slate-300">
+                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6 hover:text-primary"><Clock className="h-4 w-4" /></Button>
+                    </div>
                   </div>
-                </div>
-                <Button 
-                  type="submit" 
-                  className="h-14 w-14 rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center p-0 transition-transform hover:scale-105 active:scale-95"
-                  disabled={!newMessage.trim()}
-                >
-                  <Send className="h-5 w-5" />
-                </Button>
-              </form>
+                  <Button
+                    type="submit"
+                    className="h-14 w-14 rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center p-0 transition-transform hover:scale-105 active:scale-95"
+                    disabled={!newMessage.trim()}
+                  >
+                    <Send className="h-5 w-5" />
+                  </Button>
+                </form>
+              </div>
+            </>
+            ) : (
+            <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/30 p-12 text-center space-y-6">
+              <div className="w-24 h-24 bg-white shadow-2xl rounded-[2.5rem] flex items-center justify-center text-primary rotate-3">
+                <MessageSquare className="h-10 w-10 -rotate-3" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-black text-slate-900">Your Inbox</h2>
+                <p className="text-slate-500 max-w-xs mx-auto font-medium leading-relaxed">
+                  Connect with mentors, staff, and other startups. Select a conversation to start messaging.
+                </p>
+              </div>
+              <Button
+                className="rounded-xl px-8 h-12 font-bold shadow-lg shadow-primary/20"
+                onClick={() => searchInputRef.current?.focus()}
+              >
+                Find People
+              </Button>
             </div>
-          </>
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/30 p-12 text-center space-y-6">
-            <div className="w-24 h-24 bg-white shadow-2xl rounded-[2.5rem] flex items-center justify-center text-primary rotate-3">
-              <MessageSquare className="h-10 w-10 -rotate-3" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-black text-slate-900">Your Inbox</h2>
-              <p className="text-slate-500 max-w-xs mx-auto font-medium leading-relaxed">
-                Connect with mentors, staff, and other startups. Select a conversation to start messaging.
-              </p>
-            </div>
-            <Button 
-              className="rounded-xl px-8 h-12 font-bold shadow-lg shadow-primary/20"
-              onClick={() => searchInputRef.current?.focus()}
-            >
-              Find People
-            </Button>
-          </div>
         )}
       </div>
     </div>
   );
 }
 
-export default function MessagesPage() {
+      export default function MessagesPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center animate-pulse text-slate-400 font-bold uppercase tracking-widest">Loading Secure Messenger...</div>}>
-      <MessagesContent />
-    </Suspense>
-  );
+      <Suspense fallback={<div className="p-8 text-center animate-pulse text-slate-400 font-bold uppercase tracking-widest">Loading Secure Messenger...</div>}>
+        <MessagesContent />
+      </Suspense>
+      );
 }

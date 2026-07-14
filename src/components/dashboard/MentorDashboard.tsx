@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import { UserProfile, Meeting, Application } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import EventsWidget from './EventsWidget';
 import { 
   Users, 
   Calendar, 
@@ -123,6 +124,8 @@ export default function MentorDashboard({ user }: MentorDashboardProps) {
           </CardContent>
         </Card>
       </div>
+      
+      <EventsWidget user={user} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">

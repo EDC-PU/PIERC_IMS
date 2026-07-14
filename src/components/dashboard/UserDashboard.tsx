@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { UserProfile, Meeting, Application } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import EventsWidget from './EventsWidget';
 import { Badge } from '@/components/ui/badge';
 import { 
   Rocket, 
@@ -325,6 +326,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
 
         {/* Right Column: Growth & Notifications */}
         <div className="lg:col-span-8 space-y-8">
+          <EventsWidget user={user} />
           <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white overflow-hidden">
             <CardHeader className="p-8 border-b flex flex-row items-center justify-between">
               <div>

@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, onSnapshot, getDoc, updateDoc, deleteDoc, collection, query, where, addDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, getDocs, updateDoc, deleteDoc, collection, query, where, addDoc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import { Application, UserProfile, Cohort } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { triggerEmailNotification } from '@/lib/email-client';
-import { getStatusUpdateEmailHtml, getApplicationUpdatedEmailHtml, getApplicationRemovedEmailHtml } from '@/lib/email-templates';
+import { getStatusUpdateEmailHtml, getApplicationUpdatedEmailHtml, getApplicationRemovedEmailHtml, getEmailHtmlTemplate } from '@/lib/email-templates';
 import {
   Select,
   SelectContent,
@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -32,6 +33,7 @@ import {
 import {
   CheckCircle2,
   Clock,
+  Loader2,
   FileText,
   Calendar,
   MessageCircle,
@@ -141,6 +143,35 @@ export default function ApplicationDetailsPage() {
   const [reportProgress, setReportProgress] = useState('');
   const [reportMarketVal, setReportMarketVal] = useState('');
   const [isSavingReport, setIsSavingReport] = useState(false);
+
+  // Incubation Profile & Milestone States
+  const [editingIncubatedDetails, setEditingIncubatedDetails] = useState(false);
+  const [dpiitNumber, setDpiitNumber] = useState('');
+  const [sector, setSector] = useState('General');
+  const [isSavingIncubatedDetails, setIsSavingIncubatedDetails] = useState(false);
+  const [incorporationFile, setIncorporationFile] = useState<File | null>(null);
+
+  const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
+  const [newMilestoneDesc, setNewMilestoneDesc] = useState('');
+  const [newMilestonePhase, setNewMilestonePhase] = useState<'Phase 1' | 'Phase 2' | 'Incubation' | 'Graduation'>('Incubation');
+  const [newMilestoneDueDate, setNewMilestoneDueDate] = useState('');
+  const [isSavingMilestone, setIsSavingMilestone] = useState(false);
+
+  // Milestone completion states
+  const [completingMilestone, setCompletingMilestone] = useState<any | null>(null);
+  const [completionDetails, setCompletionDetails] = useState('');
+  const [completionDocFile, setCompletionDocFile] = useState<File | null>(null);
+  const [isCompletingMilestone, setIsCompletingMilestone] = useState(false);
+
+  // Transaction logging states
+  const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [txVendorName, setTxVendorName] = useState('');
+  const [txGstNumber, setTxGstNumber] = useState('');
+  const [txInvoiceDate, setTxInvoiceDate] = useState('');
+  const [txInvoiceFile, setTxInvoiceFile] = useState<File | null>(null);
+  const [txAmount, setTxAmount] = useState('');
+  const [txDescription, setTxDescription] = useState('');
+  const [isSavingTransaction, setIsSavingTransaction] = useState(false);
 
   const handleSaveYuktiCredentials = async () => {
     if (!yuktiId.trim() || !yuktiPassword.trim()) {
@@ -257,6 +288,8 @@ export default function ApplicationDetailsPage() {
         setNewStartupName(data.data?.startupName || data.data?.startupTitle || '');
         setNewCurrentStage(data.data?.currentStage || '');
         setNewTeamMembers(data.data?.teamMembers || []);
+        setDpiitNumber(data.data?.dpiitNumber || '');
+        setSector(data.data?.sector || 'General');
       }
       setLoading(false);
     });
@@ -278,19 +311,19 @@ export default function ApplicationDetailsPage() {
     });
 
     // 4. Fetch mentors from users collection (Admins only)
-    let usersUnsubscribe = () => {};
+    let usersUnsubscribe = () => { };
     if (user?.role === 'admin' || user?.role === 'super_admin') {
       const usersCol = collection(db, 'users');
       usersUnsubscribe = onSnapshot(usersCol, (snapshot) => {
         const mentorList = snapshot.docs
-            .map(doc => doc.data() as UserProfile)
-            .filter(u => u.role === 'mentor');
+          .map(doc => doc.data() as UserProfile)
+          .filter(u => u.role === 'mentor');
         setMentors(mentorList);
       });
     }
 
     // 5. Fetch cohorts (Admins only)
-    let cohortsUnsubscribe = () => {};
+    let cohortsUnsubscribe = () => { };
     if (user?.role === 'admin' || user?.role === 'super_admin') {
       const cohortsCol = collection(db, 'cohorts');
       cohortsUnsubscribe = onSnapshot(cohortsCol, (snapshot) => {
@@ -363,11 +396,369 @@ export default function ApplicationDetailsPage() {
       });
 
       toast.success('Monthly progress report saved successfully!');
+      sendMailNotification('report', `Submitted monthly progress report for ${activeReportMonth}`);
     } catch (err) {
       console.error('Save Report Error:', err);
       toast.error('Failed to save monthly report. Please try again.');
     } finally {
       setIsSavingReport(false);
+    }
+  };
+
+  const getAdminAndMentorEmails = async (): Promise<string[]> => {
+    const emails: string[] = [];
+    try {
+      const usersCol = collection(db, 'users');
+      const usersSnap = await getDocs(usersCol);
+      usersSnap.docs.forEach(docSnap => {
+        const u = docSnap.data();
+        if ((u.role === 'admin' || u.role === 'super_admin') && u.email) {
+          emails.push(u.email.trim());
+        }
+      });
+
+      if (application?.mentorEmail) {
+        emails.push(application.mentorEmail.trim());
+      } else if (application?.mentorId) {
+        const mentorSnap = await getDoc(doc(db, 'users', application.mentorId));
+        if (mentorSnap.exists() && mentorSnap.data().email) {
+          emails.push(mentorSnap.data().email.trim());
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to retrieve admin/mentor emails:', err);
+    }
+    return Array.from(new Set(emails.map(e => e.toLowerCase()))).filter(Boolean);
+  };
+
+  const sendMailNotification = async (type: 'report' | 'milestone' | 'profile', detail: string) => {
+    try {
+      const recipientEmails = await getAdminAndMentorEmails();
+      if (recipientEmails.length === 0) return;
+
+      const startupName = application?.data?.startupName || application?.data?.startupTitle || 'Incubated Startup';
+      const subject = type === 'report'
+        ? `[Monthly Report Submitted] ${startupName}`
+        : type === 'profile'
+          ? `[Startup Profile Update] ${startupName}`
+          : `[Milestone Update] ${startupName}`;
+
+      const bodyHtml = type === 'report'
+        ? `
+          <h3 style="color: #0f172a; margin-top: 0; margin-bottom: 12px; font-size: 16px; font-weight: 800;">Monthly progress report submitted</h3>
+          <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 16px;">
+            Startup <strong>${startupName}</strong> has submitted their progress report for <strong>${activeReportMonth}</strong>.
+          </p>
+          <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
+            <p style="margin: 0 0 8px 0; font-size: 14px; color: #475569;"><strong>Progress Summary:</strong> ${reportProgress.substring(0, 150)}...</p>
+            <p style="margin: 0; font-size: 14px; color: #475569;"><strong>Market Validation Update:</strong> ${reportMarketVal.substring(0, 150)}...</p>
+          </div>
+        `
+        : type === 'profile'
+          ? `
+          <h3 style="color: #0f172a; margin-top: 0; margin-bottom: 12px; font-size: 16px; font-weight: 800;">Startup profile updated</h3>
+          <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 16px;">
+            Startup <strong>${startupName}</strong> has updated their ERP details (DPIIT registration, sector, or incorporation certificate).
+          </p>
+          <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
+            <p style="margin: 0; font-size: 14px; color: #475569;"><strong>Details:</strong> ${detail}</p>
+          </div>
+        `
+          : `
+          <h3 style="color: #0f172a; margin-top: 0; margin-bottom: 12px; font-size: 16px; font-weight: 800;">Milestone Roadmap Updated</h3>
+          <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 16px;">
+            A milestone status was updated or created for <strong>${startupName}</strong>.
+          </p>
+          <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
+            <p style="margin: 0; font-size: 14px; color: #475569;"><strong>Details:</strong> ${detail}</p>
+          </div>
+        `;
+
+      const emailHtml = getEmailHtmlTemplate({
+        headerTitle: type === 'report' ? 'Monthly Report Activity' : type === 'profile' ? 'Profile Update Activity' : 'Milestone Update Activity',
+        bodyHtml,
+        ctaText: 'View Startup Profile',
+        ctaLink: `https://pierc-portal-9bd82.web.app/dashboard/applications/${id}`
+      });
+
+      await triggerEmailNotification({
+        to: recipientEmails,
+        subject,
+        html: emailHtml
+      });
+    } catch (error) {
+      console.error('Failed to dispatch notification email:', error);
+    }
+  };
+
+  const handleSaveIncubatedDetails = async () => {
+    setIsSavingIncubatedDetails(true);
+    try {
+      const updates: any = {
+        'data.dpiitNumber': dpiitNumber.trim(),
+        'data.sector': sector,
+        updatedAt: Date.now()
+      };
+
+      if (incorporationFile) {
+        toast.info('Uploading incorporation certificate...');
+        const fileRef = storageRef(storage, `applications/${id}/incorporation_cert_${Date.now()}_${incorporationFile.name}`);
+        const snapshot = await uploadBytes(fileRef, incorporationFile);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        updates['documents.incorporationCert'] = downloadURL;
+      }
+
+      await updateDoc(doc(db, 'applications', id), updates);
+      toast.success('Incubation profile updated successfully!');
+      setEditingIncubatedDetails(false);
+      setIncorporationFile(null);
+
+      // Notify admins and mentor
+      let detailMsg = `Updated Sector: ${sector}.`;
+      if (dpiitNumber.trim()) {
+        detailMsg += ` DPIIT Number: ${dpiitNumber.trim()}.`;
+      }
+      if (incorporationFile) {
+        detailMsg += ` Uploaded incorporation certificate document (${incorporationFile.name}).`;
+      }
+      sendMailNotification('profile', detailMsg);
+    } catch (error) {
+      console.error('Error saving details:', error);
+      toast.error('Failed to update incubation details.');
+    } finally {
+      setIsSavingIncubatedDetails(false);
+    }
+  };
+
+  const handleSaveMilestone = async () => {
+    if (!newMilestoneTitle.trim()) {
+      toast.error('Milestone title is required.');
+      return;
+    }
+
+    setIsSavingMilestone(true);
+    try {
+      const milestone = {
+        id: `ms-${Date.now()}`,
+        title: newMilestoneTitle.trim(),
+        description: newMilestoneDesc.trim(),
+        status: 'Pending',
+        updatedBy: user?.uid || ''
+      };
+
+      const updatedMilestones = [...(application?.milestones || []), milestone];
+      await updateDoc(doc(db, 'applications', id), {
+        milestones: updatedMilestones,
+        updatedAt: Date.now()
+      });
+
+      toast.success('Milestone added successfully!');
+      setNewMilestoneTitle('');
+      setNewMilestoneDesc('');
+    } catch (err) {
+      console.error('Save Milestone Error:', err);
+      toast.error('Failed to add milestone.');
+    } finally {
+      setIsSavingMilestone(false);
+    }
+  };
+
+  const handleUpdateMilestoneStatus = async (milestoneId: string, newStatus: 'Pending' | 'Completed' | 'Delayed') => {
+    if (!application) return;
+
+    try {
+      const updatedMilestones = (application.milestones || []).map((ms) => {
+        if (ms.id === milestoneId) {
+          return {
+            ...ms,
+            status: newStatus,
+            completedAt: newStatus === 'Completed' ? Date.now() : undefined,
+            updatedBy: user?.uid || ''
+          };
+        }
+        return ms;
+      });
+
+      await updateDoc(doc(db, 'applications', id), {
+        milestones: updatedMilestones,
+        updatedAt: Date.now()
+      });
+
+      const updatedMs = updatedMilestones.find(ms => ms.id === milestoneId);
+      toast.success('Milestone status updated!');
+      if (updatedMs) {
+        sendMailNotification('milestone', `Updated status of milestone "${updatedMs.title}" to ${newStatus}.`);
+      }
+    } catch (err) {
+      console.error('Update Milestone Error:', err);
+      toast.error('Failed to update milestone status.');
+    }
+  };
+
+  const handleCompleteMilestoneSubmit = async () => {
+    if (!completingMilestone || !application) return;
+    if (!completionDetails.trim()) {
+      toast.error('Please enter completion details.');
+      return;
+    }
+
+    setIsCompletingMilestone(true);
+    try {
+      let documentUrl = '';
+      let documentName = '';
+
+      if (completionDocFile) {
+        toast.info('Uploading milestone document...');
+        const fileRef = storageRef(storage, `milestone-documents/${Date.now()}_${completionDocFile.name}`);
+        const snapshot = await uploadBytes(fileRef, completionDocFile);
+        documentUrl = await getDownloadURL(snapshot.ref);
+        documentName = completionDocFile.name;
+      }
+
+      const updatedMilestones = (application.milestones || []).map((ms) => {
+        if (ms.id === completingMilestone.id) {
+          return {
+            ...ms,
+            status: 'Completed' as const,
+            completedAt: Date.now(),
+            completionDetails: completionDetails.trim(),
+            documentUrl: documentUrl || undefined,
+            documentName: documentName || undefined,
+            updatedBy: user?.uid || ''
+          };
+        }
+        return ms;
+      });
+
+      await updateDoc(doc(db, 'applications', id), {
+        milestones: updatedMilestones,
+        updatedAt: Date.now()
+      });
+
+      toast.success('Milestone marked as completed!');
+      sendMailNotification('milestone', `Completed milestone "${completingMilestone.title}". Details: ${completionDetails.trim()}`);
+
+      setCompletingMilestone(null);
+      setCompletionDetails('');
+      setCompletionDocFile(null);
+    } catch (err) {
+      console.error('Milestone Completion Error:', err);
+      toast.error('Failed to complete milestone.');
+    } finally {
+      setIsCompletingMilestone(false);
+    }
+  };
+
+  const handleSaveTransaction = async () => {
+    if (!application) return;
+    if (!txVendorName.trim() || !txGstNumber.trim() || !txInvoiceDate || !txAmount || !txDescription.trim()) {
+      toast.error('Please fill in all transaction fields.');
+      return;
+    }
+    if (!txInvoiceFile) {
+      toast.error('Please upload an invoice document.');
+      return;
+    }
+
+    setIsSavingTransaction(true);
+    try {
+      toast.info('Uploading invoice document...');
+      const fileRef = storageRef(storage, `applications/${id}/invoices/${Date.now()}_${txInvoiceFile.name}`);
+      const snapshot = await uploadBytes(fileRef, txInvoiceFile);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+
+      const newTx = {
+        id: `tx-${Date.now()}`,
+        vendorName: txVendorName.trim(),
+        gstNumber: txGstNumber.trim(),
+        invoiceDate: txInvoiceDate,
+        invoiceUrl: downloadURL,
+        invoiceName: txInvoiceFile.name,
+        amount: parseFloat(txAmount),
+        description: txDescription.trim(),
+        submittedAt: Date.now()
+      };
+
+      const updatedTransactions = [...(application.transactions || []), newTx];
+
+      await updateDoc(doc(db, 'applications', id), {
+        transactions: updatedTransactions,
+        updatedAt: Date.now()
+      });
+
+      toast.success('Transaction logged successfully!');
+
+      // Reset state
+      setTxVendorName('');
+      setTxGstNumber('');
+      setTxInvoiceDate('');
+      setTxInvoiceFile(null);
+      setTxAmount('');
+      setTxDescription('');
+      setShowAddTransaction(false);
+    } catch (err) {
+      console.error('Transaction Logging Error:', err);
+      toast.error('Failed to log transaction.');
+    } finally {
+      setIsSavingTransaction(false);
+    }
+  };
+
+  const handleDeleteMilestone = async (milestoneId: string) => {
+    if (!confirm('Are you sure you want to delete this milestone?') || !application) return;
+
+    try {
+      const updatedMilestones = (application.milestones || []).filter((ms) => ms.id !== milestoneId);
+      await updateDoc(doc(db, 'applications', id), {
+        milestones: updatedMilestones,
+        updatedAt: Date.now()
+      });
+
+      toast.success('Milestone deleted.');
+    } catch (err) {
+      console.error('Delete Milestone Error:', err);
+      toast.error('Failed to delete milestone.');
+    }
+  };
+
+  const defaultMilestones = [
+    { title: 'Startup Registered (Company Incorporated)', description: 'Official registration/incorporation of the legal entity.' },
+    { title: 'Logo Created', description: 'Creating the official startup brand identity logo.' },
+    { title: 'DPIIT Recognition Obtained', description: 'Obtaining the DPIIT recognition certificate.' },
+    { title: 'Website Launched', description: 'Launch of the official website or web presence.' },
+    { title: 'MVP/Prototype Developed', description: 'Development of the Minimum Viable Product or working prototype.' },
+    { title: 'Product/Service Launched', description: 'Official launch of the product/service in the market.' },
+    { title: 'First Customer Acquired', description: 'Acquiring the first paying customer.' },
+    { title: 'First Revenue Generated', description: 'Logging the first commercial transaction.' },
+    { title: 'External Grant/Funding Secured', description: 'Securing seed funding, external grants, or investor funds.' },
+    { title: 'Trademark/Patent Filed', description: 'Filing IP protections for the startup technology.' },
+    { title: 'Team Expanded (First Employee Hired)', description: 'Hiring the first team member/employee.' },
+    { title: 'Startup Graduated', description: 'Successful graduation from PIERC incubation.' }
+  ];
+
+  const handleInitializeDefaultMilestones = async () => {
+    if (!application) return;
+    setIsSavingMilestone(true);
+    try {
+      const milestones = defaultMilestones.map((dm, idx) => ({
+        id: `ms-default-${idx}-${Date.now()}`,
+        title: dm.title,
+        description: dm.description,
+        status: 'Pending' as const,
+        updatedBy: user?.uid || ''
+      }));
+
+      await updateDoc(doc(db, 'applications', id), {
+        milestones: milestones,
+        updatedAt: Date.now()
+      });
+
+      toast.success('Default milestones initialized successfully!');
+    } catch (err) {
+      console.error('Initialize Milestones Error:', err);
+      toast.error('Failed to initialize default milestones.');
+    } finally {
+      setIsSavingMilestone(false);
     }
   };
 
@@ -380,6 +771,17 @@ export default function ApplicationDetailsPage() {
         updatedAt: Date.now(),
         ...extraUpdates
       };
+
+      if (newStatus === 'Incubated') {
+        const milestones = defaultMilestones.map((dm, idx) => ({
+          id: `ms-default-${idx}-${Date.now()}`,
+          title: dm.title,
+          description: dm.description,
+          status: 'Pending' as const,
+          updatedBy: user?.uid || ''
+        }));
+        updates.milestones = milestones;
+      }
 
       if (newStatus === 'Revision Needed') {
         updates.revisionRemarks = remarks;
@@ -569,7 +971,7 @@ export default function ApplicationDetailsPage() {
   if (!application) return <div className="p-8 text-center text-rose-500 font-bold">Application not found</div>;
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
-  const isOwner = user?.uid === application.userId || 
+  const isOwner = user?.uid === application.userId ||
     (Array.isArray(application.data?.teamMembers) && application.data.teamMembers.some((m: any) => m.email?.toLowerCase() === user?.email?.toLowerCase()));
   const isRevisionNeeded = application.status === 'Revision Needed';
   const canEdit = isOwner && (isRevisionNeeded || (meetings.length === 0 && (application.status === 'Submitted' || application.status === 'Under Review')));
@@ -757,15 +1159,15 @@ export default function ApplicationDetailsPage() {
               application.status !== 'Cohort Selected' &&
               application.status !== 'Incubated' &&
               application.status !== 'Phase 2 Rejected' && (
-              <div className="flex gap-2">
-                <Button className="rounded-xl h-11 bg-green-600 hover:bg-green-700 text-white border-none" onClick={() => setShowCohortDialog(true)}>
-                  <CheckCircle2 className="mr-2 h-4 w-4" /> Final Selection (Cohort)
-                </Button>
-                <Button className="rounded-xl h-11 bg-rose-600 hover:bg-rose-700 text-white border-none" onClick={() => updateStatus('Phase 2 Rejected')}>
-                  Reject Phase 2
-                </Button>
-              </div>
-            )}
+                <div className="flex gap-2">
+                  <Button className="rounded-xl h-11 bg-green-600 hover:bg-green-700 text-white border-none" onClick={() => setShowCohortDialog(true)}>
+                    <CheckCircle2 className="mr-2 h-4 w-4" /> Final Selection (Cohort)
+                  </Button>
+                  <Button className="rounded-xl h-11 bg-rose-600 hover:bg-rose-700 text-white border-none" onClick={() => updateStatus('Phase 2 Rejected')}>
+                    Reject Phase 2
+                  </Button>
+                </div>
+              )}
 
             {application.status === 'Cohort Selected' && user?.role === 'super_admin' && (
               <Button className="rounded-xl h-11 bg-primary font-black" onClick={() => setShowIncubationDialog(true)}>
@@ -1106,8 +1508,129 @@ export default function ApplicationDetailsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
+          {/* Startup ERP Profile (DPIIT & Sector) */}
+          {application.status === 'Incubated' && (
+            <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden bg-white rounded-3xl">
+              <CardHeader className="bg-slate-50/50 border-b flex flex-row items-center justify-between space-y-0 p-6">
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center">
+                  <ShieldCheck className="h-4 w-4 mr-2 text-primary" /> Startup Profile
+                </CardTitle>
+                {(isOwner || isAdmin) && !editingIncubatedDetails && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl font-bold h-9 border-primary/20 text-primary hover:bg-primary hover:text-white transition-all"
+                    onClick={() => setEditingIncubatedDetails(true)}
+                  >
+                    <Edit3 className="h-4 w-4 mr-2" /> Update Details
+                  </Button>
+                )}
+                {editingIncubatedDetails && (
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" className="rounded-xl h-9" onClick={() => setEditingIncubatedDetails(false)}>Cancel</Button>
+                    <Button
+                      size="sm"
+                      className="rounded-xl h-9 font-bold px-4 bg-primary hover:bg-primary/90 text-white"
+                      onClick={handleSaveIncubatedDetails}
+                      disabled={isSavingIncubatedDetails}
+                    >
+                      {isSavingIncubatedDetails ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                {editingIncubatedDetails ? (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">DPIIT Registration Number</Label>
+                      <Input
+                        placeholder="e.g. DIPP12345"
+                        value={dpiitNumber}
+                        onChange={(e) => setDpiitNumber(e.target.value)}
+                        className="h-11 rounded-xl border-slate-200"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Startup Sector</Label>
+                      <Select value={sector} onValueChange={(val) => setSector(val || 'General')}>
+                        <SelectTrigger className="h-11 rounded-xl border-slate-200">
+                          <SelectValue placeholder="Select Sector" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {['AI', 'HealthTech', 'AgriTech', 'FinTech', 'EdTech', 'SaaS', 'CleanTech', 'DeepTech', 'General', 'Other'].map(s => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5 md:col-span-2 border-t pt-4">
+                      <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Incorporation / Registration Certificate</Label>
+                      <div className="relative">
+                        <input
+                          id="incorporation-cert-upload"
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          className="hidden"
+                          onChange={(e) => setIncorporationFile(e.target.files?.[0] || null)}
+                        />
+                        <Button
+                          variant="outline"
+                          type="button"
+                          onClick={() => document.getElementById('incorporation-cert-upload')?.click()}
+                          className="w-full h-11 rounded-xl border-dashed border-slate-300 hover:bg-slate-50 justify-start px-4 text-xs font-bold text-slate-600"
+                        >
+                          {incorporationFile ? (
+                            <>
+                              <FileText className="h-4 w-4 text-emerald-500 mr-2" />
+                              <span className="truncate">{incorporationFile.name}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 text-slate-400 mr-2" />
+                              <span>Select Incorporation Certificate PDF or Image</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">DPIIT Registered</span>
+                      <p className="text-sm font-bold text-slate-900">{application.data?.dpiitNumber ? `Yes (${application.data.dpiitNumber})` : 'No / Not Uploaded'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sector</span>
+                      <p className="text-sm font-bold text-slate-900">{application.data?.sector || 'General'}</p>
+                    </div>
+                    <div className="space-y-1 md:col-span-2 border-t pt-4">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Incorporation Certificate</span>
+                      {application.documents?.incorporationCert ? (
+                        <div className="flex items-center gap-2 mt-1">
+                          <FileText className="h-4 w-4 text-primary" />
+                          <a
+                            href={application.documents.incorporationCert}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-bold text-primary hover:underline"
+                          >
+                            View Incorporation Certificate Document
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="text-xs font-bold text-slate-400 italic mt-1">No document uploaded yet.</p>
+                      )}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Applicant Profile Snapshot */}
-          <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden">
+          <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden bg-white">
             <CardHeader className="bg-slate-50/50 border-b flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center">
                 <User className="h-4 w-4 mr-2 text-primary" /> Applicant Information
@@ -1535,67 +2058,276 @@ export default function ApplicationDetailsPage() {
 
           {/* Incubation Status Details Section */}
           {application.status === 'Incubated' && (
-            <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden">
-              <CardHeader className="bg-slate-50/50 border-b flex flex-row items-center justify-between space-y-0">
+            <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden bg-white rounded-3xl">
+              <CardHeader className="bg-slate-50/50 border-b flex flex-row items-center justify-between p-6">
                 <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center">
-                  <Rocket className="h-4 w-4 mr-2 text-primary" /> Incubation Details
+                  <Rocket className="h-4 w-4 mr-2 text-primary" /> Incubation Management
                 </CardTitle>
                 <Badge className="bg-emerald-100 text-emerald-800 border-none font-bold">
                   {application.incubationType || 'Incubated'}
                 </Badge>
               </CardHeader>
-              <CardContent className="pt-6 space-y-6">
-                
-                {/* 1. Selected for Funding: Phase-wise Grants Display */}
-                {application.incubationType === 'Selected for Funding' && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Approved Grant Phases</h3>
-                      {application.fundingSource && (
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-bold text-[10px]">
-                          Source: {application.fundingSource}
-                        </Badge>
+              <CardContent className="p-6">
+                <Tabs defaultValue="overview" className="w-full">
+                  <TabsList className="bg-slate-100 p-1 rounded-xl h-12 flex justify-start w-fit mb-6">
+                    <TabsTrigger value="overview" className="rounded-lg font-bold text-xs px-4">Overview & Funding</TabsTrigger>
+                    {application.incubationType === 'Selected for Funding' && (
+                      <TabsTrigger value="transactions" className="rounded-lg font-bold text-xs px-4">Grant Expenses</TabsTrigger>
+                    )}
+                    <TabsTrigger value="reports" className="rounded-lg font-bold text-xs px-4">Monthly Reports</TabsTrigger>
+                  </TabsList>
+
+                  {/* Tab 1: Overview & Funding */}
+                  <TabsContent value="overview" className="space-y-6">
+                    {application.incubationType === 'Selected for Funding' ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xs font-bold text-slate-400">Approved Grant Phases</h3>
+                          {application.fundingSource && (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-bold text-[10px]">
+                              Source: {application.fundingSource}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="border rounded-2xl overflow-hidden bg-slate-50/50">
+                          <Table>
+                            <TableHeader className="bg-slate-100/50">
+                              <TableRow className="border-slate-100">
+                                <TableHead className="text-[9px] font-black uppercase tracking-widest py-2">Phase Name</TableHead>
+                                <TableHead className="text-[9px] font-black uppercase tracking-widest py-2 text-right">Grant Amount</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {application.fundingPhases && application.fundingPhases.length > 0 ? (
+                                application.fundingPhases.map((phase, idx) => (
+                                  <TableRow key={idx} className="border-slate-100">
+                                    <TableCell className="py-3 text-xs font-bold text-slate-900">{phase.phaseName}</TableCell>
+                                    <TableCell className="py-3 text-xs font-bold text-slate-900 text-right">
+                                      ₹{phase.amount?.toLocaleString('en-IN') || '0'}
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              ) : (
+                                <TableRow>
+                                  <TableCell colSpan={2} className="py-4 text-center text-xs text-slate-400 font-bold italic">
+                                    No funding phases defined.
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-100">
+                        <p className="text-xs text-slate-500 font-medium">This startup is currently incubated under the <strong>{application.incubationType || 'Incubation Only'}</strong> track.</p>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Tab 3: Grant Transactions */}
+                  {application.incubationType === 'Selected for Funding' && (
+                    <TabsContent value="transactions" className="space-y-6">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
+                        <div>
+                          <h3 className="text-xs font-bold text-slate-500">Grant Expenses Log</h3>
+                          <p className="text-[10px] text-slate-400 font-medium mt-1">
+                            Submit and track all vendor transactions funded by the grant (GST Registered vendors only).
+                          </p>
+                        </div>
+                        {isOwner && !showAddTransaction && (
+                          <Button
+                            onClick={() => setShowAddTransaction(true)}
+                            className="rounded-xl h-10 bg-primary text-white font-bold text-xs px-4"
+                          >
+                            Log New Transaction
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Add Transaction Form Card */}
+                      {showAddTransaction && (
+                        <Card className="border border-slate-100 bg-slate-50/50 rounded-2xl overflow-hidden mt-2 animate-in fade-in duration-300">
+                          <CardHeader className="bg-slate-100/50 p-5 border-b flex flex-row items-center justify-between">
+                            <div>
+                              <h4 className="text-xs font-black uppercase tracking-wider text-slate-600">Log Grant Expense</h4>
+                              <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase">GST Registered Vendors Only</p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowAddTransaction(false)}
+                              className="h-8 rounded-lg text-slate-400 hover:text-slate-700 text-xs"
+                            >
+                              Cancel
+                            </Button>
+                          </CardHeader>
+                          <CardContent className="p-5 space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Vendor Name</Label>
+                                <Input
+                                  placeholder="e.g. Acme Tech Solutions"
+                                  value={txVendorName}
+                                  onChange={(e) => setTxVendorName(e.target.value)}
+                                  className="h-10 rounded-xl bg-white border-slate-200"
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">GST Registration Number</Label>
+                                <Input
+                                  placeholder="e.g. 22AAAAA0000A1Z5"
+                                  value={txGstNumber}
+                                  onChange={(e) => setTxGstNumber(e.target.value)}
+                                  className="h-10 rounded-xl bg-white border-slate-200"
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Invoice Date</Label>
+                                <Input
+                                  type="date"
+                                  value={txInvoiceDate}
+                                  onChange={(e) => setTxInvoiceDate(e.target.value)}
+                                  className="h-10 rounded-xl bg-white border-slate-200"
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Transaction Amount (₹)</Label>
+                                <Input
+                                  type="number"
+                                  placeholder="e.g. 45000"
+                                  value={txAmount}
+                                  onChange={(e) => setTxAmount(e.target.value)}
+                                  className="h-10 rounded-xl bg-white border-slate-200"
+                                />
+                              </div>
+                              <div className="space-y-1.5 md:col-span-2">
+                                <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Invoice Document Upload</Label>
+                                <div className="relative">
+                                  <input
+                                    id="tx-invoice-upload"
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    className="hidden"
+                                    onChange={(e) => setTxInvoiceFile(e.target.files?.[0] || null)}
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => document.getElementById('tx-invoice-upload')?.click()}
+                                    className="w-full h-11 rounded-xl border-dashed border-slate-300 hover:bg-slate-100 justify-start px-4 text-xs font-bold text-slate-600"
+                                  >
+                                    {txInvoiceFile ? (
+                                      <>
+                                        <FileText className="h-4 w-4 text-emerald-500 mr-2" />
+                                        <span className="truncate">{txInvoiceFile.name}</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Upload className="h-4 w-4 text-slate-400 mr-2" />
+                                        <span>Select Invoice PDF or Image</span>
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="space-y-1.5 md:col-span-2">
+                                <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Description of Transaction</Label>
+                                <textarea
+                                  placeholder="Provide details about the hardware, software, or services purchased under this invoice."
+                                  value={txDescription}
+                                  onChange={(e) => setTxDescription(e.target.value)}
+                                  className="w-full min-h-[80px] p-3 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
+                                />
+                              </div>
+                            </div>
+                            <Button
+                              onClick={handleSaveTransaction}
+                              disabled={isSavingTransaction}
+                              className="w-full h-11 rounded-xl bg-primary hover:bg-primary/95 text-white font-bold text-xs mt-2"
+                            >
+                              {isSavingTransaction ? 'Saving Transaction Record...' : 'Submit Transaction & Invoice'}
+                            </Button>
+                          </CardContent>
+                        </Card>
                       )}
-                    </div>
-                    <div className="border rounded-2xl overflow-hidden bg-slate-50/50">
-                      <Table>
-                        <TableHeader className="bg-slate-100/50">
-                          <TableRow className="border-slate-100">
-                            <TableHead className="text-[9px] font-black uppercase tracking-widest py-2">Phase Name</TableHead>
-                            <TableHead className="text-[9px] font-black uppercase tracking-widest py-2 text-right">Grant Amount</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {application.fundingPhases && application.fundingPhases.length > 0 ? (
-                            application.fundingPhases.map((phase, idx) => (
-                              <TableRow key={idx} className="border-slate-100">
-                                <TableCell className="py-3 text-xs font-bold text-slate-900">{phase.phaseName}</TableCell>
-                                <TableCell className="py-3 text-xs font-bold text-slate-900 text-right">
-                                  ₹{phase.amount?.toLocaleString('en-IN') || '0'}
+
+                      {/* Spent summary card */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col justify-between">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Total Approved Grant</span>
+                          <strong className="text-xl text-slate-900 mt-2">
+                            ₹{(application.fundingPhases || []).reduce((acc: number, p: any) => acc + (p.amount || 0), 0).toLocaleString('en-IN')}
+                          </strong>
+                        </div>
+                        <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex flex-col justify-between">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-primary">Total Expenses Logged</span>
+                          <strong className="text-xl text-primary mt-2">
+                            ₹{(application.transactions || []).reduce((acc: number, t: any) => acc + (t.amount || 0), 0).toLocaleString('en-IN')}
+                          </strong>
+                        </div>
+                      </div>
+
+                      {/* Transactions Table */}
+                      <div className="border rounded-2xl overflow-hidden bg-white">
+                        <Table>
+                          <TableHeader className="bg-slate-50/80">
+                            <TableRow className="border-slate-100">
+                              <TableHead className="text-[9px] font-black uppercase tracking-widest py-3">Vendor / GST</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase tracking-widest py-3">Invoice Details</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase tracking-widest py-3">Description</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase tracking-widest py-3 text-right">Amount</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {(application.transactions || []).length > 0 ? (
+                              (application.transactions || []).map((tx: any) => (
+                                <TableRow key={tx.id} className="border-slate-100 hover:bg-slate-50/40">
+                                  <TableCell className="py-4">
+                                    <p className="text-xs font-bold text-slate-900">{tx.vendorName}</p>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">GST: {tx.gstNumber}</p>
+                                  </TableCell>
+                                  <TableCell className="py-4">
+                                    <p className="text-xs font-bold text-slate-700">{format(new Date(tx.invoiceDate), 'MMM dd, yyyy')}</p>
+                                    {tx.invoiceUrl && (
+                                      <a
+                                        href={tx.invoiceUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-[9px] font-black uppercase text-primary hover:underline mt-1"
+                                      >
+                                        <FileText className="h-3 w-3" /> View Invoice
+                                      </a>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="py-4 text-xs font-medium text-slate-600 max-w-xs truncate">
+                                    {tx.description}
+                                  </TableCell>
+                                  <TableCell className="py-4 text-xs font-black text-slate-900 text-right">
+                                    ₹{tx.amount?.toLocaleString('en-IN') || '0'}
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={4} className="py-8 text-center text-xs text-slate-400 font-bold italic">
+                                  No transaction logs found for this grant.
                                 </TableCell>
                               </TableRow>
-                            ))
-                          ) : (
-                            <TableRow>
-                              <TableCell colSpan={2} className="py-4 text-center text-xs text-slate-400 font-bold italic">
-                                No funding phases defined.
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                )}
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </TabsContent>
+                  )}
 
-                {/* 2. On Hold: Monthly Progress Reports Submission & Viewing */}
-                {application.incubationType === 'On Hold' && (
-                  <div className="space-y-6">
+                  {/* Tab 2: Monthly Progress Reports */}
+                  <TabsContent value="reports" className="space-y-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
                       <div>
-                        <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Monthly Progress Tracking</h3>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide mt-1">
-                          Required for applicant & team members between 1st - 8th of every month
+                        <h3 className="text-xs font-bold text-slate-500">Monthly Progress Tracking</h3>
+                        <p className="text-[10px] text-slate-400 font-medium mt-1">
+                          Required updates submitted between 1st - 8th of every month
                         </p>
                       </div>
 
@@ -1651,7 +2383,7 @@ export default function ApplicationDetailsPage() {
                               value={reportProgress}
                               onChange={(e) => setReportProgress(e.target.value)}
                               placeholder="Describe your progress during this month..."
-                              className="rounded-2xl min-h-[100px] bg-slate-50 border-none focus:ring-primary/20 p-4"
+                              className="rounded-2xl min-h-[100px] bg-slate-50 border-none focus:ring-primary/20 p-4 font-medium"
                               disabled={!(new Date().getDate() >= 1 && new Date().getDate() <= 8)}
                             />
                           </div>
@@ -1662,7 +2394,7 @@ export default function ApplicationDetailsPage() {
                               value={reportMarketVal}
                               onChange={(e) => setReportMarketVal(e.target.value)}
                               placeholder="Detail any market validation activities or updates..."
-                              className="rounded-2xl min-h-[100px] bg-slate-50 border-none focus:ring-primary/20 p-4"
+                              className="rounded-2xl min-h-[100px] bg-slate-50 border-none focus:ring-primary/20 p-4 font-medium"
                               disabled={!(new Date().getDate() >= 1 && new Date().getDate() <= 8)}
                             />
                           </div>
@@ -1710,8 +2442,8 @@ export default function ApplicationDetailsPage() {
                         </div>
                       )}
                     </div>
-                  </div>
-                )}
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           )}
@@ -2075,6 +2807,147 @@ export default function ApplicationDetailsPage() {
             </CardContent>
           </Card>
 
+          {/* Standalone Milestones Roadmap Card */}
+          {application.status === 'Incubated' && (
+            <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden bg-white rounded-3xl mt-6">
+              <CardHeader className="bg-slate-50/50 border-b flex flex-row items-center justify-between p-6">
+                <div>
+                  <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center">
+                    <Rocket className="h-4 w-4 mr-2 text-primary animate-pulse" /> Startup Milestones Roadmap
+                  </CardTitle>
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">
+                    Track cohort milestones and key compliance targets for graduation.
+                  </p>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                {/* Milestones Checklist */}
+                <div className="space-y-3">
+                  {(application.milestones || []).length > 0 ? (
+                    (application.milestones || []).map((ms) => (
+                      <div key={ms.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-sm transition-all gap-4">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-1">
+                            {ms.status === 'Completed' ? (
+                              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                            ) : ms.status === 'Delayed' ? (
+                              <AlertTriangle className="h-5 w-5 text-rose-500" />
+                            ) : (
+                              <Clock className="h-5 w-5 text-slate-400" />
+                            )}
+                          </div>
+                          <div>
+                            <h4 className={cn("text-sm font-bold text-slate-900", ms.status === 'Completed' && "line-through text-slate-400")}>{ms.title}</h4>
+                            {ms.description && <p className="text-xs text-slate-500 mt-0.5">{ms.description}</p>}
+                            {ms.status === 'Completed' && ms.completionDetails && (
+                              <div className="mt-3 p-3 bg-emerald-50/40 rounded-xl border border-emerald-100/50 space-y-1 max-w-xl">
+                                <p className="text-[10px] font-black uppercase text-emerald-800 tracking-wider">Completion Proof & Details</p>
+                                <p className="text-xs text-slate-600 font-medium whitespace-pre-line">{ms.completionDetails}</p>
+                                {ms.documentUrl && (
+                                  <div className="pt-1.5 flex items-center gap-1.5 text-[10px] font-bold text-emerald-700">
+                                    <FileText className="h-3.5 w-3.5 text-emerald-600" />
+                                    <a href={ms.documentUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-xs">
+                                      {ms.documentName || 'Download Document'}
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end md:self-center">
+                          {ms.status !== 'Completed' && (isOwner || isAdmin) ? (
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setCompletingMilestone(ms);
+                                setCompletionDetails('');
+                                setCompletionDocFile(null);
+                              }}
+                              className="h-9 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md"
+                            >
+                              Complete Milestone
+                            </Button>
+                          ) : null}
+
+                          {ms.status === 'Completed' && (
+                            <Badge className="bg-emerald-100 text-emerald-800 border-none font-bold text-[10px] px-3 py-1">
+                              Completed
+                            </Badge>
+                          )}
+
+                          {isAdmin && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 w-9 p-0 text-rose-600 hover:bg-rose-50 rounded-xl"
+                              onClick={() => handleDeleteMilestone(ms.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-3">
+                      <p className="text-xs text-slate-400 font-bold italic">No milestones defined for this startup yet.</p>
+                      {isAdmin && (
+                        <Button
+                          onClick={handleInitializeDefaultMilestones}
+                          disabled={isSavingMilestone}
+                          className="rounded-xl h-10 bg-primary text-white font-bold text-xs px-4"
+                        >
+                          Initialize Default Milestones
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Admin/User Add Milestone Section */}
+                {(isAdmin || isOwner) && (
+                  <Card className="border border-slate-100 bg-slate-50/50 rounded-2xl overflow-hidden mt-6">
+                    <CardHeader className="bg-slate-100/50 p-4 border-b">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-600">Create New Milestone</h4>
+                    </CardHeader>
+                    <CardContent className="p-4 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Milestone Title</Label>
+                          <Input
+                            placeholder="e.g. Complete Prototype MVP"
+                            value={newMilestoneTitle}
+                            onChange={(e) => setNewMilestoneTitle(e.target.value)}
+                            className="h-10 rounded-xl bg-white border-slate-200"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Description (Optional)</Label>
+                          <Input
+                            placeholder="e.g. Upload final pitch deck and video URL"
+                            value={newMilestoneDesc}
+                            onChange={(e) => setNewMilestoneDesc(e.target.value)}
+                            className="h-10 rounded-xl bg-white border-slate-200"
+                          />
+                        </div>
+                      </div>
+
+                      <Button
+                        onClick={handleSaveMilestone}
+                        disabled={isSavingMilestone}
+                        className="w-full h-10 rounded-xl bg-primary hover:bg-primary/95 text-white font-bold text-xs"
+                      >
+                        {isSavingMilestone ? 'Adding Milestone...' : 'Add Milestone to Roadmap'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {isAdmin && (
             <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden">
               <CardHeader className="bg-slate-50/50 border-b">
@@ -2160,6 +3033,87 @@ export default function ApplicationDetailsPage() {
           )}
         </div>
       </div>
+
+      {/* Milestone Completion Dialog */}
+      <Dialog open={completingMilestone !== null} onOpenChange={(open) => { if (!open) setCompletingMilestone(null); }}>
+        <DialogContent className="sm:max-w-lg rounded-[2rem] p-8 bg-white shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-slate-900">Complete Milestone</DialogTitle>
+            <DialogDescription className="text-xs font-bold uppercase tracking-widest text-slate-400">
+              {completingMilestone?.title}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5 pt-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="milestone-details" className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                Completion Details *
+              </Label>
+              <textarea
+                id="milestone-details"
+                placeholder="Explain how this milestone was achieved, key highlights, URL links, etc."
+                value={completionDetails}
+                onChange={e => setCompletionDetails(e.target.value)}
+                required
+                className="w-full min-h-[100px] p-3 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-slate-50/50"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                Relevant Document / Proof (Optional)
+              </Label>
+              <div className="relative">
+                <input
+                  type="file"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) setCompletionDocFile(file);
+                  }}
+                  className="hidden"
+                  id="milestone-doc-input"
+                />
+                <label
+                  htmlFor="milestone-doc-input"
+                  className="flex items-center justify-center gap-2 h-11 px-4 rounded-xl border border-dashed border-slate-300 hover:border-slate-400 cursor-pointer bg-slate-50/50 hover:bg-slate-50 transition-colors text-xs font-bold text-slate-600"
+                >
+                  {completionDocFile ? (
+                    <>
+                      <FileText className="h-4 w-4 text-emerald-500" />
+                      <span className="truncate max-w-[250px]">{completionDocFile.name}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 text-slate-400" />
+                      <span>Choose Document or Proof PDF/Image</span>
+                    </>
+                  )}
+                </label>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isCompletingMilestone}
+                onClick={() => setCompletingMilestone(null)}
+                className="h-11 px-5 rounded-xl border-slate-200 font-bold text-xs uppercase"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                disabled={isCompletingMilestone || !completionDetails.trim()}
+                onClick={handleCompleteMilestoneSubmit}
+                className="h-11 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider"
+              >
+                {isCompletingMilestone ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
+                Submit Completion Proof
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
