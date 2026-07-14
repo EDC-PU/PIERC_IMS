@@ -28,8 +28,10 @@ import {
   Loader2,
   CalendarDays,
   History,
-  ClipboardCheck
+  ClipboardCheck,
+  Search
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
 export default function UserEventsPage() {
@@ -40,6 +42,11 @@ export default function UserEventsPage() {
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [registeringId, setRegisteringId] = useState<string | null>(null);
   const [detailEvent, setDetailEvent] = useState<PortalEvent | null>(null);
+
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [modeFilter, setModeFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('date-desc');
 
   useEffect(() => {
     if (!user) return;
@@ -136,20 +143,42 @@ export default function UserEventsPage() {
     });
   });
 
+  // Apply Search, Mode Filter, and Sorters to visibleEvents
+  const filteredAndSortedVisibleEvents = visibleEvents
+    .filter(e => {
+      const q = searchQuery.toLowerCase();
+      const matchesSearch = 
+        e.title.toLowerCase().includes(q) ||
+        (e.description && e.description.toLowerCase().includes(q)) ||
+        (e.linkOrLocation && e.linkOrLocation.toLowerCase().includes(q));
+
+      const matchesMode = modeFilter === 'all' || e.mode === modeFilter;
+      return matchesSearch && matchesMode;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(`${a.date}T${a.time || '00:00'}`).getTime();
+      const dateB = new Date(`${b.date}T${b.time || '00:00'}`).getTime();
+      if (sortBy === 'date-desc') return dateB - dateA;
+      if (sortBy === 'date-asc') return dateA - dateB;
+      if (sortBy === 'title-asc') return a.title.localeCompare(b.title);
+      if (sortBy === 'title-desc') return b.title.localeCompare(a.title);
+      return 0;
+    });
+
   // Separate events into upcoming and past
   const now = new Date();
-  const upcomingEvents = visibleEvents.filter(event => {
+  const upcomingEvents = filteredAndSortedVisibleEvents.filter(event => {
     const eventDateTime = new Date(`${event.date}T${event.time || '00:00'}`);
     return eventDateTime >= now;
-  }).sort((a, b) => new Date(`${a.date}T${a.time || '00:00'}`).getTime() - new Date(`${b.date}T${b.time || '00:00'}`).getTime());
+  });
 
-  const pastEvents = visibleEvents.filter(event => {
+  const pastEvents = filteredAndSortedVisibleEvents.filter(event => {
     const eventDateTime = new Date(`${event.date}T${event.time || '00:00'}`);
     return eventDateTime < now;
-  }).sort((a, b) => new Date(`${b.date}T${b.time || '00:00'}`).getTime() - new Date(`${a.date}T${a.time || '00:00'}`).getTime());
+  });
 
   // Filter events registered by user
-  const registeredEvents = visibleEvents.filter(event =>
+  const registeredEvents = filteredAndSortedVisibleEvents.filter(event =>
     event.registeredUsers?.includes(user.uid)
   );
 
@@ -298,8 +327,45 @@ export default function UserEventsPage() {
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <Tabs defaultValue="upcoming" className="w-full">
-          <TabsList className="bg-slate-100 p-1 rounded-xl h-12 flex justify-start w-fit">
+        <div className="space-y-6">
+          {/* Search, Filter, and Sort Controls */}
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] overflow-hidden bg-white/50 backdrop-blur-sm">
+            <CardContent className="p-4 md:p-6 flex flex-col md:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input 
+                  placeholder="Search events by title, description, or location..." 
+                  className="h-12 pl-12 rounded-2xl border-slate-100 bg-white focus:ring-primary/20 transition-all font-medium text-sm text-slate-800"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <select 
+                  className="h-12 px-6 rounded-2xl border border-slate-100 bg-white text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20"
+                  value={modeFilter}
+                  onChange={(e) => setModeFilter(e.target.value)}
+                >
+                  <option value="all">All Modes</option>
+                  <option value="Online">Online</option>
+                  <option value="Offline">Offline</option>
+                </select>
+                <select 
+                  className="h-12 px-6 rounded-2xl border border-slate-100 bg-white text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                >
+                  <option value="date-desc">Date (Newest)</option>
+                  <option value="date-asc">Date (Oldest)</option>
+                  <option value="title-asc">Title (A-Z)</option>
+                  <option value="title-desc">Title (Z-A)</option>
+                </select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Tabs defaultValue="upcoming" className="w-full">
+            <TabsList className="bg-slate-100 p-1 rounded-xl h-12 flex justify-start w-fit">
             <TabsTrigger value="upcoming" className="rounded-lg font-bold text-xs uppercase px-4 flex items-center gap-1.5">
               <CalendarDays className="h-4 w-4" /> Upcoming Events ({upcomingEvents.length})
             </TabsTrigger>
@@ -323,6 +389,7 @@ export default function UserEventsPage() {
             {renderEventList(registeredEvents)}
           </TabsContent>
         </Tabs>
+        </div>
       )}
 
       {/* Learn More Details Dialog */}

@@ -33,6 +33,7 @@ export default function StartupsDirectory() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedSector, setSelectedSector] = useState<string>('All Sectors');
+  const [sortBy, setSortBy] = useState<string>('name-asc');
 
   useEffect(() => {
     const appsCol = collection(db, 'applications');
@@ -51,6 +52,25 @@ export default function StartupsDirectory() {
     const matchesSearch = name.includes(searchQuery.toLowerCase());
     const matchesSector = selectedSector === 'All Sectors' || sector === selectedSector;
     return matchesSearch && matchesSector;
+  });
+
+  const sortedStartups = [...filteredStartups].sort((a, b) => {
+    const nameA = (a.data?.startupTitle || a.programmeTitle).toLowerCase();
+    const nameB = (b.data?.startupTitle || b.programmeTitle).toLowerCase();
+    if (sortBy === 'name-asc') return nameA.localeCompare(nameB);
+    if (sortBy === 'name-desc') return nameB.localeCompare(nameA);
+    
+    const sectorA = (a.data?.sector || 'Other').toLowerCase();
+    const sectorB = (b.data?.sector || 'Other').toLowerCase();
+    if (sortBy === 'sector-asc') return sectorA.localeCompare(sectorB);
+    if (sortBy === 'sector-desc') return sectorB.localeCompare(sectorA);
+
+    const statusA = (a.status || '').toLowerCase();
+    const statusB = (b.status || '').toLowerCase();
+    if (sortBy === 'status-asc') return statusA.localeCompare(statusB);
+    if (sortBy === 'status-desc') return statusB.localeCompare(statusA);
+
+    return 0;
   });
 
   const handleExportStartups = () => {
@@ -145,9 +165,18 @@ export default function StartupsDirectory() {
             >
               {sectors.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <Button variant="outline" className="h-12 rounded-2xl border-slate-100 font-bold px-6">
-              <Filter className="h-4 w-4 mr-2" /> More Filters
-            </Button>
+            <select 
+              className="h-12 px-6 rounded-2xl border border-slate-100 bg-white text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="name-asc">Sort by: Name (A-Z)</option>
+              <option value="name-desc">Sort by: Name (Z-A)</option>
+              <option value="sector-asc">Sort by: Sector (A-Z)</option>
+              <option value="sector-desc">Sort by: Sector (Z-A)</option>
+              <option value="status-asc">Sort by: Status (A-Z)</option>
+              <option value="status-desc">Sort by: Status (Z-A)</option>
+            </select>
           </div>
         </CardContent>
       </Card>
@@ -155,7 +184,7 @@ export default function StartupsDirectory() {
       {/* Grid View */}
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStartups.map((startup) => (
+          {sortedStartups.map((startup) => (
             <Link key={startup.id} href={`/dashboard/applications/${startup.id}`}>
               <Card className="group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 border-none ring-1 ring-slate-100 rounded-[2.5rem] overflow-hidden bg-white h-full flex flex-col">
                 <div className="h-32 bg-slate-900 relative overflow-hidden">
@@ -229,7 +258,7 @@ export default function StartupsDirectory() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredStartups.map((startup) => (
+                {sortedStartups.map((startup) => (
                   <tr key={startup.id} className="hover:bg-slate-50/50 transition-all group">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">

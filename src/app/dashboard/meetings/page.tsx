@@ -68,6 +68,32 @@ export default function MeetingsPage() {
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('date-desc');
+
+  // Filtered & Sorted Meetings
+  const filteredAndSortedMeetings = meetings
+    .filter(m => {
+      const queryText = searchQuery.toLowerCase();
+      const matchesSearch = 
+        m.title.toLowerCase().includes(queryText) ||
+        (m.description && m.description.toLowerCase().includes(queryText)) ||
+        (m.location && m.location.toLowerCase().includes(queryText)) ||
+        m.mode.toLowerCase().includes(queryText);
+
+      const matchesStatus = statusFilter === 'all' || m.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'date-desc') return b.startTime - a.startTime;
+      if (sortBy === 'date-asc') return a.startTime - b.startTime;
+      if (sortBy === 'title-asc') return a.title.localeCompare(b.title);
+      if (sortBy === 'title-desc') return b.title.localeCompare(a.title);
+      return 0;
+    });
+
   // Form State
   const [meetingDate, setMeetingDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [meetingTime, setMeetingTime] = useState('10:00');
@@ -638,6 +664,42 @@ export default function MeetingsPage() {
 
         {/* History Content */}
         <TabsContent value="history" className="mt-8">
+          {/* Search, Filter, and Sort Controls */}
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input 
+                placeholder="Search sessions by title, description, mode, location..." 
+                className="h-12 pl-12 rounded-2xl border-slate-100 bg-white shadow-sm focus:ring-primary/20 transition-all font-medium text-sm text-slate-800"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <select 
+                className="h-12 px-6 rounded-2xl border border-slate-100 bg-white text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All Statuses</option>
+                <option value="Scheduled">Scheduled</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+                <option value="Absent">Absent</option>
+              </select>
+              <select 
+                className="h-12 px-6 rounded-2xl border border-slate-100 bg-white text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="date-desc">Date (Newest)</option>
+                <option value="date-asc">Date (Oldest)</option>
+                <option value="title-asc">Title (A-Z)</option>
+                <option value="title-desc">Title (Z-A)</option>
+              </select>
+            </div>
+          </div>
+
           <Card className="border-none shadow-2xl ring-1 ring-slate-100 rounded-[2rem] overflow-hidden bg-white">
             <CardHeader className="bg-slate-900 text-white p-8">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -682,10 +744,10 @@ export default function MeetingsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {meetings.length === 0 ? (
+                    {filteredAndSortedMeetings.length === 0 ? (
                       <TableRow><TableCell colSpan={6} className="h-40 text-center text-slate-400 font-medium italic">No meeting history available.</TableCell></TableRow>
                     ) : (
-                      meetings.sort((a, b) => b.startTime - a.startTime).map(m => {
+                      filteredAndSortedMeetings.map(m => {
                         const app = applications.find(a => a.id === m.applicationId);
                         const phaseKey = m.title.toLowerCase().includes('phase 1') ? 'Phase_1' :
                           m.title.toLowerCase().includes('phase 2') ? 'Phase_2' : 'Final_Review';

@@ -98,11 +98,23 @@ export default function ManageUsersPage() {
     );
   }
 
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('name-asc');
+
   const filteredUsers = users.filter(u => {
     const name = u.displayName || '';
     const email = u.email || '';
     const searchTerm = search.toLowerCase();
-    return name.toLowerCase().includes(searchTerm) || email.toLowerCase().includes(searchTerm);
+    const matchesSearch = name.toLowerCase().includes(searchTerm) || email.toLowerCase().includes(searchTerm);
+    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+    return matchesSearch && matchesRole;
+  }).sort((a, b) => {
+    if (sortBy === 'name-asc') return (a.displayName || '').localeCompare(b.displayName || '');
+    if (sortBy === 'name-desc') return (b.displayName || '').localeCompare(a.displayName || '');
+    if (sortBy === 'email-asc') return (a.email || '').localeCompare(b.email || '');
+    if (sortBy === 'role-asc') return (a.role || '').localeCompare(b.role || '');
+    if (sortBy === 'date-desc') return (b.createdAt || 0) - (a.createdAt || 0);
+    return 0;
   });
 
   const handleExportUsers = () => {
@@ -170,6 +182,37 @@ export default function ManageUsersPage() {
           </Button>
         </div>
       </div>
+
+      {/* Filters Bar */}
+      <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-slate-50/50">
+        <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
+          <div className="flex-1"></div>
+          <div className="flex gap-2 shrink-0">
+            <select 
+              className="h-11 px-4 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+            >
+              <option value="all">All Roles</option>
+              <option value="super_admin">Super Admin</option>
+              <option value="admin">Admin</option>
+              <option value="mentor">Mentor</option>
+              <option value="user">Startup Founder / User</option>
+            </select>
+            <select 
+              className="h-11 px-4 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="name-asc">Sort by: Name (A-Z)</option>
+              <option value="name-desc">Sort by: Name (Z-A)</option>
+              <option value="email-asc">Sort by: Email (A-Z)</option>
+              <option value="role-asc">Sort by: Role</option>
+              <option value="date-desc">Sort by: Joined Date</option>
+            </select>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="border-none shadow-2xl ring-1 ring-slate-200 overflow-hidden rounded-3xl">
         <CardContent className="p-0">
