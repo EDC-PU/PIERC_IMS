@@ -1927,7 +1927,7 @@ export default function ApplicationDetailsPage() {
               <InfoBlock label="Name" value={application.userName} />
               <InfoBlock label="Email" value={application.userEmail} />
               <InfoBlock label="Contact" value={application.userContact} />
-              <InfoBlock label="Category" value={application.userCategory} />
+              <InfoBlock label="Category" value={application.userCategory || application.data?.applicantType || application.data?.category} />
               <InfoBlock label="Institute" value={application.userInstitute} />
               <InfoBlock label="Enrollment" value={application.userEnrollment} />
               <InfoBlock label="Gender" value={application.userGender} />
