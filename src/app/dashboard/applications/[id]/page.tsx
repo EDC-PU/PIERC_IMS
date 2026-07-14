@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { doc, onSnapshot, getDoc, getDocs, updateDoc, deleteDoc, collection, query, where, addDoc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
-import { Application, UserProfile, Cohort } from '@/types';
+import { Application, UserProfile, Cohort, GrantTransaction } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { triggerEmailNotification } from '@/lib/email-client';
 import { getStatusUpdateEmailHtml, getApplicationUpdatedEmailHtml, getApplicationRemovedEmailHtml, getEmailHtmlTemplate } from '@/lib/email-templates';
@@ -59,8 +59,23 @@ import {
   KeyRound,
   ShieldCheck,
   Layers,
-  MessageSquare
+  MessageSquare,
+  Coins,
+  Check,
+  X,
+  Search,
+  Receipt
 } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -164,6 +179,7 @@ export default function ApplicationDetailsPage() {
   const [isCompletingMilestone, setIsCompletingMilestone] = useState(false);
 
   // Transaction logging states
+  const [transactions, setTransactions] = useState<GrantTransaction[]>([]);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [txVendorName, setTxVendorName] = useState('');
   const [txGstNumber, setTxGstNumber] = useState('');
@@ -172,6 +188,14 @@ export default function ApplicationDetailsPage() {
   const [txAmount, setTxAmount] = useState('');
   const [txDescription, setTxDescription] = useState('');
   const [isSavingTransaction, setIsSavingTransaction] = useState(false);
+  const [showAddTxModal, setShowAddTxModal] = useState(false);
+  const [txSelectedPhase, setTxSelectedPhase] = useState('');
+  const [txUploading, setTxUploading] = useState(false);
+  const [txSearchQuery, setTxSearchQuery] = useState('');
+  const [txStatusFilter, setTxStatusFilter] = useState('all');
+
+  // Onboarding upload state
+  const [uploadingDocKey, setUploadingDocKey] = useState<string | null>(null);
 
   const handleSaveYuktiCredentials = async () => {
     if (!yuktiId.trim() || !yuktiPassword.trim()) {
@@ -332,12 +356,23 @@ export default function ApplicationDetailsPage() {
       });
     }
 
+    // 6. Fetch transactions for this application
+    const transCol = collection(db, 'transactions');
+    const transQuery = query(transCol, where('applicationId', '==', id));
+    const unsubscribeTrans = onSnapshot(transQuery, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as GrantTransaction[];
+      setTransactions(list.sort((a, b) => b.createdAt - a.createdAt));
+    }, (error) => {
+      console.error("Error loading transactions in detail page: ", error);
+    });
+
     return () => {
       unsubscribe();
       unsubscribeMeetings();
       evalUnsubscribe();
       usersUnsubscribe();
       cohortsUnsubscribe();
+      unsubscribeTrans();
     };
   }, [id, user]);
 
@@ -1070,6 +1105,155 @@ export default function ApplicationDetailsPage() {
     }
   };
 
+  const handleAddTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!application) return;
+
+    if (!txVendorName.trim()) return toast.error('Vendor Name is required.');
+    if (!txGstNumber.trim()) return toast.error('GST Number is required.');
+    if (!txAmount || parseFloat(txAmount) <= 0) return toast.error('Valid invoice amount is required.');
+    if (!txInvoiceDate) return toast.error('Invoice Date is required.');
+    if (!txSelectedPhase) return toast.error('Please allocate this invoice to a funding phase.');
+
+    const phases = application.fundingPhases || [];
+    const targetPhase = phases.find(p => p.phaseName === txSelectedPhase);
+    if (targetPhase) {
+      const phaseSpent = transactions
+        .filter(t => t.phaseName === txSelectedPhase && t.status === 'Approved')
+        .reduce((acc, t) => acc + t.amount, 0);
+
+      if (phaseSpent + parseFloat(txAmount) > targetPhase.amount) {
+        toast.warning(`This transaction exceeds the approved budget for ${txSelectedPhase} (Remaining: ₹${(targetPhase.amount - phaseSpent).toLocaleString()})`);
+      }
+    }
+
+    setTxUploading(true);
+    try {
+      let fileUrl = '';
+      let fileName = '';
+
+      if (txInvoiceFile) {
+        const fileRef = storageRef(
+          storage,
+          `applications/${application.id}/invoices/${Date.now()}_${txInvoiceFile.name}`
+        );
+        const snapshot = await uploadBytes(fileRef, txInvoiceFile);
+        fileUrl = await getDownloadURL(snapshot.ref);
+        fileName = txInvoiceFile.name;
+      }
+
+      const transactionData = {
+        userId: application.userId,
+        applicationId: application.id,
+        startupName: application.data?.startupTitle || application.programmeTitle,
+        vendorName: txVendorName,
+        gstNumber: txGstNumber,
+        amount: parseFloat(txAmount),
+        invoiceDate: new Date(txInvoiceDate).getTime(),
+        description: txDescription || '',
+        phaseName: txSelectedPhase,
+        invoiceUrl: fileUrl,
+        invoiceFileName: fileName,
+        status: 'Pending Review',
+        createdAt: Date.now(),
+      };
+
+      await addDoc(collection(db, 'transactions'), transactionData);
+
+      await addDoc(collection(db, 'notifications', application.userId, 'items'), {
+        title: "Transaction Logged",
+        message: `Invoice for ₹${parseFloat(txAmount).toLocaleString()} from ${txVendorName} logged successfully. Awaiting admin review.`,
+        type: 'info',
+        read: false,
+        timestamp: Date.now()
+      });
+
+      toast.success('Transaction logged successfully! Sent to admin for review.');
+      setTxVendorName('');
+      setTxGstNumber('');
+      setTxAmount('');
+      setTxInvoiceDate('');
+      setTxDescription('');
+      setTxSelectedPhase('');
+      setTxInvoiceFile(null);
+      setShowAddTxModal(false);
+    } catch (error) {
+      console.error("Error creating transaction: ", error);
+      toast.error('Failed to log transaction.');
+    } finally {
+      setTxUploading(false);
+    }
+  };
+
+  const handleUpdateTxStatus = async (transactionId: string, newStatus: 'Approved' | 'Rejected') => {
+    try {
+      const transRef = doc(db, 'transactions', transactionId);
+      const transaction = transactions.find(t => t.id === transactionId);
+      if (!transaction) return;
+
+      await updateDoc(transRef, { status: newStatus });
+
+      await addDoc(collection(db, 'notifications', transaction.userId, 'items'), {
+        title: `Transaction ${newStatus}`,
+        message: `Your transaction of ₹${transaction.amount.toLocaleString()} to ${transaction.vendorName} has been ${newStatus.toLowerCase()}.`,
+        type: newStatus === 'Approved' ? 'success' : 'warning',
+        read: false,
+        timestamp: Date.now()
+      });
+
+      toast.success(`Transaction successfully ${newStatus.toLowerCase()}.`);
+    } catch (error) {
+      console.error("Error updating transaction: ", error);
+      toast.error("Failed to update transaction status.");
+    }
+  };
+
+  const handleDeleteTx = async (transactionId: string) => {
+    if (!confirm('Are you sure you want to delete this transaction record?')) return;
+    try {
+      await deleteDoc(doc(db, 'transactions', transactionId));
+      toast.success('Transaction deleted successfully.');
+    } catch (error) {
+      console.error("Error deleting transaction: ", error);
+      toast.error("Failed to delete transaction.");
+    }
+  };
+
+  const handleUploadOnboardingDoc = async (key: string, file: File) => {
+    if (!application) return;
+    setUploadingDocKey(key);
+    try {
+      const fileRef = storageRef(
+        storage,
+        `applications/${application.id}/onboarding/${key}_${Date.now()}_${file.name}`
+      );
+      const snapshot = await uploadBytes(fileRef, file);
+      const downloadUrl = await getDownloadURL(snapshot.ref);
+
+      const docUpdates = {
+        [`documents.${key}`]: downloadUrl,
+        updatedAt: Date.now(),
+      };
+
+      await updateDoc(doc(db, 'applications', application.id), docUpdates);
+
+      await addDoc(collection(db, 'notifications', application.userId, 'items'), {
+        title: "Onboarding Document Submitted",
+        message: `Onboarding document was uploaded successfully.`,
+        type: 'success',
+        read: false,
+        timestamp: Date.now()
+      });
+
+      toast.success('Document uploaded successfully!');
+    } catch (error) {
+      console.error("Error uploading onboarding document: ", error);
+      toast.error('Failed to upload onboarding document.');
+    } finally {
+      setUploadingDocKey(null);
+    }
+  };
+
   const InfoBlock = ({ label, value, icon: Icon }: { label: string, value?: any, icon?: any }) => (
     <div className="space-y-1">
       <div className="flex items-center space-x-2 text-slate-400">
@@ -1104,6 +1288,89 @@ export default function ApplicationDetailsPage() {
   const revisionEvent = [...(application.timeline || [])].reverse().find(e => e.status === 'Revision Needed');
   const revisionTimestamp = revisionEvent?.timestamp || 0;
   const isDataUpdatedAfterRevision = application.updatedAt > revisionTimestamp;
+  const onboardingDocs = [
+    {
+      key: 'signedApplicationForm',
+      label: '1) Application form (Proposal) duly signed by all members and faculty mentor.',
+      template: '/1_Application form.docx',
+      templateLabel: 'Download Application Form Template'
+    },
+    {
+      key: 'selfAttestedIDs',
+      label: '2) Self attested copy of Student ID/ Staff ID of all members and faculty mentor.'
+    },
+    {
+      key: 'selfAttestedAadharCards',
+      label: '3) Self attested copy of Aadhar Card of all members and faculty mentor.'
+    },
+    {
+      key: 'passportPhotographs',
+      label: '4) Passport size photographs of all the members and a faculty mentor.'
+    },
+    {
+      key: 'pitchDeckPPT',
+      label: '5) Pitch Deck (PowerPoint slides)',
+      template: '/PRE INCUBATION TEMPLET.pptx',
+      templateLabel: 'Download Pitch Deck Template'
+    },
+    {
+      key: 'fundBifurcationSheet',
+      label: '6) Fund requirement bifurcation sheet as per the format available in Annexure-A of application form.'
+    },
+    {
+      key: 'validationForm',
+      label: '7) Validation form duly signed and sealed by Field experts as per the format available in Annexure-B of Application form.'
+    },
+    {
+      key: 'cancelledCheque',
+      label: '8) Cancelled cheque of the Bank account of team leader.'
+    },
+    {
+      key: 'signedAffidavit',
+      label: '9) Affidavit duly signed by all the members including faculty mentor.'
+    }
+  ];
+
+  // Grant calculations
+  const txPhases = application?.fundingPhases || [];
+  const totalGrantAmount = txPhases.reduce((acc, phase) => acc + (phase.amount || 0), 0);
+  const approvedSpent = transactions
+    .filter(t => t.status === 'Approved')
+    .reduce((acc, t) => acc + t.amount, 0);
+  const pendingSpent = transactions
+    .filter(t => t.status === 'Pending Review')
+    .reduce((acc, t) => acc + t.amount, 0);
+  const totalSpent = approvedSpent + pendingSpent;
+  const remainingBalance = totalGrantAmount - approvedSpent;
+
+  const chartData = txPhases.map(phase => {
+    const phaseSpent = transactions
+      .filter(t => t.phaseName === phase.phaseName && t.status === 'Approved')
+      .reduce((acc, t) => acc + t.amount, 0);
+
+    const phasePending = transactions
+      .filter(t => t.phaseName === phase.phaseName && t.status === 'Pending Review')
+      .reduce((acc, t) => acc + t.amount, 0);
+
+    return {
+      name: phase.phaseName,
+      Budget: phase.amount,
+      Spent: phaseSpent,
+      Pending: phasePending,
+    };
+  });
+
+  const filteredTransactions = transactions.filter(t => {
+    const matchesSearch =
+      t.vendorName.toLowerCase().includes(txSearchQuery.toLowerCase()) ||
+      t.gstNumber.toLowerCase().includes(txSearchQuery.toLowerCase()) ||
+      t.phaseName.toLowerCase().includes(txSearchQuery.toLowerCase()) ||
+      (t.description && t.description.toLowerCase().includes(txSearchQuery.toLowerCase()));
+
+    const matchesStatus = txStatusFilter === 'all' || t.status === txStatusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-8 p-6 md:p-8 animate-in fade-in duration-700">
@@ -2061,389 +2328,614 @@ export default function ApplicationDetailsPage() {
             <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden bg-white rounded-3xl">
               <CardHeader className="bg-slate-50/50 border-b flex flex-row items-center justify-between p-6">
                 <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center">
-                  <Rocket className="h-4 w-4 mr-2 text-primary" /> Incubation Management
+                  <Rocket className="h-4 w-4 mr-2 text-primary" /> Monthly Progress Tracking
                 </CardTitle>
                 <Badge className="bg-emerald-100 text-emerald-800 border-none font-bold">
                   {application.incubationType || 'Incubated'}
                 </Badge>
               </CardHeader>
               <CardContent className="p-6">
-                <Tabs defaultValue="overview" className="w-full">
-                  <TabsList className="bg-slate-100 p-1 rounded-xl h-12 flex justify-start w-fit mb-6">
-                    <TabsTrigger value="overview" className="rounded-lg font-bold text-xs px-4">Overview & Funding</TabsTrigger>
-                    {application.incubationType === 'Selected for Funding' && (
-                      <TabsTrigger value="transactions" className="rounded-lg font-bold text-xs px-4">Grant Expenses</TabsTrigger>
-                    )}
-                    <TabsTrigger value="reports" className="rounded-lg font-bold text-xs px-4">Monthly Reports</TabsTrigger>
-                  </TabsList>
+                <div className="space-y-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
+                    <div>
+                      <h3 className="text-xs font-bold text-slate-500">Required updates submitted between 1st - 8th of every month</h3>
 
-                  {/* Tab 1: Overview & Funding */}
-                  <TabsContent value="overview" className="space-y-6">
-                    {application.incubationType === 'Selected for Funding' ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xs font-bold text-slate-400">Approved Grant Phases</h3>
-                          {application.fundingSource && (
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-bold text-[10px]">
-                              Source: {application.fundingSource}
-                            </Badge>
+                    </div>
+
+                    {/* Month Switcher Tabs */}
+                    <div className="flex bg-slate-100 p-1 rounded-xl">
+                      {(['month1', 'month2', 'month3'] as const).map((mKey) => (
+                        <button
+                          key={mKey}
+                          onClick={() => setActiveReportMonth(mKey)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
+                            activeReportMonth === mKey
+                              ? "bg-white text-slate-900 shadow-sm"
+                              : "text-slate-500 hover:text-slate-900"
                           )}
-                        </div>
-                        <div className="border rounded-2xl overflow-hidden bg-slate-50/50">
-                          <Table>
-                            <TableHeader className="bg-slate-100/50">
-                              <TableRow className="border-slate-100">
-                                <TableHead className="text-[9px] font-black uppercase tracking-widest py-2">Phase Name</TableHead>
-                                <TableHead className="text-[9px] font-black uppercase tracking-widest py-2 text-right">Grant Amount</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {application.fundingPhases && application.fundingPhases.length > 0 ? (
-                                application.fundingPhases.map((phase, idx) => (
-                                  <TableRow key={idx} className="border-slate-100">
-                                    <TableCell className="py-3 text-xs font-bold text-slate-900">{phase.phaseName}</TableCell>
-                                    <TableCell className="py-3 text-xs font-bold text-slate-900 text-right">
-                                      ₹{phase.amount?.toLocaleString('en-IN') || '0'}
-                                    </TableCell>
-                                  </TableRow>
-                                ))
-                              ) : (
-                                <TableRow>
-                                  <TableCell colSpan={2} className="py-4 text-center text-xs text-slate-400 font-bold italic">
-                                    No funding phases defined.
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-100">
-                        <p className="text-xs text-slate-500 font-medium">This startup is currently incubated under the <strong>{application.incubationType || 'Incubation Only'}</strong> track.</p>
-                      </div>
-                    )}
-                  </TabsContent>
+                        >
+                          {mKey === 'month1' ? 'Month 1' : mKey === 'month2' ? 'Month 2' : 'Month 3'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-                  {/* Tab 3: Grant Transactions */}
-                  {application.incubationType === 'Selected for Funding' && (
-                    <TabsContent value="transactions" className="space-y-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
-                        <div>
-                          <h3 className="text-xs font-bold text-slate-500">Grant Expenses Log</h3>
-                          <p className="text-[10px] text-slate-400 font-medium mt-1">
-                            Submit and track all vendor transactions funded by the grant (GST Registered vendors only).
-                          </p>
+                  {/* Window Status Banner */}
+                  {(isOwner || application.data?.teamMembers?.some((m: any) => m.email === user?.email)) && (
+                    <div className={cn(
+                      "p-4 rounded-2xl border text-xs font-medium flex items-start gap-3",
+                      (new Date().getDate() >= 1 && new Date().getDate() <= 8)
+                        ? "bg-emerald-50 border-emerald-100 text-emerald-800"
+                        : "bg-amber-50 border-amber-100 text-amber-800"
+                    )}>
+                      <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                      <div>
+                        <p className="font-bold">
+                          {(new Date().getDate() >= 1 && new Date().getDate() <= 8)
+                            ? "Submission window is open!"
+                            : "Submission window is locked."}
+                        </p>
+                        <p className="text-[11px] opacity-90 mt-0.5">
+                          Submissions and updates are only permitted between the 1st and 8th of every month. Currently, it is day {new Date().getDate()} of the month.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Report Form / Details */}
+                  <div className="space-y-4">
+                    {/* For editing (Owners/Team members) */}
+                    {(isOwner || application.data?.teamMembers?.some((m: any) => m.email === user?.email)) ? (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Progress Report</Label>
+                          <Textarea
+                            value={reportProgress}
+                            onChange={(e) => setReportProgress(e.target.value)}
+                            placeholder="Describe your progress during this month..."
+                            className="rounded-2xl min-h-[100px] bg-slate-50 border-none focus:ring-primary/20 p-4 font-medium"
+                            disabled={!(new Date().getDate() >= 1 && new Date().getDate() <= 8)}
+                          />
                         </div>
-                        {isOwner && !showAddTransaction && (
+
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Market Validation Update</Label>
+                          <Textarea
+                            value={reportMarketVal}
+                            onChange={(e) => setReportMarketVal(e.target.value)}
+                            placeholder="Detail any market validation activities or updates..."
+                            className="rounded-2xl min-h-[100px] bg-slate-50 border-none focus:ring-primary/20 p-4 font-medium"
+                            disabled={!(new Date().getDate() >= 1 && new Date().getDate() <= 8)}
+                          />
+                        </div>
+
+                        {new Date().getDate() >= 1 && new Date().getDate() <= 8 && (
                           <Button
-                            onClick={() => setShowAddTransaction(true)}
-                            className="rounded-xl h-10 bg-primary text-white font-bold text-xs px-4"
+                            onClick={handleSaveMonthlyReport}
+                            disabled={isSavingReport}
+                            className="w-full h-11 rounded-xl bg-primary text-white font-bold"
                           >
-                            Log New Transaction
+                            {isSavingReport ? 'Saving Report...' : 'Save Progress & Validation Update'}
                           </Button>
                         )}
                       </div>
-
-                      {/* Add Transaction Form Card */}
-                      {showAddTransaction && (
-                        <Card className="border border-slate-100 bg-slate-50/50 rounded-2xl overflow-hidden mt-2 animate-in fade-in duration-300">
-                          <CardHeader className="bg-slate-100/50 p-5 border-b flex flex-row items-center justify-between">
-                            <div>
-                              <h4 className="text-xs font-black uppercase tracking-wider text-slate-600">Log Grant Expense</h4>
-                              <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase">GST Registered Vendors Only</p>
+                    ) : (
+                      // For Admin / Mentors viewing reports
+                      <div className="space-y-4">
+                        {application.monthlyReports?.[activeReportMonth] ? (
+                          <div className="space-y-4">
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Progress Report</h4>
+                              <p className="text-xs font-medium text-slate-700 whitespace-pre-line">
+                                {application.monthlyReports[activeReportMonth].progressReport}
+                              </p>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setShowAddTransaction(false)}
-                              className="h-8 rounded-lg text-slate-400 hover:text-slate-700 text-xs"
-                            >
-                              Cancel
-                            </Button>
-                          </CardHeader>
-                          <CardContent className="p-5 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Vendor Name</Label>
-                                <Input
-                                  placeholder="e.g. Acme Tech Solutions"
-                                  value={txVendorName}
-                                  onChange={(e) => setTxVendorName(e.target.value)}
-                                  className="h-10 rounded-xl bg-white border-slate-200"
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">GST Registration Number</Label>
-                                <Input
-                                  placeholder="e.g. 22AAAAA0000A1Z5"
-                                  value={txGstNumber}
-                                  onChange={(e) => setTxGstNumber(e.target.value)}
-                                  className="h-10 rounded-xl bg-white border-slate-200"
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Invoice Date</Label>
-                                <Input
-                                  type="date"
-                                  value={txInvoiceDate}
-                                  onChange={(e) => setTxInvoiceDate(e.target.value)}
-                                  className="h-10 rounded-xl bg-white border-slate-200"
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Transaction Amount (₹)</Label>
-                                <Input
-                                  type="number"
-                                  placeholder="e.g. 45000"
-                                  value={txAmount}
-                                  onChange={(e) => setTxAmount(e.target.value)}
-                                  className="h-10 rounded-xl bg-white border-slate-200"
-                                />
-                              </div>
-                              <div className="space-y-1.5 md:col-span-2">
-                                <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Invoice Document Upload</Label>
-                                <div className="relative">
-                                  <input
-                                    id="tx-invoice-upload"
-                                    type="file"
-                                    accept=".pdf,.jpg,.jpeg,.png"
-                                    className="hidden"
-                                    onChange={(e) => setTxInvoiceFile(e.target.files?.[0] || null)}
-                                  />
-                                  <Button
-                                    variant="outline"
-                                    type="button"
-                                    onClick={() => document.getElementById('tx-invoice-upload')?.click()}
-                                    className="w-full h-11 rounded-xl border-dashed border-slate-300 hover:bg-slate-100 justify-start px-4 text-xs font-bold text-slate-600"
-                                  >
-                                    {txInvoiceFile ? (
-                                      <>
-                                        <FileText className="h-4 w-4 text-emerald-500 mr-2" />
-                                        <span className="truncate">{txInvoiceFile.name}</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Upload className="h-4 w-4 text-slate-400 mr-2" />
-                                        <span>Select Invoice PDF or Image</span>
-                                      </>
-                                    )}
-                                  </Button>
-                                </div>
-                              </div>
-                              <div className="space-y-1.5 md:col-span-2">
-                                <Label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Description of Transaction</Label>
-                                <textarea
-                                  placeholder="Provide details about the hardware, software, or services purchased under this invoice."
-                                  value={txDescription}
-                                  onChange={(e) => setTxDescription(e.target.value)}
-                                  className="w-full min-h-[80px] p-3 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
-                                />
-                              </div>
-                            </div>
-                            <Button
-                              onClick={handleSaveTransaction}
-                              disabled={isSavingTransaction}
-                              className="w-full h-11 rounded-xl bg-primary hover:bg-primary/95 text-white font-bold text-xs mt-2"
-                            >
-                              {isSavingTransaction ? 'Saving Transaction Record...' : 'Submit Transaction & Invoice'}
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      )}
 
-                      {/* Spent summary card */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col justify-between">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Total Approved Grant</span>
-                          <strong className="text-xl text-slate-900 mt-2">
-                            ₹{(application.fundingPhases || []).reduce((acc: number, p: any) => acc + (p.amount || 0), 0).toLocaleString('en-IN')}
-                          </strong>
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Market Validation Update</h4>
+                              <p className="text-xs font-medium text-slate-700 whitespace-pre-line">
+                                {application.monthlyReports[activeReportMonth].marketValidationUpdate}
+                              </p>
+                            </div>
+
+                            <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider text-right">
+                              Last Updated: {format(application.monthlyReports[activeReportMonth].updatedAt, 'MMM dd, yyyy • HH:mm')}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                            <p className="text-xs text-slate-400 font-bold italic">
+                              No report has been submitted for {activeReportMonth === 'month1' ? 'Month 1' : activeReportMonth === 'month2' ? 'Month 2' : 'Month 3'} yet.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Incubation Onboarding Documents Section */}
+          {application.status === 'Incubated' && application.incubationType === 'Selected for Funding' && (
+            <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden">
+              <CardHeader className="bg-slate-50/50 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" /> Incubation Onboarding Documents
+                  </CardTitle>
+                  <CardDescription className="text-[10px] font-bold text-slate-500 uppercase mt-1">
+                    Required documents for startups incubated with funding
+                  </CardDescription>
+                </div>
+                <Badge className={cn("border-none font-bold text-xs px-3 py-1",
+                  onboardingDocs.filter(d => application?.documents?.[d.key as keyof typeof application.documents]).length === 9 ? "bg-emerald-100 text-emerald-800" : "bg-orange-100 text-orange-800"
+                )}>
+                  {onboardingDocs.filter(d => application?.documents?.[d.key as keyof typeof application.documents]).length} / 9 Completed
+                </Badge>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                {/* Onboarding progress bar */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase">
+                    <span>Onboarding Progress</span>
+                    <span>{Math.round((onboardingDocs.filter(d => application?.documents?.[d.key as keyof typeof application.documents]).length / 9) * 100)}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 transition-all duration-500"
+                      style={{ width: `${(onboardingDocs.filter(d => application?.documents?.[d.key as keyof typeof application.documents]).length / 9) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Checklist items */}
+                <div className="divide-y divide-slate-150 border rounded-2xl overflow-hidden bg-slate-50/10">
+                  {onboardingDocs.map((docItem) => {
+                    const docUrl = application.documents?.[docItem.key as keyof typeof application.documents] as string | undefined;
+
+                    return (
+                      <div key={docItem.key} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
+                        <div className="flex items-start gap-3 flex-1">
+                          <div className="mt-0.5 flex-shrink-0">
+                            {docUrl ? (
+                              <div className="h-5 w-5 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+                                <Check className="h-3 w-3" />
+                              </div>
+                            ) : (
+                              <div className="h-5 w-5 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                                <Clock className="h-3 w-3" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-bold text-slate-800 leading-tight">
+                              {docItem.label}
+                            </p>
+                            {docItem.template && (
+                              <a
+                                href={docItem.template}
+                                download
+                                className="inline-flex items-center text-[9px] font-black uppercase text-primary hover:underline mt-1"
+                              >
+                                <Download className="h-2.5 w-2.5 mr-1" /> {docItem.templateLabel}
+                              </a>
+                            )}
+                          </div>
                         </div>
-                        <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex flex-col justify-between">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-primary">Total Expenses Logged</span>
-                          <strong className="text-xl text-primary mt-2">
-                            ₹{(application.transactions || []).reduce((acc: number, t: any) => acc + (t.amount || 0), 0).toLocaleString('en-IN')}
-                          </strong>
+
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {docUrl && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-xl h-9 text-xs font-bold flex items-center gap-1 border-slate-200"
+                              onClick={() => window.open(docUrl, '_blank')}
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" /> View / Download
+                            </Button>
+                          )}
+
+                          {isOwner ? (
+                            <>
+                              <input
+                                type="file"
+                                id={`file-input-${docItem.key}`}
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    handleUploadOnboardingDoc(docItem.key, file);
+                                  }
+                                }}
+                              />
+                              <Button
+                                variant={docUrl ? "ghost" : "default"}
+                                size="sm"
+                                className={cn("rounded-xl h-9 text-xs font-bold", docUrl ? "text-slate-500 hover:bg-slate-100" : "bg-primary hover:bg-primary/95 text-white")}
+                                onClick={() => document.getElementById(`file-input-${docItem.key}`)?.click()}
+                                disabled={uploadingDocKey === docItem.key}
+                              >
+                                {uploadingDocKey === docItem.key ? (
+                                  <>
+                                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Uploading...
+                                  </>
+                                ) : docUrl ? 'Replace' : 'Upload'}
+                              </Button>
+                            </>
+                          ) : (
+                            !docUrl && (
+                              <span className="text-[10px] text-slate-400 font-bold uppercase italic">
+                                Not submitted yet
+                              </span>
+                            )
+                          )}
                         </div>
                       </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-                      {/* Transactions Table */}
-                      <div className="border rounded-2xl overflow-hidden bg-white">
+          {/* Grant Utilization & Ledger Section */}
+          {application.status === 'Incubated' && application.incubationType === 'Selected for Funding' && (
+            <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden">
+              <CardHeader className="bg-slate-50/50 border-b flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                  <Coins className="h-4 w-4 text-[#D91A2A]" /> Grant Utilization & Ledger
+                </CardTitle>
+                {isOwner && (
+                  <Dialog open={showAddTxModal} onOpenChange={setShowAddTxModal}>
+                    <DialogTrigger asChild>
+                      <Button className="rounded-xl shadow-lg shadow-red-200/50 bg-[#D91A2A] text-white hover:bg-[#D91A2A]/90 font-bold border-none h-10 px-4 text-xs">
+                        <Plus className="mr-2 h-3.5 w-3.5" /> Log Transaction
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="rounded-[2rem] border-none shadow-2xl bg-white max-w-6xl w-[90vw] md:w-[40vw] sm:max-w-none p-6 overflow-y-auto max-h-[90vh]">
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                          <Receipt className="h-6 w-6 text-[#D91A2A]" /> Log Grant Transaction
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">
+                          Submit details of vendor invoice paid from your allocated grant for admin review.
+                        </DialogDescription>
+                      </DialogHeader>
+
+                      <form onSubmit={handleAddTransaction} className="space-y-4 py-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Vendor Name</label>
+                            <Input
+                              required
+                              placeholder="e.g. Acme Corporation"
+                              className="h-12 rounded-xl bg-slate-50 border-none focus:ring-primary/20 px-4 font-medium"
+                              value={txVendorName}
+                              onChange={(e) => setTxVendorName(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">GST Number</label>
+                            <Input
+                              required
+                              placeholder="e.g. 24AAAAC1234A1Z1"
+                              className="h-12 rounded-xl bg-slate-50 border-none focus:ring-primary/20 px-4 font-medium"
+                              value={txGstNumber}
+                              onChange={(e) => setTxGstNumber(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Invoice Amount (₹)</label>
+                            <Input
+                              required
+                              type="number"
+                              min="1"
+                              step="0.01"
+                              placeholder="e.g. 52000"
+                              className="h-12 rounded-xl bg-slate-50 border-none focus:ring-primary/20 px-4 font-medium"
+                              value={txAmount}
+                              onChange={(e) => setTxAmount(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Invoice Date</label>
+                            <Input
+                              required
+                              type="date"
+                              className="h-12 rounded-xl bg-slate-50 border-none focus:ring-primary/20 px-4 font-medium"
+                              value={txInvoiceDate}
+                              onChange={(e) => setTxInvoiceDate(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Allocate to Phase</label>
+                          <select
+                            required
+                            value={txSelectedPhase}
+                            onChange={(e) => setTxSelectedPhase(e.target.value)}
+                            className="w-full h-12 rounded-xl bg-slate-50 border-none focus:ring-primary/20 px-4 font-medium text-sm outline-none text-slate-700"
+                          >
+                            <option value="" disabled>Select phase...</option>
+                            {txPhases.map((phase) => (
+                              <option key={phase.phaseName} value={phase.phaseName}>
+                                {phase.phaseName} (Budget: ₹{phase.amount.toLocaleString()})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Description / Purpose</label>
+                          <Input
+                            placeholder="e.g. Hardware purchase for prototype building"
+                            className="h-12 rounded-xl bg-slate-50 border-none focus:ring-primary/20 px-4 font-medium"
+                            value={txDescription}
+                            onChange={(e) => setTxDescription(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Upload Invoice PDF/Image (Optional)</label>
+                          <div className="border-2 border-dashed border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100/50 transition-colors">
+                            <Upload className="h-6 w-6 text-slate-400 mb-2" />
+                            <input
+                              type="file"
+                              accept=".pdf,image/*"
+                              onChange={(e) => setTxInvoiceFile(e.target.files?.[0] || null)}
+                              className="text-xs text-slate-500 max-w-full file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300 cursor-pointer"
+                            />
+                            {txInvoiceFile && (
+                              <p className="text-[11px] font-bold text-[#D91A2A] mt-2 flex items-center">
+                                Selected: {txInvoiceFile.name} ({(txInvoiceFile.size / 1024 / 1024).toFixed(2)} MB)
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <DialogFooter className="pt-4 gap-2">
+                          <Button type="button" variant="ghost" onClick={() => setShowAddTxModal(false)} className="rounded-xl font-bold">
+                            Cancel
+                          </Button>
+                          <Button type="submit" disabled={txUploading} className="rounded-xl font-bold bg-[#D91A2A] hover:bg-[#D91A2A]/90 text-white shadow-lg shadow-red-200/50 border-none px-6">
+                            {txUploading ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...
+                              </>
+                            ) : 'Submit Transaction'}
+                          </Button>
+                        </DialogFooter>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </CardHeader>
+              <CardContent className="pt-6 space-y-6">
+
+                {/* Stats row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Total Approved Grant</p>
+                    <p className="text-xl font-black text-slate-900 mt-1">₹{totalGrantAmount.toLocaleString('en-IN')}</p>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">Across {txPhases.length} Phases</p>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Total Spent</p>
+                    <p className="text-xl font-black text-slate-900 mt-1">₹{totalSpent.toLocaleString('en-IN')}</p>
+                    <div className="flex gap-2 text-[9px] font-bold text-slate-500 uppercase mt-0.5">
+                      <span>Approved: ₹{approvedSpent.toLocaleString('en-IN')}</span>
+                      {pendingSpent > 0 && <span className="text-orange-500">Pending: ₹{pendingSpent.toLocaleString('en-IN')}</span>}
+                    </div>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Remaining Balance</p>
+                    <p className="text-xl font-black text-slate-900 mt-1">₹{remainingBalance.toLocaleString('en-IN')}</p>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">Available for disbursement</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* Utilization and Progress */}
+                  <div className="lg:col-span-5 space-y-4">
+                    <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 space-y-4">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Utilization per Phase</h4>
+                      {txPhases.map((phase) => {
+                        const phaseSpent = transactions
+                          .filter(t => t.phaseName === phase.phaseName && t.status === 'Approved')
+                          .reduce((acc, t) => acc + t.amount, 0);
+
+                        const phasePending = transactions
+                          .filter(t => t.phaseName === phase.phaseName && t.status === 'Pending Review')
+                          .reduce((acc, t) => acc + t.amount, 0);
+
+                        const totalLogged = phaseSpent + phasePending;
+                        const percent = Math.min(100, Math.round((phaseSpent / phase.amount) * 100));
+                        const pendingPercent = Math.min(100 - percent, Math.round((phasePending / phase.amount) * 100));
+
+                        return (
+                          <div key={phase.phaseName} className="space-y-1.5">
+                            <div className="flex justify-between items-end text-xs">
+                              <div>
+                                <span className="font-bold text-slate-800">{phase.phaseName}</span>
+                                <span className="text-[9px] text-slate-400 font-bold ml-1.5 uppercase">
+                                  (Limit: ₹{phase.amount.toLocaleString('en-IN')})
+                                </span>
+                              </div>
+                              <span className="font-black text-slate-700">₹{totalLogged.toLocaleString('en-IN')} logged</span>
+                            </div>
+                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
+                              <div className="h-full bg-emerald-500" style={{ width: `${percent}%` }} />
+                              <div className="h-full bg-orange-400 animate-pulse" style={{ width: `${pendingPercent}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Chart visualizer */}
+                    {txPhases.length > 0 && (
+                      <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Utilization Graph</h4>
+                        <div className="h-[180px] w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 'bold', fill: '#94a3b8' }} />
+                              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 'bold', fill: '#94a3b8' }} />
+                              <Tooltip
+                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', padding: '8px' }}
+                                labelStyle={{ fontWeight: 'black', fontSize: '9px', textTransform: 'uppercase', marginBottom: '2px' }}
+                              />
+                              <Bar dataKey="Budget" fill="#cbd5e1" radius={[2, 2, 0, 0]} name="Budget" />
+                              <Bar dataKey="Spent" fill="#10b981" radius={[2, 2, 0, 0]} name="Spent" />
+                              <Bar dataKey="Pending" fill="#fb923c" radius={[2, 2, 0, 0]} name="Pending" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Transaction Ledger */}
+                  <div className="lg:col-span-7 space-y-4">
+                    <div className="flex flex-col sm:flex-row items-center gap-2 justify-between pb-1 border-b">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Expense Ledger</h4>
+                      <div className="flex gap-1.5 w-full sm:w-auto">
+                        <div className="relative flex-1 sm:w-36">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+                          <Input
+                            placeholder="Search..."
+                            className="h-8 pl-8 rounded-lg border-slate-100 bg-slate-50/50 font-medium text-[10px] w-full focus:ring-primary/20"
+                            value={txSearchQuery}
+                            onChange={(e) => setTxSearchQuery(e.target.value)}
+                          />
+                        </div>
+                        <select
+                          className="h-8 px-2 rounded-lg border border-slate-100 bg-slate-50/50 text-[10px] font-bold text-slate-600 outline-none w-24"
+                          value={txStatusFilter}
+                          onChange={(e) => setTxStatusFilter(e.target.value)}
+                        >
+                          <option value="all">All Status</option>
+                          <option value="Approved">Approved</option>
+                          <option value="Pending Review">Pending</option>
+                          <option value="Rejected">Rejected</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {filteredTransactions.length === 0 ? (
+                      <div className="p-10 text-center text-slate-400 font-bold uppercase text-[9px] tracking-widest italic space-y-2 border border-dashed border-slate-150 rounded-2xl">
+                        <Receipt className="h-6 w-6 mx-auto text-slate-200" />
+                        <p>No expense transactions logged</p>
+                      </div>
+                    ) : (
+                      <div className="border rounded-2xl overflow-hidden bg-slate-50/20 max-h-[300px] overflow-y-auto">
                         <Table>
-                          <TableHeader className="bg-slate-50/80">
+                          <TableHeader className="bg-slate-100/50 sticky top-0 z-10">
                             <TableRow className="border-slate-100">
-                              <TableHead className="text-[9px] font-black uppercase tracking-widest py-3">Vendor / GST</TableHead>
-                              <TableHead className="text-[9px] font-black uppercase tracking-widest py-3">Invoice Details</TableHead>
-                              <TableHead className="text-[9px] font-black uppercase tracking-widest py-3">Description</TableHead>
-                              <TableHead className="text-[9px] font-black uppercase tracking-widest py-3 text-right">Amount</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase tracking-widest py-2">Vendor / GST</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase tracking-widest py-2">Phase</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase tracking-widest py-2">Amount</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase tracking-widest py-2">Status</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase tracking-widest py-2 text-right">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {(application.transactions || []).length > 0 ? (
-                              (application.transactions || []).map((tx: any) => (
-                                <TableRow key={tx.id} className="border-slate-100 hover:bg-slate-50/40">
-                                  <TableCell className="py-4">
-                                    <p className="text-xs font-bold text-slate-900">{tx.vendorName}</p>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">GST: {tx.gstNumber}</p>
-                                  </TableCell>
-                                  <TableCell className="py-4">
-                                    <p className="text-xs font-bold text-slate-700">{format(new Date(tx.invoiceDate), 'MMM dd, yyyy')}</p>
+                            {filteredTransactions.map((tx) => (
+                              <TableRow key={tx.id} className="border-slate-100 hover:bg-white transition-colors">
+                                <TableCell className="py-2.5">
+                                  <div>
+                                    <p className="text-xs font-black text-slate-900 leading-none">{tx.vendorName}</p>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">
+                                      GST: {tx.gstNumber} • {format(tx.invoiceDate, 'MMM dd, yyyy')}
+                                    </p>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="py-2.5">
+                                  <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-[8px] font-black uppercase">
+                                    {tx.phaseName}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="py-2.5 text-xs font-black text-slate-900">
+                                  ₹{tx.amount.toLocaleString('en-IN')}
+                                </TableCell>
+                                <TableCell className="py-2.5">
+                                  <Badge className={`border-none font-bold text-[8px] uppercase px-1.5 py-0.5 rounded ${tx.status === 'Approved' ? 'bg-emerald-50 text-emerald-600' :
+                                    tx.status === 'Rejected' ? 'bg-rose-50 text-rose-600' :
+                                      'bg-orange-50 text-orange-600'
+                                    }`}>
+                                    {tx.status === 'Pending Review' ? 'Pending' : tx.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="py-2.5 text-right">
+                                  <div className="flex items-center justify-end gap-1">
                                     {tx.invoiceUrl && (
                                       <a
                                         href={tx.invoiceUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1 text-[9px] font-black uppercase text-primary hover:underline mt-1"
+                                        className="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors"
+                                        title="View Invoice Document"
                                       >
-                                        <FileText className="h-3 w-3" /> View Invoice
+                                        <ExternalLink className="h-3.5 w-3.5" />
                                       </a>
                                     )}
-                                  </TableCell>
-                                  <TableCell className="py-4 text-xs font-medium text-slate-600 max-w-xs truncate">
-                                    {tx.description}
-                                  </TableCell>
-                                  <TableCell className="py-4 text-xs font-black text-slate-900 text-right">
-                                    ₹{tx.amount?.toLocaleString('en-IN') || '0'}
-                                  </TableCell>
-                                </TableRow>
-                              ))
-                            ) : (
-                              <TableRow>
-                                <TableCell colSpan={4} className="py-8 text-center text-xs text-slate-400 font-bold italic">
-                                  No transaction logs found for this grant.
+
+                                    {isAdmin && tx.status === 'Pending Review' && (
+                                      <>
+                                        <button
+                                          onClick={() => handleUpdateTxStatus(tx.id, 'Approved')}
+                                          className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-colors cursor-pointer"
+                                          title="Approve Transaction"
+                                        >
+                                          <Check className="h-4.5 w-4.5" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleUpdateTxStatus(tx.id, 'Rejected')}
+                                          className="p-1 text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                                          title="Reject Transaction"
+                                        >
+                                          <X className="h-4.5 w-4.5" />
+                                        </button>
+                                      </>
+                                    )}
+
+                                    {(!isAdmin && tx.status === 'Pending Review') && (
+                                      <button
+                                        onClick={() => handleDeleteTx(tx.id)}
+                                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                                        title="Delete Log"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    )}
+                                    {isAdmin && (
+                                      <button
+                                        onClick={() => handleDeleteTx(tx.id)}
+                                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                                        title="Admin Delete Log"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
                                 </TableCell>
                               </TableRow>
-                            )}
+                            ))}
                           </TableBody>
                         </Table>
                       </div>
-                    </TabsContent>
-                  )}
-
-                  {/* Tab 2: Monthly Progress Reports */}
-                  <TabsContent value="reports" className="space-y-6">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
-                      <div>
-                        <h3 className="text-xs font-bold text-slate-500">Monthly Progress Tracking</h3>
-                        <p className="text-[10px] text-slate-400 font-medium mt-1">
-                          Required updates submitted between 1st - 8th of every month
-                        </p>
-                      </div>
-
-                      {/* Month Switcher Tabs */}
-                      <div className="flex bg-slate-100 p-1 rounded-xl">
-                        {(['month1', 'month2', 'month3'] as const).map((mKey) => (
-                          <button
-                            key={mKey}
-                            onClick={() => setActiveReportMonth(mKey)}
-                            className={cn(
-                              "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
-                              activeReportMonth === mKey
-                                ? "bg-white text-slate-900 shadow-sm"
-                                : "text-slate-500 hover:text-slate-900"
-                            )}
-                          >
-                            {mKey === 'month1' ? 'Month 1' : mKey === 'month2' ? 'Month 2' : 'Month 3'}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Window Status Banner */}
-                    {(isOwner || application.data?.teamMembers?.some((m: any) => m.email === user?.email)) && (
-                      <div className={cn(
-                        "p-4 rounded-2xl border text-xs font-medium flex items-start gap-3",
-                        (new Date().getDate() >= 1 && new Date().getDate() <= 8)
-                          ? "bg-emerald-50 border-emerald-100 text-emerald-800"
-                          : "bg-amber-50 border-amber-100 text-amber-800"
-                      )}>
-                        <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                        <div>
-                          <p className="font-bold">
-                            {(new Date().getDate() >= 1 && new Date().getDate() <= 8)
-                              ? "Submission window is open!"
-                              : "Submission window is locked."}
-                          </p>
-                          <p className="text-[11px] opacity-90 mt-0.5">
-                            Submissions and updates are only permitted between the 1st and 8th of every month. Currently, it is day {new Date().getDate()} of the month.
-                          </p>
-                        </div>
-                      </div>
                     )}
+                  </div>
+                </div>
 
-                    {/* Report Form / Details */}
-                    <div className="space-y-4">
-                      {/* For editing (Owners/Team members) */}
-                      {(isOwner || application.data?.teamMembers?.some((m: any) => m.email === user?.email)) ? (
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Progress Report</Label>
-                            <Textarea
-                              value={reportProgress}
-                              onChange={(e) => setReportProgress(e.target.value)}
-                              placeholder="Describe your progress during this month..."
-                              className="rounded-2xl min-h-[100px] bg-slate-50 border-none focus:ring-primary/20 p-4 font-medium"
-                              disabled={!(new Date().getDate() >= 1 && new Date().getDate() <= 8)}
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Market Validation Update</Label>
-                            <Textarea
-                              value={reportMarketVal}
-                              onChange={(e) => setReportMarketVal(e.target.value)}
-                              placeholder="Detail any market validation activities or updates..."
-                              className="rounded-2xl min-h-[100px] bg-slate-50 border-none focus:ring-primary/20 p-4 font-medium"
-                              disabled={!(new Date().getDate() >= 1 && new Date().getDate() <= 8)}
-                            />
-                          </div>
-
-                          {new Date().getDate() >= 1 && new Date().getDate() <= 8 && (
-                            <Button
-                              onClick={handleSaveMonthlyReport}
-                              disabled={isSavingReport}
-                              className="w-full h-11 rounded-xl bg-primary text-white font-bold"
-                            >
-                              {isSavingReport ? 'Saving Report...' : 'Save Progress & Validation Update'}
-                            </Button>
-                          )}
-                        </div>
-                      ) : (
-                        // For Admin / Mentors viewing reports
-                        <div className="space-y-4">
-                          {application.monthlyReports?.[activeReportMonth] ? (
-                            <div className="space-y-4">
-                              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Progress Report</h4>
-                                <p className="text-xs font-medium text-slate-700 whitespace-pre-line">
-                                  {application.monthlyReports[activeReportMonth].progressReport}
-                                </p>
-                              </div>
-
-                              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Market Validation Update</h4>
-                                <p className="text-xs font-medium text-slate-700 whitespace-pre-line">
-                                  {application.monthlyReports[activeReportMonth].marketValidationUpdate}
-                                </p>
-                              </div>
-
-                              <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider text-right">
-                                Last Updated: {format(application.monthlyReports[activeReportMonth].updatedAt, 'MMM dd, yyyy • HH:mm')}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                              <p className="text-xs text-slate-400 font-bold italic">
-                                No report has been submitted for {activeReportMonth === 'month1' ? 'Month 1' : activeReportMonth === 'month2' ? 'Month 2' : 'Month 3'} yet.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </TabsContent>
-                </Tabs>
               </CardContent>
             </Card>
           )}
