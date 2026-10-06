@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { AnimatedProgressRing, LivePulseBadge, CardHoverEffect } from '@/components/ui/animated';
 import {
   Table,
   TableBody,
@@ -1372,6 +1373,24 @@ export default function ApplicationDetailsPage() {
     return matchesSearch && matchesStatus;
   });
 
+  const getReadinessScore = (status: string) => {
+    switch (status) {
+      case 'Submitted': return 20;
+      case 'Under Review': return 35;
+      case 'Phase 1 Evaluation': return 45;
+      case 'Phase 1 Selected': return 55;
+      case 'Phase 2 Evaluation': return 70;
+      case 'Phase 2 Selected': return 80;
+      case 'Cohort Selected': return 90;
+      case 'Funding Committee Review': return 85;
+      case 'Funding Approved': return 95;
+      case 'Incubated': return 100;
+      case 'Revision Needed': return 30;
+      case 'Revision Submitted': return 45;
+      default: return 15;
+    }
+  };
+
   return (
     <div className="space-y-8 p-6 md:p-8 animate-in fade-in duration-700">
       <Button
@@ -1383,16 +1402,33 @@ export default function ApplicationDetailsPage() {
       </Button>
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-6 border-b">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-black tracking-tight text-slate-900">{application.programmeTitle}</h1>
-            <Badge className="bg-primary/10 text-primary border-none font-black px-4 py-1">
-              {application.status.toUpperCase()}
-            </Badge>
-          </div>
-          <div className="flex items-center space-x-4 text-xs font-medium text-slate-400">
-            <span className="flex items-center"><Hash className="h-3 w-3 mr-1" /> {application.id}</span>
-            <span className="flex items-center"><Clock className="h-3 w-3 mr-1" /> Applied on {format(application.submittedAt, 'MMM dd, yyyy')}</span>
+        <div className="flex items-center gap-5">
+          <AnimatedProgressRing 
+            value={getReadinessScore(application.status)} 
+            size={64} 
+            strokeWidth={5} 
+            label="Milestone" 
+          />
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-black tracking-tight text-slate-900">{application.programmeTitle}</h1>
+              <Badge className="bg-primary/10 text-primary border-none font-black px-4 py-1">
+                {application.status.toUpperCase()}
+              </Badge>
+              {['Phase 1 Evaluation', 'Phase 2 Evaluation', 'Under Review'].includes(application.status) && (
+                <LivePulseBadge label="Evaluation Active" variant="warning" pulse />
+              )}
+              {application.status === 'Incubated' && (
+                <LivePulseBadge label="Incubated Venture" variant="success" pulse />
+              )}
+              {application.status === 'Revision Needed' && (
+                <LivePulseBadge label="Revision Required" variant="danger" pulse />
+              )}
+            </div>
+            <div className="flex items-center space-x-4 text-xs font-medium text-slate-400">
+              <span className="flex items-center"><Hash className="h-3 w-3 mr-1" /> {application.id}</span>
+              <span className="flex items-center"><Clock className="h-3 w-3 mr-1" /> Applied on {format(application.submittedAt, 'MMM dd, yyyy')}</span>
+            </div>
           </div>
         </div>
 
@@ -3277,24 +3313,43 @@ export default function ApplicationDetailsPage() {
           )}
 
           <Card className="border-none shadow-sm ring-1 ring-slate-200">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle className="text-sm font-black uppercase tracking-widest">Activity Timeline</CardTitle>
+              {(application.timeline || []).length > 0 && (
+                <LivePulseBadge label="Live Tracked" variant="success" pulse />
+              )}
             </CardHeader>
             <CardContent>
               <div className="relative space-y-8 pl-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
-                {(application.timeline || []).map((event: any, i: number) => (
-                  <div key={i} className="relative group">
-                    <div className={cn(
-                      "absolute -left-[31px] top-1 h-6 w-6 rounded-full border-4 border-white flex items-center justify-center shadow-sm",
-                      i === application.timeline!.length - 1 ? "bg-primary" : "bg-slate-200"
-                    )} />
-                    <div className="space-y-1">
-                      <p className="text-xs font-black text-slate-900">{event.status}</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase">{format(event.timestamp, 'MMM dd, yyyy • HH:mm')}</p>
-                      <p className="text-[11px] text-slate-500 leading-relaxed italic mt-1 bg-slate-50 p-2 rounded-lg">{event.remarks}</p>
+                {(application.timeline || []).slice().reverse().map((event: any, i: number) => {
+                  const isLatest = i === 0;
+                  return (
+                    <div key={i} className="relative group">
+                      <div className={cn(
+                        "absolute -left-[31px] top-1 h-6 w-6 rounded-full border-4 border-white flex items-center justify-center shadow-sm transition-all",
+                        isLatest ? "bg-primary" : "bg-slate-200"
+                      )}>
+                        {isLatest && (
+                          <span className="absolute -inset-1 rounded-full bg-primary/40 animate-ping opacity-75" />
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-black text-slate-900">{event.status}</p>
+                          {isLatest && (
+                            <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                              Current
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">{format(event.timestamp, 'MMM dd, yyyy • HH:mm')}</p>
+                        {event.remarks && (
+                          <p className="text-[11px] text-slate-500 leading-relaxed italic mt-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100/80">{event.remarks}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )).reverse()}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -3302,15 +3357,34 @@ export default function ApplicationDetailsPage() {
           {/* Standalone Milestones Roadmap Card */}
           {application.status === 'Incubated' && (
             <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden bg-white rounded-3xl mt-6">
-              <CardHeader className="bg-slate-50/50 border-b flex flex-row items-center justify-between p-6">
+              <CardHeader className="bg-slate-50/50 border-b flex flex-col sm:flex-row sm:items-center justify-between p-6 gap-4">
                 <div>
                   <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center">
-                    <Rocket className="h-4 w-4 mr-2 text-primary animate-pulse" /> Startup Milestones Roadmap
+                    <Rocket className="h-4 w-4 mr-2 text-primary" /> Startup Milestones Roadmap
                   </CardTitle>
                   <p className="text-[10px] text-slate-400 font-medium mt-1">
                     Track cohort milestones and key compliance targets for graduation.
                   </p>
                 </div>
+                {(application.milestones || []).length > 0 && (
+                  <div className="flex items-center gap-3 bg-white px-3.5 py-2 rounded-2xl border border-slate-100 shadow-sm self-start sm:self-auto">
+                    <AnimatedProgressRing
+                      value={Math.round(
+                        ((application.milestones || []).filter(m => m.status === 'Completed').length /
+                          (application.milestones || []).length) *
+                          100
+                      )}
+                      size={44}
+                      strokeWidth={4}
+                    />
+                    <div>
+                      <p className="text-xs font-black text-slate-800">
+                        {(application.milestones || []).filter(m => m.status === 'Completed').length} / {(application.milestones || []).length}
+                      </p>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Completed</p>
+                    </div>
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="p-6 space-y-6">
                 {/* Milestones Checklist */}
@@ -3329,7 +3403,12 @@ export default function ApplicationDetailsPage() {
                             )}
                           </div>
                           <div>
-                            <h4 className={cn("text-sm font-bold text-slate-900", ms.status === 'Completed' && "line-through text-slate-400")}>{ms.title}</h4>
+                            <div className="flex items-center gap-2">
+                              <h4 className={cn("text-sm font-bold text-slate-900", ms.status === 'Completed' && "line-through text-slate-400")}>{ms.title}</h4>
+                              {ms.status === 'Pending' && <LivePulseBadge label="Active Target" variant="neutral" pulse />}
+                              {ms.status === 'Completed' && <LivePulseBadge label="Done" variant="success" />}
+                              {ms.status === 'Delayed' && <LivePulseBadge label="Delayed" variant="danger" pulse />}
+                            </div>
                             {ms.description && <p className="text-xs text-slate-500 mt-0.5">{ms.description}</p>}
                             {ms.status === 'Completed' && ms.completionDetails && (
                               <div className="mt-3 p-3 bg-emerald-50/40 rounded-xl border border-emerald-100/50 space-y-1 max-w-xl">

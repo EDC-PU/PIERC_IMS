@@ -50,7 +50,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
 
   return (
     <header className="h-16 bg-white border-b flex items-center justify-between px-6 shrink-0">
-      <div className="flex items-center flex-1 max-w-md gap-4">
+      <div className="flex items-center flex-1 max-w-md gap-3">
         {onMenuClick && (
           <button 
             onClick={onMenuClick}
@@ -59,6 +59,9 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
             <Menu className="h-6 w-6" />
           </button>
         )}
+        <Link href="/dashboard" className="lg:hidden flex items-center">
+          <img src="/logo.svg" alt="PIERC Logo" className="h-8 w-auto object-contain" />
+        </Link>
         <div className="relative w-full hidden md:block">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
           <Input

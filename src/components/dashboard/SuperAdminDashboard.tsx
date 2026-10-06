@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AnimatedNumber, CardHoverEffect, LivePulseBadge } from '@/components/ui/animated';
 import {
   Users,
   Rocket,
@@ -386,71 +387,95 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
 
       {/* 1. Dashboard Overview Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-        <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
-            <CardTitle className="text-xs font-bold text-slate-500">Total Startups</CardTitle>
-            <Rocket className="h-4 w-4 text-rose-500" />
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-2xl font-black text-slate-900">{totalStartups}</div>
-            <p className="text-[9px] font-medium text-slate-400 mt-1">From Application Logs</p>
-          </CardContent>
-        </Card>
+        <CardHoverEffect delay={0.02}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
+              <CardTitle className="text-xs font-bold text-slate-500">Total Startups</CardTitle>
+              <Rocket className="h-4 w-4 text-rose-500" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="text-2xl font-black text-slate-900">
+                <AnimatedNumber value={totalStartups} duration={1000} />
+              </div>
+              <p className="text-[9px] font-medium text-slate-400 mt-1">From Application Logs</p>
+            </CardContent>
+          </Card>
+        </CardHoverEffect>
 
-        <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
-            <CardTitle className="text-xs font-bold text-slate-500">Active Startups</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-2xl font-black text-slate-900">{activeStartups}</div>
-            <p className="text-[9px] font-medium text-emerald-600 mt-1">Currently Active</p>
-          </CardContent>
-        </Card>
+        <CardHoverEffect delay={0.06}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
+              <CardTitle className="text-xs font-bold text-slate-500">Active Startups</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="text-2xl font-black text-slate-900">
+                <AnimatedNumber value={activeStartups} duration={1100} />
+              </div>
+              <p className="text-[9px] font-medium text-emerald-600 mt-1">Currently Active</p>
+            </CardContent>
+          </Card>
+        </CardHoverEffect>
 
-        <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
-            <CardTitle className="text-xs font-bold text-slate-500">Apps Received</CardTitle>
-            <FileText className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-2xl font-black text-slate-900">{applicationsReceived}</div>
-            <p className="text-[9px] font-medium text-slate-400 mt-1">Total Submissions</p>
-          </CardContent>
-        </Card>
+        <CardHoverEffect delay={0.1}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
+              <CardTitle className="text-xs font-bold text-slate-500">Apps Received</CardTitle>
+              <FileText className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="text-2xl font-black text-slate-900">
+                <AnimatedNumber value={applicationsReceived} duration={1200} />
+              </div>
+              <p className="text-[9px] font-medium text-slate-400 mt-1">Total Submissions</p>
+            </CardContent>
+          </Card>
+        </CardHoverEffect>
 
-        <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
-            <CardTitle className="text-xs font-bold text-slate-500">Incubated</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-indigo-500" />
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-2xl font-black text-slate-900">{incubatedCount}</div>
-            <p className="text-[9px] font-medium text-indigo-600 mt-1">Officially Incubated</p>
-          </CardContent>
-        </Card>
+        <CardHoverEffect delay={0.14}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
+              <CardTitle className="text-xs font-bold text-slate-500">Incubated</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-indigo-500" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="text-2xl font-black text-slate-900">
+                <AnimatedNumber value={incubatedCount} duration={1300} />
+              </div>
+              <p className="text-[9px] font-medium text-indigo-600 mt-1">Officially Incubated</p>
+            </CardContent>
+          </Card>
+        </CardHoverEffect>
 
-        <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
-            <CardTitle className="text-xs font-bold text-slate-500">Graduated</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-[#D91A2A]" />
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-2xl font-black text-slate-900">{graduatedCount}</div>
-            <p className="text-[9px] font-medium text-[#D91A2A] mt-1">Graduated Cohorts</p>
-          </CardContent>
-        </Card>
+        <CardHoverEffect delay={0.18}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
+              <CardTitle className="text-xs font-bold text-slate-500">Graduated</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-[#D91A2A]" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="text-2xl font-black text-slate-900">
+                <AnimatedNumber value={graduatedCount} duration={1400} />
+              </div>
+              <p className="text-[9px] font-medium text-[#D91A2A] mt-1">Graduated Cohorts</p>
+            </CardContent>
+          </Card>
+        </CardHoverEffect>
 
-        <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
-            <CardTitle className="text-xs font-bold text-slate-500">Dropped</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-rose-500" />
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-2xl font-black text-slate-900">{droppedCount}</div>
-            <p className="text-[9px] font-medium text-rose-500 mt-1">Rejected / Discontinued</p>
-          </CardContent>
-        </Card>
+        <CardHoverEffect delay={0.22}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
+              <CardTitle className="text-xs font-bold text-slate-500">Dropped</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-rose-500" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="text-2xl font-black text-slate-900">
+                <AnimatedNumber value={droppedCount} duration={1500} />
+              </div>
+              <p className="text-[9px] font-medium text-rose-500 mt-1">Rejected / Discontinued</p>
+            </CardContent>
+          </Card>
+        </CardHoverEffect>
       </div>
 
       {/* Analytics Tabs */}
@@ -573,12 +598,16 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
               <CardContent className="p-6 grid grid-cols-2 gap-4">
                 <div className="p-4 bg-purple-50/30 rounded-2xl border border-purple-100/30 text-center">
                   <span className="text-[9px] font-black uppercase text-slate-400 block mb-1">Total Mentors</span>
-                  <span className="text-3xl font-black text-purple-700 block">{totalMentors}</span>
+                  <span className="text-3xl font-black text-purple-700 block">
+                    <AnimatedNumber value={totalMentors} duration={1000} />
+                  </span>
                   <span className="text-[9px] font-bold text-purple-500 block mt-1">{activeMentors} Active Mentors</span>
                 </div>
                 <div className="p-4 bg-orange-50/30 rounded-2xl border border-orange-100/30 text-center">
                   <span className="text-[9px] font-black uppercase text-slate-400 block mb-1">Sessions (Month)</span>
-                  <span className="text-3xl font-black text-orange-600 block">{sessionsThisMonth}</span>
+                  <span className="text-3xl font-black text-orange-600 block">
+                    <AnimatedNumber value={sessionsThisMonth} duration={1100} />
+                  </span>
                   <span className="text-[9px] font-bold text-orange-500 block mt-1">{pendingSessions} Scheduled Sessions</span>
                 </div>
               </CardContent>
@@ -675,23 +704,33 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="p-5 bg-white border border-slate-100 shadow-sm rounded-2xl text-center">
               <span className="text-[9px] font-black uppercase text-slate-400 block mb-1">Decided (Month)</span>
-              <span className="text-2xl font-black text-slate-800 block">{decidedApps.length}</span>
+              <span className="text-2xl font-black text-slate-800 block">
+                <AnimatedNumber value={decidedApps.length} duration={900} />
+              </span>
             </div>
             <div className="p-5 bg-white border border-slate-100 shadow-sm rounded-2xl text-center">
               <span className="text-[9px] font-black uppercase text-slate-400 block mb-1">Approval Rate</span>
-              <span className="text-2xl font-black text-green-600 block">{approvalRate}%</span>
+              <span className="text-2xl font-black text-green-600 block">
+                <AnimatedNumber value={approvalRate} suffix="%" duration={1000} />
+              </span>
             </div>
             <div className="p-5 bg-white border border-slate-100 shadow-sm rounded-2xl text-center">
               <span className="text-[9px] font-black uppercase text-slate-400 block mb-1">Rejection Rate</span>
-              <span className="text-2xl font-black text-rose-600 block">{rejectionRate}%</span>
+              <span className="text-2xl font-black text-rose-600 block">
+                <AnimatedNumber value={rejectionRate} suffix="%" duration={1100} />
+              </span>
             </div>
             <div className="p-5 bg-white border border-slate-100 shadow-sm rounded-2xl text-center">
               <span className="text-[9px] font-black uppercase text-slate-400 block mb-1">Avg Process Time</span>
-              <span className="text-2xl font-black text-slate-800 block">{avgProcessingTime} Days</span>
+              <span className="text-2xl font-black text-slate-800 block">
+                <AnimatedNumber value={avgProcessingTime} suffix=" Days" duration={1200} />
+              </span>
             </div>
             <div className="p-5 bg-white border border-slate-100 shadow-sm rounded-2xl text-center">
               <span className="text-[9px] font-black uppercase text-slate-400 block mb-1">Apps This Month</span>
-              <span className="text-2xl font-black text-blue-600 block">{appsThisMonth}</span>
+              <span className="text-2xl font-black text-blue-600 block">
+                <AnimatedNumber value={appsThisMonth} duration={1000} />
+              </span>
             </div>
           </div>
 
@@ -753,8 +792,12 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
                 <DollarSign className="h-4 w-4 text-emerald-600" />
               </CardHeader>
               <CardContent className="p-6">
-                <div className="text-2xl font-black text-slate-900">₹{totalFundingRaised.toLocaleString()}</div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Grants: ₹{totalGrants.toLocaleString()}</p>
+                <div className="text-2xl font-black text-slate-900">
+                  <AnimatedNumber value={totalFundingRaised} prefix="₹" duration={1300} />
+                </div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">
+                  Grants: <AnimatedNumber value={totalGrants} prefix="₹" duration={1300} />
+                </p>
               </CardContent>
             </Card>
 
@@ -764,7 +807,9 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
                 <DollarSign className="h-4 w-4 text-indigo-600" />
               </CardHeader>
               <CardContent className="p-6">
-                <div className="text-2xl font-black text-slate-900">₹{totalInvestorFunding.toLocaleString()}</div>
+                <div className="text-2xl font-black text-slate-900">
+                  <AnimatedNumber value={totalInvestorFunding} prefix="₹" duration={1300} />
+                </div>
                 <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">External investor seed rounds</p>
               </CardContent>
             </Card>

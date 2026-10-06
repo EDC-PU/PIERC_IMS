@@ -12,6 +12,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "PIERC Portal | Incubation Management System",
   description: "Enterprise-grade incubation lifecycle management portal for PIERC.",
+  icons: {
+    icon: "/logo.svg",
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export default function RootLayout({

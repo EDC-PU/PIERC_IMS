@@ -18,6 +18,7 @@ import {
   TabsList,
   TabsTrigger
 } from '@/components/ui/tabs';
+import { AnimatedNumber, AnimatedPillTabs, LivePulseBadge, CardHoverEffect } from '@/components/ui/animated';
 import {
   Table,
   TableBody,
@@ -66,6 +67,7 @@ export default function EvaluatePage() {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('pipeline');
 
   // Evaluation Form State
   const [marks, setMarks] = useState<number | ''>('');
@@ -319,40 +321,90 @@ export default function EvaluatePage() {
   return (
     <div className="max-w-[1600px] mx-auto p-6 md:p-8 animate-in fade-in duration-700">
       {!selectedApp ? (
-        <Tabs defaultValue="pipeline" className="space-y-10">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
               <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest text-primary mb-2">
                 <ClipboardList className="h-4 w-4" />
                 <span>Expert Workspace</span>
+                {filteredApps.length > 0 && (
+                  <LivePulseBadge label="Review Queue" variant="warning" pulse />
+                )}
               </div>
               <h1 className="text-4xl font-black tracking-tighter text-slate-900">Evaluation Hub</h1>
               <p className="text-slate-500 font-medium mt-1">Review startup submissions and manage your evaluation history.</p>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <Button variant="outline" onClick={handleExportEvaluations} className="rounded-2xl h-14 px-6 font-bold flex items-center gap-2 border-slate-200 shadow-sm bg-white hover:bg-slate-50">
                 <Download className="h-4 w-4" /> Export CSV
               </Button>
-              <TabsList className="bg-slate-100/50 p-1 rounded-2xl border border-slate-200 h-14">
-                <TabsTrigger value="pipeline" className="rounded-xl px-8 h-12 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md font-black text-[10px] uppercase tracking-widest text-slate-500">
-                  Project Pipeline ({filteredApps.length})
-                </TabsTrigger>
-                <TabsTrigger value="history" className="rounded-xl px-8 h-12 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md font-black text-[10px] uppercase tracking-widest text-slate-500">
-                  My History ({evaluatedApps.reduce((acc, app) => acc + app.evals.length, 0)})
-                </TabsTrigger>
-              </TabsList>
 
               <div className="relative w-full md:w-80">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder="Search startups..."
-                  className="pl-12 rounded-2xl h-14 border-slate-200 bg-white shadow-sm focus:ring-primary/10 transition-all"
+                  className="pl-12 rounded-2xl h-14 border-slate-200 bg-white shadow-sm focus:ring-primary/10 transition-all font-medium text-sm"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
             </div>
+          </div>
+
+          {/* Metric Stat Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <CardHoverEffect delay={0.05}>
+              <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white p-6 h-full">
+                <div className="flex items-center justify-between pb-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pending Review</span>
+                  <ClipboardList className="h-4 w-4 text-primary" />
+                </div>
+                <div className="text-3xl font-black text-slate-900 mt-2">
+                  <AnimatedNumber value={filteredApps.length} />
+                </div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Awaiting Evaluation</p>
+              </Card>
+            </CardHoverEffect>
+
+            <CardHoverEffect delay={0.1}>
+              <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white p-6 h-full">
+                <div className="flex items-center justify-between pb-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evaluations Logged</span>
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                </div>
+                <div className="text-3xl font-black text-slate-900 mt-2">
+                  <AnimatedNumber value={evaluatedApps.reduce((acc, app) => acc + app.evals.length, 0)} />
+                </div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Submitted Reviews</p>
+              </Card>
+            </CardHoverEffect>
+
+            <CardHoverEffect delay={0.15}>
+              <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white p-6 h-full">
+                <div className="flex items-center justify-between pb-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Committee Sessions</span>
+                  <Users className="h-4 w-4 text-blue-500" />
+                </div>
+                <div className="text-3xl font-black text-slate-900 mt-2">
+                  <AnimatedNumber value={meetings.filter(m => m.attendees?.includes(currentUser?.uid || '')).length} />
+                </div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Scheduled Panels</p>
+              </Card>
+            </CardHoverEffect>
+          </div>
+
+          {/* Sliding Pill Navigation */}
+          <div className="overflow-x-auto pb-1">
+            <AnimatedPillTabs
+              options={[
+                { id: 'pipeline', label: `Project Pipeline (${filteredApps.length})` },
+                { id: 'history', label: `My History (${evaluatedApps.reduce((acc, app) => acc + app.evals.length, 0)})` },
+              ]}
+              activeId={activeTab}
+              onChange={setActiveTab}
+              layoutId="eval-hub-pill"
+            />
           </div>
 
           <TabsContent value="pipeline" className="mt-0 outline-none">
@@ -363,35 +415,36 @@ export default function EvaluatePage() {
                   <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">No pending evaluations</p>
                 </div>
               ) : (
-                filteredApps.map((app) => (
-                  <Card
-                    key={app.id}
-                    className="group border-none shadow-sm ring-1 ring-slate-200 rounded-[2rem] overflow-hidden hover:shadow-2xl hover:ring-primary/20 transition-all duration-500 cursor-pointer"
-                    onClick={() => setSelectedApp(app)}
-                  >
-                    <CardHeader className="bg-slate-50/50 p-8">
-                      <div className="flex justify-between items-start mb-4">
-                        <Badge className="bg-white text-slate-900 border-slate-200 px-3 py-1 font-black text-[9px] uppercase tracking-widest rounded-full">
-                          {getPhase(app.id)}
-                        </Badge>
-                        <div className="h-10 w-10 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-primary group-hover:text-white transition-colors duration-500">
-                          <Rocket className="h-5 w-5" />
+                filteredApps.map((app, index) => (
+                  <CardHoverEffect key={app.id} delay={index * 0.04}>
+                    <Card
+                      className="group border-none shadow-sm ring-1 ring-slate-200 rounded-[2rem] overflow-hidden hover:shadow-2xl hover:ring-primary/20 transition-all duration-500 cursor-pointer h-full"
+                      onClick={() => setSelectedApp(app)}
+                    >
+                      <CardHeader className="bg-slate-50/50 p-8">
+                        <div className="flex justify-between items-start mb-4">
+                          <Badge className="bg-white text-slate-900 border-slate-200 px-3 py-1 font-black text-[9px] uppercase tracking-widest rounded-full">
+                            {getPhase(app.id)}
+                          </Badge>
+                          <div className="h-10 w-10 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-primary group-hover:text-white transition-colors duration-500">
+                            <Rocket className="h-5 w-5" />
+                          </div>
                         </div>
-                      </div>
-                      <CardTitle className="text-xl font-black leading-tight text-slate-900 group-hover:text-primary transition-colors">
-                        {app.data?.startupTitle || app.programmeTitle}
-                      </CardTitle>
-                      <CardDescription className="font-bold text-[10px] uppercase tracking-widest mt-2">
-                        <Link 
-                          href={`/dashboard/profile/${app.userId}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="hover:underline hover:text-primary transition-colors"
-                        >
-                          {app.userName}
-                        </Link>
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
+                        <CardTitle className="text-xl font-black leading-tight text-slate-900 group-hover:text-primary transition-colors">
+                          {app.data?.startupTitle || app.programmeTitle}
+                        </CardTitle>
+                        <CardDescription className="font-bold text-[10px] uppercase tracking-widest mt-2">
+                          <Link 
+                            href={`/dashboard/profile/${app.userId}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="hover:underline hover:text-primary transition-colors"
+                          >
+                            {app.userName}
+                          </Link>
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  </CardHoverEffect>
                 ))
               )}
             </div>
@@ -671,8 +724,8 @@ export default function EvaluatePage() {
                               key={item.id}
                               onClick={() => setRecommendation(item.id)}
                               className={cn(
-                                "flex items-center space-x-3 p-5 rounded-2xl border font-black text-xs uppercase tracking-tight transition-all",
-                                recommendation === item.id ? item.active : "bg-white border-slate-100 text-slate-500 hover:border-primary/20"
+                                "flex items-center space-x-3 p-5 rounded-2xl border font-black text-xs uppercase tracking-tight transition-all duration-200 active:scale-95 hover:scale-[1.01]",
+                                recommendation === item.id ? `${item.active} shadow-lg shadow-black/5` : "bg-white border-slate-100 text-slate-500 hover:border-primary/20 shadow-sm"
                               )}
                             >
                               <item.icon className={cn("h-5 w-5", recommendation === item.id ? "text-white" : item.color)} />

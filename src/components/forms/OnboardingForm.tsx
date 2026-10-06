@@ -160,8 +160,12 @@ export default function OnboardingForm() {
   return (
     <Card className="max-w-xl mx-auto shadow-2xl border-none glass-card">
       <CardHeader className="text-center pb-8">
-        <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/20">
-          <Rocket className="text-white h-8 w-8" />
+        <div className="flex justify-center mb-6">
+          <img
+            src="/logo.svg"
+            alt="PIERC Logo"
+            className="h-16 w-auto object-contain"
+          />
         </div>
         <CardTitle className="text-3xl font-black tracking-tight">Complete Your Profile</CardTitle>
         <CardDescription className="text-slate-500 font-medium pt-2">

@@ -164,11 +164,13 @@ export default function LandingPage() {
       {/* Navigation */}
       <header className="px-6 lg:px-12 h-20 flex items-center justify-between sticky top-0 glass z-50">
         <div className="flex items-center gap-3">
-          <img 
-            src="https://www.pierc.org/_next/static/media/PIERC.959ad75d.svg" 
-            alt="PIERC Logo" 
-            className="h-10 w-auto"
-          />
+          <Link href="/" className="flex items-center">
+            <img
+              src="/logo.svg"
+              alt="PIERC Logo"
+              className="h-10 w-auto object-contain"
+            />
+          </Link>
         </div>
         <nav className="hidden lg:flex gap-8 text-sm font-bold text-slate-600">
           <Link href="#about" className="hover:text-primary transition-all">About Us</Link>
@@ -408,10 +410,13 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           <div className="space-y-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-                <Rocket className="text-white h-5 w-5" />
-              </div>
-              <span className="text-3xl font-black tracking-tighter">PIERC</span>
+              <Link href="/" className="flex items-center">
+                <img
+                  src="/logo.svg"
+                  alt="PIERC Logo"
+                  className="h-12 w-auto object-contain"
+                />
+              </Link>
             </div>
             <p className="text-sm text-slate-500 font-medium leading-relaxed">
               BBA Building, Parul University P.O.Limda, Ta.Waghodia – 391760 Dist. Vadodara, Gujarat (India)

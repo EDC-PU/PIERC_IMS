@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AnimatedNumber, CardHoverEffect, LivePulseBadge } from '@/components/ui/animated';
 import {
   Users,
   Rocket,
@@ -427,71 +428,95 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
 
       {/* 1. Dashboard Overview Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-        <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
-            <CardTitle className="text-xs font-bold text-slate-500">Total Startups</CardTitle>
-            <Rocket className="h-4 w-4 text-rose-500" />
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-2xl font-black text-slate-900">{totalStartups}</div>
-            <p className="text-[9px] font-medium text-slate-400 mt-1">From Application Logs</p>
-          </CardContent>
-        </Card>
+        <CardHoverEffect delay={0.02}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
+              <CardTitle className="text-xs font-bold text-slate-500">Total Startups</CardTitle>
+              <Rocket className="h-4 w-4 text-rose-500" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="text-2xl font-black text-slate-900">
+                <AnimatedNumber value={totalStartups} duration={1000} />
+              </div>
+              <p className="text-[9px] font-medium text-slate-400 mt-1">From Application Logs</p>
+            </CardContent>
+          </Card>
+        </CardHoverEffect>
 
-        <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
-            <CardTitle className="text-xs font-bold text-slate-500">Active Startups</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-2xl font-black text-slate-900">{activeStartups}</div>
-            <p className="text-[9px] font-medium text-emerald-600 mt-1">Currently Active</p>
-          </CardContent>
-        </Card>
+        <CardHoverEffect delay={0.06}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
+              <CardTitle className="text-xs font-bold text-slate-500">Active Startups</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="text-2xl font-black text-slate-900">
+                <AnimatedNumber value={activeStartups} duration={1100} />
+              </div>
+              <p className="text-[9px] font-medium text-emerald-600 mt-1">Currently Active</p>
+            </CardContent>
+          </Card>
+        </CardHoverEffect>
 
-        <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
-            <CardTitle className="text-xs font-bold text-slate-500">Apps Received</CardTitle>
-            <FileText className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-2xl font-black text-slate-900">{applicationsReceived}</div>
-            <p className="text-[9px] font-medium text-slate-400 mt-1">Total Submissions</p>
-          </CardContent>
-        </Card>
+        <CardHoverEffect delay={0.1}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
+              <CardTitle className="text-xs font-bold text-slate-500">Apps Received</CardTitle>
+              <FileText className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="text-2xl font-black text-slate-900">
+                <AnimatedNumber value={applicationsReceived} duration={1200} />
+              </div>
+              <p className="text-[9px] font-medium text-slate-400 mt-1">Total Submissions</p>
+            </CardContent>
+          </Card>
+        </CardHoverEffect>
 
-        <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
-            <CardTitle className="text-xs font-bold text-slate-500">Incubated</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-indigo-500" />
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-2xl font-black text-slate-900">{incubatedCount}</div>
-            <p className="text-[9px] font-medium text-indigo-600 mt-1">Officially Incubated</p>
-          </CardContent>
-        </Card>
+        <CardHoverEffect delay={0.14}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
+              <CardTitle className="text-xs font-bold text-slate-500">Incubated</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-indigo-500" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="text-2xl font-black text-slate-900">
+                <AnimatedNumber value={incubatedCount} duration={1300} />
+              </div>
+              <p className="text-[9px] font-medium text-indigo-600 mt-1">Officially Incubated</p>
+            </CardContent>
+          </Card>
+        </CardHoverEffect>
 
-        <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
-            <CardTitle className="text-xs font-bold text-slate-500">Graduated</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-[#D91A2A]" />
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-2xl font-black text-slate-900">{graduatedCount}</div>
-            <p className="text-[9px] font-medium text-[#D91A2A] mt-1">Graduated Cohorts</p>
-          </CardContent>
-        </Card>
+        <CardHoverEffect delay={0.18}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
+              <CardTitle className="text-xs font-bold text-slate-500">Graduated</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-[#D91A2A]" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="text-2xl font-black text-slate-900">
+                <AnimatedNumber value={graduatedCount} duration={1400} />
+              </div>
+              <p className="text-[9px] font-medium text-[#D91A2A] mt-1">Graduated Cohorts</p>
+            </CardContent>
+          </Card>
+        </CardHoverEffect>
 
-        <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
-            <CardTitle className="text-xs font-bold text-slate-500">Dropped</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-rose-500" />
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-2xl font-black text-slate-900">{droppedCount}</div>
-            <p className="text-[9px] font-medium text-rose-500 mt-1">Rejected / Discontinued</p>
-          </CardContent>
-        </Card>
+        <CardHoverEffect delay={0.22}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-white h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50 p-6">
+              <CardTitle className="text-xs font-bold text-slate-500">Dropped</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-rose-500" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="text-2xl font-black text-slate-900">
+                <AnimatedNumber value={droppedCount} duration={1500} />
+              </div>
+              <p className="text-[9px] font-medium text-rose-500 mt-1">Rejected / Discontinued</p>
+            </CardContent>
+          </Card>
+        </CardHoverEffect>
       </div>
 
       {/* Analytics Tabs */}

@@ -125,8 +125,8 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
           totalMeetings = p1 + p2 + rev;
         }
 
-        setCounts(prev => ({ 
-          ...prev, 
+        setCounts(prev => ({
+          ...prev,
           evaluate: pendingList.length,
           ...(userRole === 'admin' || userRole === 'super_admin' ? { totalMeetings } : {})
         }));
@@ -239,9 +239,9 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
         <div className="p-6 border-b bg-slate-50/50 flex items-center justify-between">
           <Link href="/dashboard" className="block" onClick={() => setIsOpen?.(false)}>
             <img
-              src="https://www.pierc.org/_next/static/media/PIERC.959ad75d.svg"
+              src="/logo.svg"
               alt="PIERC Logo"
-              className="h-18 w-auto"
+              className="h-12 w-auto object-contain"
             />
           </Link>
           {setIsOpen && (
@@ -268,11 +268,11 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
               style={pathname === item.href ? { backgroundColor: '#D91A2A', color: '#FFFFFF' } : undefined}
             >
               <div className="flex items-center space-x-3">
-                <item.icon 
+                <item.icon
                   className={cn("h-5 w-5 transition-transform group-hover:scale-110", pathname === item.href ? "text-white" : "text-slate-400 group-hover:text-primary")}
                   style={pathname === item.href ? { color: '#FFFFFF' } : undefined}
                 />
-                <span 
+                <span
                   className={cn("text-[13px] font-black tracking-tight", pathname === item.href ? "text-white" : "text-slate-600")}
                   style={pathname === item.href ? { color: '#FFFFFF' } : undefined}
                 >

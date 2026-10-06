@@ -26,6 +26,7 @@ import {
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { exportToCSV } from '@/lib/export';
+import { AnimatedNumber, AnimatedPillTabs, StaggerGrid, StaggerItem } from '@/components/ui/animated';
 
 export default function StartupsDirectory() {
   const [startups, setStartups] = useState<Application[]>([]);
@@ -115,7 +116,9 @@ export default function StartupsDirectory() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-slate-900">Startup Directory</h1>
-          <p className="text-slate-500 font-medium mt-1">Exploring {startups.length} ventures in the PIERC ecosystem.</p>
+          <p className="text-slate-500 font-medium mt-1">
+            Exploring <span className="font-bold text-slate-900"><AnimatedNumber value={startups.length} /></span> ventures in the PIERC ecosystem.
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={handleExportStartups} className="rounded-xl font-bold flex items-center gap-2 border-slate-200 h-11 px-6 shadow-sm bg-white hover:bg-slate-50">
@@ -145,6 +148,16 @@ export default function StartupsDirectory() {
         </div>
       </div>
 
+      {/* Sliding Pill Sector Filter Bar */}
+      <div className="overflow-x-auto pb-2 -mb-2">
+        <AnimatedPillTabs
+          tabs={sectors}
+          activeTab={selectedSector}
+          onChange={setSelectedSector}
+          layoutId="startup-sector-tabs"
+        />
+      </div>
+
       {/* Filters Bar */}
       <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] overflow-hidden bg-white/50 backdrop-blur-sm">
         <CardContent className="p-4 md:p-6 flex flex-col md:flex-row gap-4">
@@ -158,13 +171,6 @@ export default function StartupsDirectory() {
             />
           </div>
           <div className="flex gap-2">
-            <select 
-              className="h-12 px-6 rounded-2xl border border-slate-100 bg-white text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20"
-              value={selectedSector}
-              onChange={(e) => setSelectedSector(e.target.value)}
-            >
-              {sectors.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
             <select 
               className="h-12 px-6 rounded-2xl border border-slate-100 bg-white text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20"
               value={sortBy}
@@ -183,66 +189,68 @@ export default function StartupsDirectory() {
 
       {/* Grid View */}
       {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedStartups.map((startup) => (
-            <Link key={startup.id} href={`/dashboard/applications/${startup.id}`}>
-              <Card className="group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 border-none ring-1 ring-slate-100 rounded-[2.5rem] overflow-hidden bg-white h-full flex flex-col">
-                <div className="h-32 bg-slate-900 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/40 to-transparent opacity-50"></div>
-                  <div className="absolute top-4 right-4">
-                    <Badge className="bg-white/20 backdrop-blur-md text-white border-none font-black text-[9px] uppercase tracking-widest px-3 py-1">
-                      {startup.status}
-                    </Badge>
-                  </div>
-                  <div className="absolute -bottom-6 left-8">
-                    <div className="w-16 h-16 bg-white rounded-3xl shadow-xl flex items-center justify-center p-3 ring-4 ring-white">
-                      <Rocket className="h-8 w-8 text-primary" />
+            <StaggerItem key={startup.id} id={startup.id} className="h-full">
+              <Link href={`/dashboard/applications/${startup.id}`}>
+                <Card className="group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-none ring-1 ring-slate-100 rounded-[2.5rem] overflow-hidden bg-white h-full flex flex-col">
+                  <div className="h-32 bg-slate-900 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/40 to-transparent opacity-50"></div>
+                    <div className="absolute top-4 right-4">
+                      <Badge className="bg-white/20 backdrop-blur-md text-white border-none font-black text-[9px] uppercase tracking-widest px-3 py-1">
+                        {startup.status}
+                      </Badge>
                     </div>
-                  </div>
-                </div>
-                <CardContent className="p-8 pt-10 flex-1 flex flex-col">
-                  <div className="space-y-4 flex-1">
-                    <div>
-                      <h3 className="text-xl font-black text-slate-900 group-hover:text-primary transition-colors leading-tight line-clamp-1">
-                        {startup.data?.startupTitle || startup.programmeTitle}
-                      </h3>
-                      <div className="flex items-center text-[10px] font-black text-primary uppercase tracking-widest mt-1">
-                        <Target className="h-3 w-3 mr-1.5" />
-                        {startup.data?.sector || 'General Tech'}
+                    <div className="absolute -bottom-6 left-8">
+                      <div className="w-16 h-16 bg-white rounded-3xl shadow-xl flex items-center justify-center p-3 ring-4 ring-white">
+                        <Rocket className="h-8 w-8 text-primary" />
                       </div>
                     </div>
-                    
-                    <p className="text-sm text-slate-500 font-medium line-clamp-2 leading-relaxed italic">
-                      {startup.data?.briefDescription || startup.data?.problemStatement || "Exploring innovation frontiers in the PIERC incubation ecosystem."}
-                    </p>
-
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      <Badge variant="secondary" className="bg-slate-50 text-slate-500 border-none rounded-lg text-[9px] font-bold">
-                        <Users className="h-3 w-3 mr-1" /> Team of {startup.data?.teamMembers?.length || 1}
-                      </Badge>
-                      <Badge variant="secondary" className="bg-slate-50 text-slate-500 border-none rounded-lg text-[9px] font-bold">
-                        <MapPin className="h-3 w-3 mr-1" /> Vadodara
-                      </Badge>
-                    </div>
                   </div>
-
-                  <div className="pt-6 mt-6 border-t flex items-center justify-between">
-                    <div className="flex -space-x-2">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[8px] font-bold text-slate-400">
-                          U{i}
+                  <CardContent className="p-8 pt-10 flex-1 flex flex-col">
+                    <div className="space-y-4 flex-1">
+                      <div>
+                        <h3 className="text-xl font-black text-slate-900 group-hover:text-primary transition-colors leading-tight line-clamp-1">
+                          {startup.data?.startupTitle || startup.programmeTitle}
+                        </h3>
+                        <div className="flex items-center text-[10px] font-black text-primary uppercase tracking-widest mt-1">
+                          <Target className="h-3 w-3 mr-1.5" />
+                          {startup.data?.sector || 'General Tech'}
                         </div>
-                      ))}
+                      </div>
+                      
+                      <p className="text-sm text-slate-500 font-medium line-clamp-2 leading-relaxed italic">
+                        {startup.data?.briefDescription || startup.data?.problemStatement || "Exploring innovation frontiers in the PIERC incubation ecosystem."}
+                      </p>
+
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        <Badge variant="secondary" className="bg-slate-50 text-slate-500 border-none rounded-lg text-[9px] font-bold">
+                          <Users className="h-3 w-3 mr-1" /> Team of {startup.data?.teamMembers?.length || 1}
+                        </Badge>
+                        <Badge variant="secondary" className="bg-slate-50 text-slate-500 border-none rounded-lg text-[9px] font-bold">
+                          <MapPin className="h-3 w-3 mr-1" /> Vadodara
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      View Profile <ArrowUpRight className="h-3 w-3 ml-1" />
+
+                    <div className="pt-6 mt-6 border-t flex items-center justify-between">
+                      <div className="flex -space-x-2">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[8px] font-bold text-slate-400">
+                            U{i}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        View Profile <ArrowUpRight className="h-3 w-3 ml-1" />
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
+                  </CardContent>
+                </Card>
+              </Link>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerGrid>
       ) : (
         /* List View */
         <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] overflow-hidden">

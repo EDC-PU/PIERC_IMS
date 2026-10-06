@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
@@ -89,8 +90,14 @@ export default function LoginPage() {
 
       <Card className="w-full max-w-md shadow-2xl border-none glass-card animate-page-entry">
         <CardHeader className="space-y-4 text-center pb-8">
-          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-primary/20">
-            <Rocket className="text-white h-8 w-8" />
+          <div className="flex justify-center mb-2">
+            <Link href="/" className="inline-block transition-transform hover:scale-105">
+              <img
+                src="/logo.svg"
+                alt="PIERC Logo"
+                className="h-16 w-auto object-contain"
+              />
+            </Link>
           </div>
           <div className="space-y-1">
             <CardTitle className="text-3xl font-black tracking-tight">Welcome Back</CardTitle>

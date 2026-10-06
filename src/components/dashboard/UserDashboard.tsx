@@ -36,6 +36,7 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { AnimatedNumber, CardHoverEffect, LivePulseBadge } from '@/components/ui/animated';
 
 interface UserDashboardProps {
   user: UserProfile;
@@ -175,55 +176,73 @@ export default function UserDashboard({ user }: UserDashboardProps) {
 
       {/* Hero Stats */}
       <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-6", user.role === 'user' ? "lg:grid-cols-3" : "lg:grid-cols-4")}>
-        <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/30">
-            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Application</CardTitle>
-            <Clock className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="text-2xl font-black text-slate-900">{latestApp?.status || 'N/A'}</div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Phase {appMeetings.length + 1} Pipeline</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/30">
-            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Next Session</CardTitle>
-            <Calendar className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="text-2xl font-black text-slate-900">
-              {upcomingMeeting ? format(upcomingMeeting.startTime, 'MMM dd') : 'TBD'}
-            </div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">
-              {upcomingMeeting ? format(upcomingMeeting.startTime, 'hh:mm a') : 'Awaiting Schedule'}
-            </p>
-          </CardContent>
-        </Card>
-
-        {user.role !== 'user' && (
-          <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-3xl overflow-hidden bg-white">
+        <CardHoverEffect delay={0.05}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-3xl overflow-hidden bg-white h-full">
             <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/30">
-              <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evaluations</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Application</CardTitle>
+              <Clock className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent className="pt-4">
-              <div className="text-2xl font-black text-slate-900">{Object.keys(appEvaluations).length}</div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Completed Reviews</p>
+              <div className="text-2xl font-black text-slate-900">{latestApp?.status || 'N/A'}</div>
+              <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Phase {appMeetings.length + 1} Pipeline</p>
             </CardContent>
           </Card>
+        </CardHoverEffect>
+
+        <CardHoverEffect delay={0.1}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-3xl overflow-hidden bg-white h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/30">
+              <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Next Session</CardTitle>
+              <Calendar className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="text-2xl font-black text-slate-900">
+                {upcomingMeeting ? format(upcomingMeeting.startTime, 'MMM dd') : 'TBD'}
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-[10px] font-bold text-slate-500 uppercase">
+                  {upcomingMeeting ? format(upcomingMeeting.startTime, 'hh:mm a') : 'Awaiting Schedule'}
+                </p>
+                {upcomingMeeting && (
+                  <LivePulseBadge label="Scheduled" variant="primary" pulse />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </CardHoverEffect>
+
+        {user.role !== 'user' && (
+          <CardHoverEffect delay={0.15}>
+            <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-3xl overflow-hidden bg-white h-full">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/30">
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evaluations</CardTitle>
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="text-2xl font-black text-slate-900">
+                  <AnimatedNumber value={Object.keys(appEvaluations).length} />
+                </div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Completed Reviews</p>
+              </CardContent>
+            </Card>
+          </CardHoverEffect>
         )}
 
-        <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/30">
-            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Traction</CardTitle>
-            <TrendingUp className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="text-2xl font-black text-slate-900">Active</div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Growth Tracking Live</p>
-          </CardContent>
-        </Card>
+        <CardHoverEffect delay={0.2}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-3xl overflow-hidden bg-white h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/30">
+              <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Traction</CardTitle>
+              <TrendingUp className="h-4 w-4 text-purple-500" />
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-black text-slate-900">Active</span>
+                <LivePulseBadge label="Live" variant="success" pulse />
+              </div>
+              <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Growth Tracking Live</p>
+            </CardContent>
+          </Card>
+        </CardHoverEffect>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -333,7 +352,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                 <CardTitle className="text-xl font-black text-slate-900">Startup Traction</CardTitle>
                 <CardDescription className="font-bold text-[10px] uppercase tracking-widest text-slate-400">Monthly Growth Visualizer</CardDescription>
               </div>
-              <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] uppercase px-3 py-1">Auto-Updating</Badge>
+              <LivePulseBadge label="Auto-Updating" variant="primary" pulse />
             </CardHeader>
             <CardContent className="p-8 pt-12">
               <div className="h-[300px] w-full">
@@ -354,33 +373,37 @@ export default function UserDashboard({ user }: UserDashboardProps) {
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card 
-              className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white p-8 group hover:ring-primary/20 transition-all cursor-pointer"
-              onClick={() => router.push(latestApp ? `/dashboard/applications/${latestApp.id}` : '/dashboard/applications')}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="h-12 w-12 bg-primary/5 rounded-2xl flex items-center justify-center text-primary">
-                  <FileText className="h-6 w-6" />
+            <CardHoverEffect delay={0.1}>
+              <Card 
+                className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white p-8 group hover:ring-primary/20 transition-all cursor-pointer h-full"
+                onClick={() => router.push(latestApp ? `/dashboard/applications/${latestApp.id}` : '/dashboard/applications')}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="h-12 w-12 bg-primary/5 rounded-2xl flex items-center justify-center text-primary">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-slate-200 group-hover:text-primary transition-colors" />
                 </div>
-                <ChevronRight className="h-5 w-5 text-slate-200 group-hover:text-primary transition-colors" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900 tracking-tight">Pitch Deck & Docs</h3>
-              <p className="text-sm font-medium text-slate-500 mt-1">Manage your application attachments and resources.</p>
-            </Card>
+                <h3 className="text-lg font-black text-slate-900 tracking-tight">Pitch Deck & Docs</h3>
+                <p className="text-sm font-medium text-slate-500 mt-1">Manage your application attachments and resources.</p>
+              </Card>
+            </CardHoverEffect>
 
-            <Card 
-              className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white p-8 group hover:ring-primary/20 transition-all cursor-pointer"
-              onClick={() => router.push(latestApp?.mentorId ? `/dashboard/profile/${latestApp.mentorId}` : '/dashboard/mentors')}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="h-12 w-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
-                  <Rocket className="h-6 w-6" />
+            <CardHoverEffect delay={0.15}>
+              <Card 
+                className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white p-8 group hover:ring-primary/20 transition-all cursor-pointer h-full"
+                onClick={() => router.push(latestApp?.mentorId ? `/dashboard/profile/${latestApp.mentorId}` : '/dashboard/mentors')}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="h-12 w-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
+                    <Rocket className="h-6 w-6" />
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-slate-200 group-hover:text-purple-600 transition-colors" />
                 </div>
-                <ChevronRight className="h-5 w-5 text-slate-200 group-hover:text-purple-600 transition-colors" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900 tracking-tight">Innovation Mentorship</h3>
-              <p className="text-sm font-medium text-slate-500 mt-1">Connect with assigned mentors and industry experts.</p>
-            </Card>
+                <h3 className="text-lg font-black text-slate-900 tracking-tight">Innovation Mentorship</h3>
+                <p className="text-sm font-medium text-slate-500 mt-1">Connect with assigned mentors and industry experts.</p>
+              </Card>
+            </CardHoverEffect>
           </div>
         </div>
       </div>

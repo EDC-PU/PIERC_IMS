@@ -10,6 +10,7 @@ import { triggerEmailNotification } from '@/lib/email-client';
 import { getMeetingScheduledEmailHtml, getMeetingCancelledEmailHtml } from '@/lib/email-templates';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AnimatedNumber, AnimatedPillTabs, LivePulseBadge, CardHoverEffect } from '@/components/ui/animated';
 import {
   Table,
   TableBody,
@@ -401,6 +402,21 @@ export default function MeetingsPage() {
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
   const days = eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
 
+  const scheduledCount = meetings.filter(m => m.status === 'Scheduled').length;
+  const todaysCount = meetings.filter(m => isSameDay(m.startTime, new Date())).length;
+  const meetingTabs = isAdmin
+    ? [
+        { id: 'phase1', label: `Phase 1 (${phase1Apps.length})` },
+        { id: 'phase2', label: `Phase 2 (${phase2Apps.length})` },
+        { id: 'review', label: `Review Meeting (${reviewApps.length})` },
+        { id: 'calendar', label: 'Calendar View' },
+        { id: 'history', label: 'History' },
+      ]
+    : [
+        { id: 'calendar', label: 'Calendar View' },
+        { id: 'history', label: 'History' },
+      ];
+
   if (loading) return <div className="p-8 text-center animate-pulse text-slate-400 font-bold">Loading Evaluation Pipeline...</div>;
 
   return (
@@ -417,35 +433,88 @@ export default function MeetingsPage() {
         </div>
       </div>
 
+      {/* KPI Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <CardHoverEffect delay={0.05}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white p-6 h-full">
+            <div className="flex items-center justify-between pb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Scheduled Panels</span>
+              <CalendarIcon className="h-4 w-4 text-primary" />
+            </div>
+            <div className="text-3xl font-black text-slate-900 mt-2">
+              <AnimatedNumber value={scheduledCount} />
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Active Review Panels</p>
+          </Card>
+        </CardHoverEffect>
+
+        <CardHoverEffect delay={0.1}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white p-6 h-full">
+            <div className="flex items-center justify-between pb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Phase 1 Queue</span>
+              <Users className="h-4 w-4 text-blue-500" />
+            </div>
+            <div className="text-3xl font-black text-slate-900 mt-2">
+              <AnimatedNumber value={phase1Apps.length} />
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Pending 1st Round</p>
+          </Card>
+        </CardHoverEffect>
+
+        <CardHoverEffect delay={0.15}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white p-6 h-full">
+            <div className="flex items-center justify-between pb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Phase 2 & Final</span>
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            </div>
+            <div className="text-3xl font-black text-slate-900 mt-2">
+              <AnimatedNumber value={phase2Apps.length + reviewApps.length} />
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Advanced Candidates</p>
+          </Card>
+        </CardHoverEffect>
+
+        <CardHoverEffect delay={0.2}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white p-6 h-full">
+            <div className="flex items-center justify-between pb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Today's Agenda</span>
+              {todaysCount > 0 ? (
+                <LivePulseBadge label="Active" variant="warning" pulse />
+              ) : (
+                <Clock className="h-4 w-4 text-slate-400" />
+              )}
+            </div>
+            <div className="text-3xl font-black text-slate-900 mt-2">
+              <AnimatedNumber value={todaysCount} />
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+              {todaysCount === 1 ? '1 Session Today' : `${todaysCount} Sessions Today`}
+            </p>
+          </Card>
+        </CardHoverEffect>
+      </div>
+
+      {/* Sliding Pill Navigation */}
+      <div className="overflow-x-auto pb-1">
+        <AnimatedPillTabs
+          options={meetingTabs}
+          activeId={activePhase}
+          onChange={(val) => {
+            setActivePhase(val);
+            setSelectedEvaluator('');
+          }}
+          layoutId="meeting-phase-pill"
+        />
+      </div>
+
       <Tabs 
-        defaultValue={isAdmin ? "phase1" : "calendar"} 
+        value={activePhase}
         className="w-full" 
         onValueChange={(val) => {
           setActivePhase(val);
           setSelectedEvaluator('');
         }}
       >
-        <TabsList className="bg-slate-100/50 p-1 rounded-2xl border border-slate-200 h-14 w-full justify-start space-x-2">
-          {isAdmin && (
-            <>
-              <TabsTrigger value="phase1" className="rounded-xl px-8 h-12 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md font-black text-[10px] uppercase tracking-widest text-slate-500">
-                Phase 1 ({phase1Apps.length})
-              </TabsTrigger>
-              <TabsTrigger value="phase2" className="rounded-xl px-8 h-12 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md font-black text-[10px] uppercase tracking-widest text-slate-500">
-                Phase 2 ({phase2Apps.length})
-              </TabsTrigger>
-              <TabsTrigger value="review" className="rounded-xl px-8 h-12 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md font-black text-[10px] uppercase tracking-widest text-slate-500">
-                Review Meeting ({reviewApps.length})
-              </TabsTrigger>
-            </>
-          )}
-          <TabsTrigger value="calendar" className="rounded-xl px-8 h-12 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md font-black text-[10px] uppercase tracking-widest text-slate-500">
-            Calendar View
-          </TabsTrigger>
-          <TabsTrigger value="history" className="rounded-xl px-8 h-12 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md font-black text-[10px] uppercase tracking-widest text-slate-500">
-            History
-          </TabsTrigger>
-        </TabsList>
 
         {/* Phase Tabs Content */}
         {['phase1', 'phase2', 'review'].map((phase) => (
@@ -637,10 +706,13 @@ export default function MeetingsPage() {
 
             <div className="space-y-6">
               <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-3xl overflow-hidden">
-                <CardHeader className="bg-slate-50/50 border-b">
+                <CardHeader className="bg-slate-50/50 border-b flex flex-row items-center justify-between">
                   <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-900 flex items-center">
                     <Clock className="h-4 w-4 mr-2 text-primary" /> Active Sessions
                   </CardTitle>
+                  {todaysCount > 0 && (
+                    <LivePulseBadge label="Live Agenda" variant="warning" pulse />
+                  )}
                 </CardHeader>
                 <CardContent className="pt-6 space-y-4">
                   {meetings.filter(m => isSameDay(m.startTime, new Date())).length === 0 ? (

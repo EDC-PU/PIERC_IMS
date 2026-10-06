@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { AnimatedNumber, AnimatedPillTabs, CardHoverEffect } from '@/components/ui/animated';
 
 export default function ApplicationsPage() {
   const { user } = useAuthStore();
@@ -36,6 +37,8 @@ export default function ApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStatusTab, setSelectedStatusTab] = useState('All');
+  const statusTabs = ['All', 'Under Review', 'Selected', 'Incubated', 'Revisions', 'Rejected'];
   const [dateRangeOption, setDateRangeOption] = useState('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
@@ -150,8 +153,29 @@ export default function ApplicationsPage() {
       }
     }
 
+    // Status Tab Filtering
+    if (selectedStatusTab === 'Under Review') {
+      const isUnderReview = ['Submitted', 'Under Review', 'Phase 1 Evaluation', 'Phase 2 Evaluation', 'Funding Committee Review', 'Shortlisted'].includes(app.status);
+      if (!isUnderReview) return false;
+    } else if (selectedStatusTab === 'Selected') {
+      const isSelected = ['Phase 1 Selected', 'Phase 2 Selected', 'Cohort Selected', 'Funding Approved'].includes(app.status);
+      if (!isSelected) return false;
+    } else if (selectedStatusTab === 'Incubated') {
+      if (app.status !== 'Incubated') return false;
+    } else if (selectedStatusTab === 'Revisions') {
+      const isRevision = ['Revision Needed', 'Revision Submitted'].includes(app.status);
+      if (!isRevision) return false;
+    } else if (selectedStatusTab === 'Rejected') {
+      const isRejected = ['Phase 1 Rejected', 'Phase 2 Rejected', 'Rejected'].includes(app.status);
+      if (!isRejected) return false;
+    }
+
     return true;
   });
+
+  const totalSubmissions = applications.length;
+  const underReviewCount = applications.filter(a => ['Submitted', 'Under Review', 'Phase 1 Evaluation', 'Phase 2 Evaluation', 'Funding Committee Review', 'Shortlisted'].includes(a.status)).length;
+  const selectedOrIncubatedCount = applications.filter(a => ['Phase 1 Selected', 'Phase 2 Selected', 'Cohort Selected', 'Incubated', 'Funding Approved'].includes(a.status)).length;
 
   const handleExportApplications = () => {
     const headers = [
@@ -208,6 +232,58 @@ export default function ApplicationsPage() {
             </Link>
           )}
         </div>
+      </div>
+
+      {/* Overview Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <CardHoverEffect delay={0.05}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white p-6 h-full">
+            <div className="flex items-center justify-between pb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Pipeline</span>
+              <Rocket className="h-4 w-4 text-primary" />
+            </div>
+            <div className="text-3xl font-black text-slate-900 mt-2">
+              <AnimatedNumber value={totalSubmissions} />
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total Submissions</p>
+          </Card>
+        </CardHoverEffect>
+
+        <CardHoverEffect delay={0.1}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white p-6 h-full">
+            <div className="flex items-center justify-between pb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Under Review</span>
+              <Clock className="h-4 w-4 text-orange-500" />
+            </div>
+            <div className="text-3xl font-black text-slate-900 mt-2">
+              <AnimatedNumber value={underReviewCount} />
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">In Evaluation Stages</p>
+          </Card>
+        </CardHoverEffect>
+
+        <CardHoverEffect delay={0.15}>
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white p-6 h-full">
+            <div className="flex items-center justify-between pb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Selected & Incubated</span>
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            </div>
+            <div className="text-3xl font-black text-slate-900 mt-2">
+              <AnimatedNumber value={selectedOrIncubatedCount} />
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Accepted Startups</p>
+          </Card>
+        </CardHoverEffect>
+      </div>
+
+      {/* Sliding Pill Status Tabs */}
+      <div className="overflow-x-auto pb-1">
+        <AnimatedPillTabs
+          tabs={statusTabs}
+          activeTab={selectedStatusTab}
+          onChange={setSelectedStatusTab}
+          layoutId="app-status-tabs"
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

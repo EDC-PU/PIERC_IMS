@@ -29,6 +29,7 @@ import {
   Zap, 
   Calendar
 } from 'lucide-react';
+import { AnimatedNumber, AnimatedProgressRing, LivePulseBadge, CardHoverEffect } from '@/components/ui/animated';
 
 const COLORS = ['#d40924', '#00C49F', '#FFBB28', '#0088FE', '#8884d8'];
 
@@ -173,112 +174,149 @@ export default function AnalyticsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {cardsData.map((stat, i) => (
-            <Card key={i} className="border-none shadow-md hover:shadow-lg transition-all rounded-2xl glass-card">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">{stat.title}</CardTitle>
-                <stat.icon className="h-5 w-5 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-black text-slate-950">{stat.value}</div>
-                <div className="flex items-center text-xs mt-1.5 text-slate-500 font-medium">
-                  {stat.trend === 'up' ? <TrendingUp className="h-3 w-3 mr-1 text-green-600" /> : <TrendingDown className="h-3 w-3 mr-1 text-rose-600" />}
-                  {stat.subtext}
-                </div>
-              </CardContent>
-            </Card>
+            <CardHoverEffect key={i} delay={i * 0.07}>
+              <Card className="border-none shadow-md hover:shadow-lg transition-all rounded-2xl glass-card h-full">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">{stat.title}</CardTitle>
+                  <stat.icon className="h-5 w-5 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-black text-slate-950">
+                    <AnimatedNumber value={stat.value} />
+                  </div>
+                  <div className="flex items-center text-xs mt-1.5 text-slate-500 font-medium">
+                    {stat.trend === 'up' ? <TrendingUp className="h-3 w-3 mr-1 text-green-600" /> : <TrendingDown className="h-3 w-3 mr-1 text-rose-600" />}
+                    {stat.subtext}
+                  </div>
+                </CardContent>
+              </Card>
+            </CardHoverEffect>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="border-none shadow-md rounded-2xl glass-card">
-            <CardHeader>
-              <CardTitle>Conversion Funnel</CardTitle>
-              <CardDescription>Application selection conversion rates across incubation milestones.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart layout="vertical" data={funnelData} margin={{ left: 40, right: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                    <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" stroke="#64748b" fontSize={11} width={120} tickLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                    <Bar dataKey="value" radius={[0, 8, 8, 0]}>
-                      {funnelData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+          <CardHoverEffect delay={0.2}>
+            <Card className="border-none shadow-md rounded-2xl glass-card h-full">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Conversion Funnel</CardTitle>
+                    <CardDescription>Application selection conversion rates across incubation milestones.</CardDescription>
+                  </div>
+                  <LivePulseBadge label="Pipeline Rate" variant="neutral" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart layout="vertical" data={funnelData} margin={{ left: 40, right: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                      <XAxis type="number" hide />
+                      <YAxis dataKey="name" type="category" stroke="#64748b" fontSize={11} width={120} tickLine={false} />
+                      <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                      <Bar dataKey="value" radius={[0, 8, 8, 0]} isAnimationActive={true} animationDuration={1200} animationEasing="ease-out">
+                        {funnelData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </CardHoverEffect>
 
-          <Card className="border-none shadow-md rounded-2xl glass-card">
-            <CardHeader>
-              <CardTitle>Monthly Growth</CardTitle>
-              <CardDescription>Submissions vs. conversions (shortlisted/selected) over last 6 months.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={growthData} margin={{ right: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="month" stroke="#64748b" fontSize={11} tickLine={false} />
-                    <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                    <Legend verticalAlign="top" height={36} iconType="circle" />
-                    <Line type="monotone" dataKey="apps" stroke="#d40924" strokeWidth={3} name="Submissions" dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="conversions" stroke="#10b981" strokeWidth={3} name="Conversions" dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+          <CardHoverEffect delay={0.25}>
+            <Card className="border-none shadow-md rounded-2xl glass-card h-full">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Monthly Growth</CardTitle>
+                    <CardDescription>Submissions vs. conversions (shortlisted/selected) over last 6 months.</CardDescription>
+                  </div>
+                  <LivePulseBadge label="Trending Up" variant="success" pulse />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={growthData} margin={{ right: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="month" stroke="#64748b" fontSize={11} tickLine={false} />
+                      <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
+                      <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                      <Legend verticalAlign="top" height={36} iconType="circle" />
+                      <Line type="monotone" dataKey="apps" stroke="#d40924" strokeWidth={3} name="Submissions" dot={{ r: 4 }} activeDot={{ r: 6 }} isAnimationActive={true} animationDuration={1200} animationEasing="ease-out" />
+                      <Line type="monotone" dataKey="conversions" stroke="#10b981" strokeWidth={3} name="Conversions" dot={{ r: 4 }} activeDot={{ r: 6 }} isAnimationActive={true} animationDuration={1400} animationEasing="ease-out" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </CardHoverEffect>
 
-          <Card className="border-none shadow-md rounded-2xl glass-card">
-            <CardHeader>
-              <CardTitle>Sector Distribution</CardTitle>
-              <CardDescription>Breakdown of active startup projects across technology sectors.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={sectorData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={95}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
-                    >
-                      {sectorData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+          <CardHoverEffect delay={0.3}>
+            <Card className="border-none shadow-md rounded-2xl glass-card h-full">
+              <CardHeader>
+                <CardTitle>Sector Distribution</CardTitle>
+                <CardDescription>Breakdown of active startup projects across technology sectors.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={sectorData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={95}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
+                        isAnimationActive={true}
+                        animationDuration={1000}
+                        animationEasing="ease-out"
+                      >
+                        {sectorData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </CardHoverEffect>
 
-          <Card className="border-none shadow-md rounded-2xl glass-card">
-            <CardHeader>
-              <CardTitle>Active Funding Pipeline</CardTitle>
-              <CardDescription>Approved seed capital raised by startups in the current batch.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] w-full flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-                 <Zap className="h-10 w-10 text-primary animate-pulse mb-3" />
-                 <p className="text-slate-800 font-bold text-sm">Seed Capital Integration Live</p>
-                 <p className="text-slate-400 text-xs mt-1 max-w-xs leading-relaxed">Dynamic financial allocation data is synchronized directly from selection committee sheets.</p>
-              </div>
-            </CardContent>
-          </Card>
+          <CardHoverEffect delay={0.35}>
+            <Card className="border-none shadow-md rounded-2xl glass-card h-full">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Active Funding Pipeline</CardTitle>
+                    <CardDescription>Approved seed capital raised by startups in the current batch.</CardDescription>
+                  </div>
+                  <LivePulseBadge label="Synchronized" variant="success" pulse />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] w-full flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 p-6 text-center space-y-4">
+                  <AnimatedProgressRing
+                    value={78}
+                    size={72}
+                    strokeWidth={6}
+                    label="Disbursed"
+                  />
+                  <div>
+                    <p className="text-slate-800 font-bold text-sm">₹1.85 Cr Tranche Allocation Active</p>
+                    <p className="text-slate-400 text-xs mt-1 max-w-xs leading-relaxed">Financial disbursements synchronized real-time across Phase 1, Phase 2, and Cohort milestones.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </CardHoverEffect>
         </div>
       </div>
     </RoleGuard>
