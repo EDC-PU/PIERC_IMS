@@ -62,7 +62,7 @@ export default function ProgrammesPage() {
             className="group relative flex flex-col glass-card border-white/50 p-1 hover:border-primary/20 transition-all duration-500 hover:scale-[1.01]"
           >
             {/* Card Content Interior */}
-            <div className="bg-white/40 rounded-[1.4rem] p-8 flex-1 flex flex-col h-full">
+            <div className="bg-white/40 rounded-xl p-8 flex-1 flex flex-col h-full">
               <div className="flex justify-between items-start mb-8">
                 <div className={cn(
                   "p-4 rounded-2xl shadow-lg transition-transform group-hover:scale-110 duration-500",

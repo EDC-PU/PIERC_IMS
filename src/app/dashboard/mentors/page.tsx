@@ -174,7 +174,7 @@ export default function MentorsPage() {
             <DialogTrigger asChild>
               <Button><Plus className="mr-2 h-4 w-4" /> Add New Mentor</Button>
             </DialogTrigger>
-          <DialogContent className="rounded-[2rem] border-none shadow-2xl max-w-md">
+          <DialogContent className="rounded-xl border-none shadow-2xl max-w-md">
             <DialogHeader>
               <DialogTitle className="text-2xl font-black text-slate-900">Assign New Mentor</DialogTitle>
               <DialogDescription className="text-slate-500 font-medium">

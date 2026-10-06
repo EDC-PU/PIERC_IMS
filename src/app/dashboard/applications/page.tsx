@@ -315,7 +315,7 @@ export default function ApplicationsPage() {
       </div>
 
       {dateRangeOption === 'custom' && (
-        <div className="bg-slate-50/50 p-6 rounded-[2rem] border border-slate-200/60 flex flex-wrap items-center gap-6 animate-in slide-in-from-top-2 duration-300">
+        <div className="bg-slate-50/50 p-6 rounded-xl border border-slate-200/60 flex flex-wrap items-center gap-6 animate-in slide-in-from-top-2 duration-300">
           <div className="flex items-center gap-3">
             <span className="text-[10px] font-black tracking-widest text-slate-400">Start Date:</span>
             <input
@@ -349,7 +349,7 @@ export default function ApplicationsPage() {
       )}
 
       {applications.length === 0 ? (
-        <Card className="p-12 text-center border-dashed rounded-[2rem] bg-slate-50/50">
+        <Card className="p-12 text-center border-dashed rounded-xl bg-slate-50/50">
           <CardContent className="space-y-4">
             <div className="mx-auto w-16 h-16 bg-white rounded-3xl shadow-sm flex items-center justify-center text-primary">
               <Rocket className="h-8 w-8" />
@@ -374,7 +374,7 @@ export default function ApplicationsPage() {
           </CardContent>
         </Card>
       ) : filteredApplications.length === 0 ? (
-        <Card className="p-12 text-center border-dashed rounded-[2rem] bg-slate-50/50">
+        <Card className="p-12 text-center border-dashed rounded-xl bg-slate-50/50">
           <CardContent className="space-y-4">
             <div className="mx-auto w-16 h-16 bg-white rounded-3xl shadow-sm flex items-center justify-center text-slate-300">
               <Search className="h-8 w-8" />
@@ -388,7 +388,7 @@ export default function ApplicationsPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2rem] overflow-hidden">
+        <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden">
           <div className="w-full overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50/50">

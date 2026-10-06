@@ -90,13 +90,13 @@ export default function ProfilePage() {
     <div className="space-y-8 p-6 md:p-8 animate-in fade-in duration-700">
       {/* Header Card */}
       <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-primary/5 rounded-[2.5rem] -m-2 blur-2xl opacity-50"></div>
-        <Card className="border-none shadow-2xl ring-1 ring-slate-100 rounded-[2.5rem] overflow-hidden bg-white/80 backdrop-blur-xl relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl -m-2 blur-2xl opacity-50"></div>
+        <Card className="border-none shadow-2xl ring-1 ring-slate-100 rounded-xl overflow-hidden bg-white/80 backdrop-blur-xl relative">
           <CardContent className="p-8 md:p-12">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12">
               <div className="relative group">
-                <div className="absolute inset-0 bg-primary/20 rounded-[3rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <Avatar className="h-40 w-40 ring-4 ring-white shadow-2xl rounded-[3rem] relative transition-transform group-hover:scale-105 duration-500">
+                <div className="absolute inset-0 bg-primary/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <Avatar className="h-40 w-40 ring-4 ring-white shadow-2xl rounded-xl relative transition-transform group-hover:scale-105 duration-500">
                   <AvatarImage src={profile.photoURL} />
                   <AvatarFallback className="bg-primary text-white text-5xl font-black">{profile.displayName[0]}</AvatarFallback>
                 </Avatar>
@@ -169,13 +169,13 @@ export default function ProfilePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {userApps.length === 0 ? (
-              <Card className="md:col-span-2 border-dashed border-2 bg-slate-50/50 p-12 text-center rounded-[2rem]">
+              <Card className="md:col-span-2 border-dashed border-2 bg-slate-50/50 p-12 text-center rounded-xl">
                 <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">No startups found for this user.</p>
               </Card>
             ) : (
               userApps.map(app => (
                 <Link key={app.id} href={`/dashboard/applications/${app.id}`}>
-                  <Card className="group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 border-none ring-1 ring-slate-100 rounded-[2rem] overflow-hidden bg-white h-full flex flex-col">
+                  <Card className="group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 border-none ring-1 ring-slate-100 rounded-xl overflow-hidden bg-white h-full flex flex-col">
                     <div className="p-6 space-y-4 flex-1">
                       <div className="flex justify-between items-start">
                         <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] uppercase tracking-widest px-3">
@@ -206,7 +206,7 @@ export default function ProfilePage() {
 
         {/* Info Sidebar */}
         <div className="space-y-8">
-          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] overflow-hidden bg-white">
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-xl overflow-hidden bg-white">
             <CardHeader className="bg-slate-50/50 border-b px-6 py-4">
               <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-900 flex items-center">
                 <ShieldCheck className="h-4 w-4 mr-2 text-primary" /> System Access
@@ -237,7 +237,7 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] overflow-hidden bg-white">
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-xl overflow-hidden bg-white">
             <CardHeader className="bg-slate-50/50 border-b px-6 py-4">
               <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-900 flex items-center">
                 <Calendar className="h-4 w-4 mr-2 text-primary" /> Key Dates

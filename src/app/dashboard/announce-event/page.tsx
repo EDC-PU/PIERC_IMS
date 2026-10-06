@@ -569,7 +569,7 @@ export default function AnnounceEventPage() {
                 <Plus className="mr-2 h-4 w-4" /> Add New Event
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-[2rem] p-8 bg-white shadow-2xl">
+            <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl p-8 bg-white shadow-2xl">
               <DialogHeader>
                 <DialogTitle className="text-xl font-black text-slate-900">
                   {editingEvent ? 'Edit Event Details' : 'Add New Portal Event'}

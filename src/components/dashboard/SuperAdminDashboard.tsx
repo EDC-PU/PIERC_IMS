@@ -499,7 +499,7 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
         <TabsContent value="overview" className="space-y-6 mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Chart: Applications Trend */}
-            <Card className="lg:col-span-8 border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] bg-white overflow-hidden">
+            <Card className="lg:col-span-8 border-none shadow-sm ring-1 ring-slate-100 rounded-xl bg-white overflow-hidden">
               <CardHeader className="p-6 border-b flex flex-row items-center justify-between bg-slate-50/20">
                 <div>
                   <CardTitle className="text-base font-black text-slate-900">Applications Trend</CardTitle>
@@ -528,7 +528,7 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
             </Card>
 
             {/* Chart: Startups by Stage */}
-            <Card className="lg:col-span-4 border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] bg-white overflow-hidden">
+            <Card className="lg:col-span-4 border-none shadow-sm ring-1 ring-slate-100 rounded-xl bg-white overflow-hidden">
               <CardHeader className="p-6 border-b bg-slate-50/20">
                 <CardTitle className="text-base font-black text-slate-900">Startups by Stage</CardTitle>
                 <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Distribution by Maturity</CardDescription>
@@ -568,7 +568,7 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Funding Overview */}
-            <Card className="lg:col-span-6 border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] bg-white overflow-hidden">
+            <Card className="lg:col-span-6 border-none shadow-sm ring-1 ring-slate-100 rounded-xl bg-white overflow-hidden">
               <CardHeader className="p-6 border-b bg-slate-50/20 flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-base font-black text-slate-900">Funding Overview</CardTitle>
@@ -598,7 +598,7 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
             </Card>
 
             {/* Mentor Activity */}
-            <Card className="lg:col-span-6 border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] bg-white overflow-hidden">
+            <Card className="lg:col-span-6 border-none shadow-sm ring-1 ring-slate-100 rounded-xl bg-white overflow-hidden">
               <CardHeader className="p-6 border-b bg-slate-50/20">
                 <CardTitle className="text-base font-black text-slate-900">Mentor Activity</CardTitle>
                 <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sessions & Mentor Metrics</CardDescription>
@@ -623,7 +623,7 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
           </div>
 
           {/* Activity Feed */}
-          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] bg-white overflow-hidden">
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-xl bg-white overflow-hidden">
             <CardHeader className="p-6 border-b bg-slate-50/20 flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-base font-black text-slate-900 flex items-center gap-1.5">
@@ -651,7 +651,7 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Pending Approvals */}
-            <Card className="lg:col-span-7 border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] bg-white overflow-hidden">
+            <Card className="lg:col-span-7 border-none shadow-sm ring-1 ring-slate-100 rounded-xl bg-white overflow-hidden">
               <CardHeader className="p-6 border-b bg-slate-50/20">
                 <CardTitle className="text-base font-black text-slate-900">Pending Approvals</CardTitle>
                 <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Applications awaiting manager assessment</CardDescription>
@@ -681,7 +681,7 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
             </Card>
 
             {/* Upcoming Events */}
-            <Card className="lg:col-span-5 border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] bg-white overflow-hidden">
+            <Card className="lg:col-span-5 border-none shadow-sm ring-1 ring-slate-100 rounded-xl bg-white overflow-hidden">
               <CardHeader className="p-6 border-b bg-slate-50/20">
                 <CardTitle className="text-base font-black text-slate-900">Upcoming Events</CardTitle>
                 <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Portal bootcamps and workshops</CardDescription>
@@ -744,7 +744,7 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Startups by Sector */}
-            <Card className="lg:col-span-6 border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] bg-white overflow-hidden">
+            <Card className="lg:col-span-6 border-none shadow-sm ring-1 ring-slate-100 rounded-xl bg-white overflow-hidden">
               <CardHeader className="p-6 border-b bg-slate-50/20">
                 <CardTitle className="text-base font-black text-slate-900">Startups by Sector</CardTitle>
                 <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Distribution across tech categories</CardDescription>
@@ -765,7 +765,7 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
             </Card>
 
             {/* Demographics */}
-            <Card className="lg:col-span-6 border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] bg-white overflow-hidden">
+            <Card className="lg:col-span-6 border-none shadow-sm ring-1 ring-slate-100 rounded-xl bg-white overflow-hidden">
               <CardHeader className="p-6 border-b bg-slate-50/20">
                 <CardTitle className="text-base font-black text-slate-900">Applicant Demographics</CardTitle>
                 <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-slate-400">PU Affiliation breakdown</CardDescription>
@@ -825,7 +825,7 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Resource Bookings */}
-            <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] bg-white overflow-hidden">
+            <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-xl bg-white overflow-hidden">
               <CardHeader className="p-6 border-b bg-slate-50/20">
                 <CardTitle className="text-base font-black text-slate-900">Resource Booking Logs</CardTitle>
                 <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Lab & Meeting Room Bookings</CardDescription>
@@ -852,7 +852,7 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
             </Card>
 
             {/* Compliance */}
-            <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] bg-white overflow-hidden">
+            <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-xl bg-white overflow-hidden">
               <CardHeader className="p-6 border-b bg-slate-50/20">
                 <CardTitle className="text-base font-black text-slate-900">Compliance Tracker</CardTitle>
                 <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Incubator agreements & document statuses</CardDescription>
@@ -896,7 +896,7 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
             </div>
           </div>
 
-          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] bg-white overflow-hidden">
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-xl bg-white overflow-hidden">
             <CardHeader className="p-6 border-b bg-slate-50/20">
               <CardTitle className="text-base font-black text-slate-900">Conduct Event Checklists</CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Recent announced portal events & registry counts</CardDescription>

@@ -331,7 +331,7 @@ export default function UserEventsPage() {
       ) : (
         <div className="space-y-6">
           {/* Search, Filter, and Sort Controls */}
-          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] overflow-hidden bg-white/50 backdrop-blur-sm">
+          <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
             <CardContent className="p-4 md:p-6 flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -398,7 +398,7 @@ export default function UserEventsPage() {
 
       {/* Learn More Details Dialog */}
       <Dialog open={detailEvent !== null} onOpenChange={(open) => { if (!open) setDetailEvent(null); }}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto rounded-[2rem] p-8 bg-white shadow-2xl">
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl p-8 bg-white shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black text-slate-900">{detailEvent?.title}</DialogTitle>
             <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400">

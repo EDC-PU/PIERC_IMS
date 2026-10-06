@@ -410,7 +410,7 @@ export default function EvaluatePage() {
           <TabsContent value="pipeline" className="mt-0 outline-none">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredApps.length === 0 ? (
-                <div className="col-span-full py-20 text-center bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200">
+                <div className="col-span-full py-20 text-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
                   <AlertCircle className="h-12 w-12 text-slate-300 mx-auto mb-4" />
                   <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">No pending evaluations</p>
                 </div>
@@ -418,7 +418,7 @@ export default function EvaluatePage() {
                 filteredApps.map((app, index) => (
                   <CardHoverEffect key={app.id} delay={index * 0.04}>
                     <Card
-                      className="group border-none shadow-sm ring-1 ring-slate-200 rounded-[2rem] overflow-hidden hover:shadow-2xl hover:ring-primary/20 transition-all duration-500 cursor-pointer h-full"
+                      className="group border-none shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden hover:shadow-2xl hover:ring-primary/20 transition-all duration-500 cursor-pointer h-full"
                       onClick={() => setSelectedApp(app)}
                     >
                       <CardHeader className="bg-slate-50/50 p-8">
@@ -451,7 +451,7 @@ export default function EvaluatePage() {
           </TabsContent>
 
           <TabsContent value="history" className="mt-0 outline-none">
-            <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2rem] overflow-hidden">
+            <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden">
               <div className="w-full overflow-x-auto">
                 <Table>
                   <TableHeader className="bg-slate-50/50">
@@ -541,7 +541,7 @@ export default function EvaluatePage() {
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
             {/* Startup Data Panel */}
             <div className="xl:col-span-8 space-y-6">
-              <div className="bg-white ring-1 ring-slate-100 rounded-[2.5rem] p-10 space-y-10 shadow-sm">
+              <div className="bg-white ring-1 ring-slate-100 rounded-xl p-10 space-y-10 shadow-sm">
                 {/* Header Information */}
                 <div className="border-b border-slate-50 pb-8 flex flex-col md:flex-row justify-between items-start gap-6">
                   <div>
@@ -585,7 +585,7 @@ export default function EvaluatePage() {
                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 flex items-center">
                       <Target className="h-4 w-4 mr-2 text-primary" /> Detailed Description / Problem Statement
                     </h3>
-                    <div className="p-8 bg-slate-50 rounded-[2rem] font-medium text-slate-600 leading-loose">
+                    <div className="p-8 bg-slate-50 rounded-xl font-medium text-slate-600 leading-loose">
                       {selectedApp.data?.problemStatement || "No problem statement provided."}
                     </div>
                   </div>
@@ -594,7 +594,7 @@ export default function EvaluatePage() {
                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 flex items-center">
                       <BrainCircuit className="h-4 w-4 mr-2 text-primary" /> Solution
                     </h3>
-                    <div className="p-8 bg-slate-50 rounded-[2rem] font-medium text-slate-600 leading-loose">
+                    <div className="p-8 bg-slate-50 rounded-xl font-medium text-slate-600 leading-loose">
                       {selectedApp.data?.solutionStatement || "No solution statement provided."}
                     </div>
                   </div>
@@ -670,14 +670,14 @@ export default function EvaluatePage() {
 
             {/* Sticky Score Sidebar */}
             <div className="xl:col-span-4">
-              <Card className="border-none shadow-2xl ring-1 ring-slate-200 rounded-[2.5rem] bg-white overflow-hidden sticky top-8">
+              <Card className="border-none shadow-2xl ring-1 ring-slate-200 rounded-xl bg-white overflow-hidden sticky top-8">
                 <CardHeader className="bg-slate-50/50 border-b p-10 text-center">
                   <CardTitle className="text-2xl font-black text-slate-900 uppercase tracking-tight">Evaluator Verdict</CardTitle>
                 </CardHeader>
                 <CardContent className="p-10 space-y-10">
                   {alreadyEvaluated ? (
                     <div className="py-12 text-center space-y-4 animate-in zoom-in duration-500">
-                      <div className="h-24 w-24 bg-green-50 rounded-[2rem] flex items-center justify-center mx-auto shadow-sm">
+                      <div className="h-24 w-24 bg-green-50 rounded-xl flex items-center justify-center mx-auto shadow-sm">
                         <CheckCircle2 className="h-12 w-12 text-green-500" />
                       </div>
                       <div className="space-y-1">
@@ -706,7 +706,7 @@ export default function EvaluatePage() {
                                 if (val > 100) return;
                                 setMarks(isNaN(val) ? '' : val);
                               }}
-                              className="h-32 w-32 p-0 text-center text-6xl font-black rounded-[2rem] border-slate-100 bg-slate-50 focus:bg-white transition-all text-primary"
+                              className="h-32 w-32 p-0 text-center text-6xl font-black rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all text-primary"
                             />
                           </div>
                         </div>

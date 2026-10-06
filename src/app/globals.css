@@ -39,13 +39,13 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: calc(var(--radius) * 1.25);
+  --radius-2xl: calc(var(--radius) * 1.5);
+  --radius-3xl: calc(var(--radius) * 2);
+  --radius-4xl: calc(var(--radius) * 2.5);
 }
 
 :root {
@@ -67,7 +67,7 @@
   --border: oklch(0.92 0 0);
   --input: oklch(0.92 0 0);
   --ring: oklch(0.55 0.22 25 / 0.4);
-  --radius: 1rem; /* Slightly more rounded for modern feel */
+  --radius: 0.5rem; /* Clean modern tight radius */
 }
 
 .dark {
@@ -88,7 +88,7 @@
     @apply bg-white/40 backdrop-blur-xl border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)];
   }
   .glass-card {
-    @apply bg-white/60 backdrop-blur-lg border border-white/40 shadow-xl rounded-3xl;
+    @apply bg-white/60 backdrop-blur-lg border border-white/40 shadow-xl rounded-xl;
   }
   .glass-red {
     @apply bg-primary/80 backdrop-blur-md border border-white/20 shadow-lg text-white hover:bg-primary transition-all;

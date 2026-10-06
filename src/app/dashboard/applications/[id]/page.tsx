@@ -1567,7 +1567,7 @@ export default function ApplicationDetailsPage() {
                     Request Revision
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="rounded-[2rem] border-none shadow-2xl">
+                <DialogContent className="rounded-xl border-none shadow-2xl">
                   <DialogHeader>
                     <DialogTitle className="text-2xl font-black text-slate-900">Request Revision</DialogTitle>
                     <DialogDescription className="text-slate-500 font-medium pt-2">
@@ -1602,7 +1602,7 @@ export default function ApplicationDetailsPage() {
 
             {/* Mentor Assignment Dialog for Cohort Selection */}
             <Dialog open={showCohortDialog} onOpenChange={setShowCohortDialog}>
-              <DialogContent className="rounded-[2rem] border-none shadow-2xl bg-white max-w-md w-full p-6">
+              <DialogContent className="rounded-xl border-none shadow-2xl bg-white max-w-md w-full p-6">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-black text-slate-900">Cohort & Mentor Assignment</DialogTitle>
                   <DialogDescription className="text-slate-500 font-medium pt-2">
@@ -1694,7 +1694,7 @@ export default function ApplicationDetailsPage() {
 
             {/* Incubation Type and Funding Phase Selection Dialog */}
             <Dialog open={showIncubationDialog} onOpenChange={setShowIncubationDialog}>
-              <DialogContent className="rounded-[2rem] border-none shadow-2xl bg-white max-w-lg w-full p-6">
+              <DialogContent className="rounded-xl border-none shadow-2xl bg-white max-w-lg w-full p-6">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-black text-slate-900">Mark as Incubated</DialogTitle>
                   <DialogDescription className="text-slate-500 font-medium pt-2">
@@ -1850,7 +1850,7 @@ export default function ApplicationDetailsPage() {
                     <Trash2 className="h-4 w-4 mr-2" /> Delete
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
+                <AlertDialogContent className="rounded-xl border-none shadow-2xl">
                   <AlertDialogHeader>
                     <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 mb-4">
                       <AlertTriangle className="h-6 w-6" />
@@ -2713,7 +2713,7 @@ export default function ApplicationDetailsPage() {
                         <Plus className="mr-2 h-3.5 w-3.5" /> Log Transaction
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="rounded-[2rem] border-none shadow-2xl bg-white max-w-6xl w-[90vw] md:w-[40vw] sm:max-w-none p-6 overflow-y-auto max-h-[90vh]">
+                    <DialogContent className="rounded-xl border-none shadow-2xl bg-white max-w-6xl w-[90vw] md:w-[40vw] sm:max-w-none p-6 overflow-y-auto max-h-[90vh]">
                       <DialogHeader>
                         <DialogTitle className="text-2xl font-black text-slate-900 flex items-center gap-2">
                           <Receipt className="h-6 w-6 text-[#D91A2A]" /> Log Grant Transaction
@@ -3098,7 +3098,7 @@ export default function ApplicationDetailsPage() {
               )}
 
               {isOwner && application.status === 'Phase 2 Selected' && (
-                <div className="mt-8 p-8 bg-orange-50/50 rounded-[2.5rem] border-2 border-dashed border-orange-200 flex flex-col items-center text-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                <div className="mt-8 p-8 bg-orange-50/50 rounded-xl border-2 border-dashed border-orange-200 flex flex-col items-center text-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
                   <div className="h-20 w-20 bg-white rounded-3xl flex items-center justify-center shadow-xl shadow-orange-200/50 text-orange-600">
                     <Upload className="h-10 w-10" />
                   </div>
@@ -3689,7 +3689,7 @@ export default function ApplicationDetailsPage() {
 
       {/* Milestone Completion Dialog */}
       <Dialog open={completingMilestone !== null} onOpenChange={(open) => { if (!open) setCompletingMilestone(null); }}>
-        <DialogContent className="sm:max-w-lg rounded-[2rem] p-8 bg-white shadow-2xl">
+        <DialogContent className="sm:max-w-lg rounded-xl p-8 bg-white shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black text-slate-900">Complete Milestone</DialogTitle>
             <DialogDescription className="text-xs font-bold uppercase tracking-widest text-slate-400">

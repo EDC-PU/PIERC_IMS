@@ -95,7 +95,7 @@ export default function NotificationsPage() {
 
       <div className="space-y-4">
         {notifications.length === 0 ? (
-          <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2rem] p-20 text-center bg-slate-50/50">
+          <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-xl p-20 text-center bg-slate-50/50">
             <Bell className="h-12 w-12 text-slate-200 mx-auto mb-4" />
             <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No notifications yet</p>
           </Card>

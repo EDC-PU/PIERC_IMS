@@ -780,7 +780,7 @@ export default function MeetingsPage() {
             </div>
           </div>
 
-          <Card className="border-none shadow-2xl ring-1 ring-slate-100 rounded-[2rem] overflow-hidden bg-white">
+          <Card className="border-none shadow-2xl ring-1 ring-slate-100 rounded-xl overflow-hidden bg-white">
             <CardHeader className="bg-slate-900 text-white p-8">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>

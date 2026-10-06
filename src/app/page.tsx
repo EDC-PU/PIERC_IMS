@@ -336,8 +336,8 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="relative group">
-              <div className="absolute -inset-4 bg-gradient-to-tr from-primary/20 to-rose-200/20 rounded-[2rem] blur-2xl opacity-50 group-hover:opacity-80 transition-all" />
-              <div className="relative aspect-square rounded-[2rem] overflow-hidden shadow-2xl border-8 border-white">
+              <div className="absolute -inset-4 bg-gradient-to-tr from-primary/20 to-rose-200/20 rounded-xl blur-2xl opacity-50 group-hover:opacity-80 transition-all" />
+              <div className="relative aspect-square rounded-xl overflow-hidden shadow-2xl border-8 border-white">
                 <div className="absolute inset-0 bg-slate-200 animate-pulse" />
                 <img
                   src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1000"
@@ -395,7 +395,7 @@ export default function LandingPage() {
                 { name: 'Vadodara Hackathon', desc: 'The largest regional technical problem-solving event.' },
                 { name: 'Women Startup Meet', desc: 'Empowering female founders in the ecosystem.' },
               ].map((event, i) => (
-                <div key={i} className="group relative rounded-[2rem] overflow-hidden aspect-[4/5] glass-card border-none shadow-2xl hover:scale-[1.02] transition-all duration-500">
+                <div key={i} className="group relative rounded-xl overflow-hidden aspect-[4/5] glass-card border-none shadow-2xl hover:scale-[1.02] transition-all duration-500">
                   <div className="absolute inset-0 bg-slate-900/40 group-hover:bg-slate-900/20 transition-all z-10" />
                   <img
                     src={`https://images.unsplash.com/photo-1540575861501-7ce0e220beff?auto=format&fit=crop&q=80&w=600`}

@@ -133,7 +133,7 @@ export default function EventsWidget({ user }: EventsWidgetProps) {
 
   if (loading) {
     return (
-      <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white overflow-hidden animate-pulse">
+      <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-xl bg-white overflow-hidden animate-pulse">
         <CardContent className="p-8 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">
           Loading events...
         </CardContent>
@@ -146,7 +146,7 @@ export default function EventsWidget({ user }: EventsWidgetProps) {
   }
 
   return (
-    <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white overflow-hidden">
+    <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-xl bg-white overflow-hidden">
       <CardHeader className="p-8 border-b bg-slate-50/30 flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-xl font-black text-slate-900 flex items-center gap-2">

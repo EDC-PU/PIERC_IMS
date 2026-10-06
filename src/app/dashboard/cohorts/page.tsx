@@ -271,7 +271,7 @@ export default function CohortsPage() {
                 <Plus className="mr-2 h-4 w-4" /> Create Cohort
               </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-[2rem] border-none shadow-2xl bg-white max-w-md w-full p-6">
+            <DialogContent className="rounded-xl border-none shadow-2xl bg-white max-w-md w-full p-6">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-black text-slate-900">Create New Cohort</DialogTitle>
                 <DialogDescription className="text-slate-500 font-medium pt-2">
@@ -350,7 +350,7 @@ export default function CohortsPage() {
             const membersCount = cohortApps.reduce((acc, app) => acc + (app.data?.teamMembers?.length || 0), 0);
             const totalParticipants = leadersCount + membersCount;
             return (
-              <Card key={cohort.id} className="border-none shadow-lg bg-white rounded-[2rem] overflow-hidden flex flex-col justify-between">
+              <Card key={cohort.id} className="border-none shadow-lg bg-white rounded-xl overflow-hidden flex flex-col justify-between">
                 <CardHeader className="border-b bg-slate-50/50 p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -438,7 +438,7 @@ export default function CohortsPage() {
 
       {/* Edit Cohort Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="rounded-[2rem] border-none shadow-2xl bg-white max-w-md w-full p-6">
+        <DialogContent className="rounded-xl border-none shadow-2xl bg-white max-w-md w-full p-6">
           <DialogHeader>
             <DialogTitle className="text-2xl font-black text-slate-900">Edit Cohort Details</DialogTitle>
             <DialogDescription className="text-slate-500 font-medium pt-2">
@@ -499,7 +499,7 @@ export default function CohortsPage() {
 
       {/* Confirm Email Notification Dialog */}
       <Dialog open={showConfirmEmailDialog} onOpenChange={setShowConfirmEmailDialog}>
-        <DialogContent className="rounded-[2rem] border-none shadow-2xl bg-white max-w-md w-full p-8 text-center space-y-6">
+        <DialogContent className="rounded-xl border-none shadow-2xl bg-white max-w-md w-full p-8 text-center space-y-6">
           <DialogHeader className="space-y-3">
             <div className="mx-auto w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center text-red-600">
               <Calendar className="h-6 w-6" />

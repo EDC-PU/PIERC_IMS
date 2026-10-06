@@ -368,7 +368,7 @@ function MessagesContent() {
             </>
             ) : (
             <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/30 p-12 text-center space-y-6">
-              <div className="w-24 h-24 bg-white shadow-2xl rounded-[2.5rem] flex items-center justify-center text-primary rotate-3">
+              <div className="w-24 h-24 bg-white shadow-2xl rounded-xl flex items-center justify-center text-primary rotate-3">
                 <MessageSquare className="h-10 w-10 -rotate-3" />
               </div>
               <div className="space-y-2">

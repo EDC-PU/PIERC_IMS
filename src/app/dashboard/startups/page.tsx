@@ -159,7 +159,7 @@ export default function StartupsDirectory() {
       </div>
 
       {/* Filters Bar */}
-      <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] overflow-hidden bg-white/50 backdrop-blur-sm">
+      <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
         <CardContent className="p-4 md:p-6 flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -193,7 +193,7 @@ export default function StartupsDirectory() {
           {sortedStartups.map((startup) => (
             <StaggerItem key={startup.id} id={startup.id} className="h-full">
               <Link href={`/dashboard/applications/${startup.id}`}>
-                <Card className="group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-none ring-1 ring-slate-100 rounded-[2.5rem] overflow-hidden bg-white h-full flex flex-col">
+                <Card className="group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-none ring-1 ring-slate-100 rounded-xl overflow-hidden bg-white h-full flex flex-col">
                   <div className="h-32 bg-slate-900 relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/40 to-transparent opacity-50"></div>
                     <div className="absolute top-4 right-4">
@@ -253,7 +253,7 @@ export default function StartupsDirectory() {
         </StaggerGrid>
       ) : (
         /* List View */
-        <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-[2rem] overflow-hidden">
+        <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-50/50 border-b">

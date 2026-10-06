@@ -250,7 +250,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Timeline & Schedule */}
         <div className="lg:col-span-4 space-y-8">
-          <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white overflow-hidden">
+          <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-xl bg-white overflow-hidden">
             <CardHeader className="p-8 border-b bg-slate-50/30">
               <CardTitle className="text-lg font-black text-slate-900 flex items-center">
                 <History className="h-5 w-5 mr-2 text-primary" /> Activity Timeline
@@ -296,7 +296,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white overflow-hidden">
+          <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-xl bg-white overflow-hidden">
             <CardHeader className="p-8 border-b bg-slate-50/30">
               <CardTitle className="text-lg font-black text-slate-900 flex items-center">
                 <Calendar className="h-5 w-5 mr-2 text-primary" /> Upcoming Sessions
@@ -348,7 +348,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
         {/* Right Column: Growth & Notifications */}
         <div className="lg:col-span-8 space-y-8">
           <EventsWidget user={user} />
-          <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white overflow-hidden">
+          <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-xl bg-white overflow-hidden">
             <CardHeader className="p-8 border-b flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-xl font-black text-slate-900">Startup Traction</CardTitle>
@@ -377,7 +377,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <CardHoverEffect delay={0.1}>
               <Card 
-                className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white p-8 group hover:ring-primary/20 transition-all cursor-pointer h-full"
+                className="border-none shadow-sm ring-1 ring-slate-200 rounded-xl bg-white p-8 group hover:ring-primary/20 transition-all cursor-pointer h-full"
                 onClick={() => router.push(latestApp ? `/dashboard/applications/${latestApp.id}` : '/dashboard/applications')}
               >
                 <div className="flex items-center justify-between mb-6">
@@ -393,7 +393,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
 
             <CardHoverEffect delay={0.15}>
               <Card 
-                className="border-none shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] bg-white p-8 group hover:ring-primary/20 transition-all cursor-pointer h-full"
+                className="border-none shadow-sm ring-1 ring-slate-200 rounded-xl bg-white p-8 group hover:ring-primary/20 transition-all cursor-pointer h-full"
                 onClick={() => router.push(latestApp?.mentorId ? `/dashboard/profile/${latestApp.mentorId}` : '/dashboard/mentors')}
               >
                 <div className="flex items-center justify-between mb-6">
