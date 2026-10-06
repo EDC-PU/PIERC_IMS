@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const response = NextResponse.next();
@@ -14,7 +14,7 @@ export function middleware(request: NextRequest) {
   // 2. Server-Side Route Guard [HIGH-03]
   if (pathname.startsWith('/dashboard')) {
     const sessionCookie = request.cookies.get('__session');
-    
+
     // Direct URL protection: redirect unauthenticated callers to /login
     if (!sessionCookie || !sessionCookie.value) {
       const loginUrl = new URL('/login', request.url);
@@ -27,5 +27,15 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    /*
+     * Match all request paths except for:
+     * - api routes
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico, sitemap.xml, robots.txt
+     * - static files with extensions (.svg, .png, .jpg, .jpeg, .gif, .webp, .ico, .docx, .pdf, .pptx, .mp4, etc.)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|docx|pdf|pptx|mp4)$).*)',
+  ],
 };

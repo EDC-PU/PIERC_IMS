@@ -365,7 +365,7 @@ export default function SettingsPage() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Applicant Category</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
                               <FormControl>
                                 <SelectTrigger className="w-full h-11 rounded-xl">
                                   <SelectValue />
@@ -392,7 +392,7 @@ export default function SettingsPage() {
                             {isParulEmail ? "Institute / College" : "Institute / College Name"}
                           </FormLabel>
                           {isParulEmail ? (
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
                               <FormControl>
                                 <SelectTrigger className="w-full h-11 rounded-xl">
                                   <SelectValue />
@@ -438,7 +438,7 @@ export default function SettingsPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Gender</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <SelectTrigger className="w-full h-11 rounded-xl">
                                 <SelectValue placeholder="Select gender" />
@@ -460,7 +460,7 @@ export default function SettingsPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Category</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <SelectTrigger className="w-full h-11 rounded-xl">
                                 <SelectValue placeholder="Select category" />

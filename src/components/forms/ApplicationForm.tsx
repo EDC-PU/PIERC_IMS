@@ -234,7 +234,7 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Startup Studio</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
                           <FormControl>
                             <SelectTrigger className="w-full h-12 rounded-xl">
                               <SelectValue placeholder="Select Studio" />
@@ -390,7 +390,7 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Company Status</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <SelectTrigger className="w-full h-12 rounded-xl">
                                 <SelectValue placeholder="Select status" />
@@ -455,7 +455,7 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Startup Sector</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <SelectTrigger className="w-full h-12 rounded-xl">
                                 <SelectValue placeholder="Select sector" />
@@ -480,7 +480,7 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Product Live?</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl><SelectTrigger className="w-full h-12 rounded-xl"><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>
                               <SelectItem value="Yes">Yes</SelectItem>
@@ -497,7 +497,7 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Revenue</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl><SelectTrigger className="w-full h-12 rounded-xl"><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>
                               {["Prerevenue", "Upto 5L", "5L-10L", "10L to 25L", "More than 25L"].map(s => (
@@ -515,7 +515,7 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Capital to Raise</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl><SelectTrigger className="w-full h-12 rounded-xl"><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>
                               {["Upto 10L", "10 Lakhs to 25 Lakhs", "25 Lakhs to 50 Lakhs", "50 Lakhs to 1 Crore", "More than 1 Crore"].map(s => (
@@ -664,7 +664,7 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Current Stage</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
                           <FormControl><SelectTrigger className="w-full h-12 rounded-xl"><SelectValue placeholder="Select current stage..." /></SelectTrigger></FormControl>
                           <SelectContent>
                             <SelectItem value="Idea">Idea / Concept</SelectItem>
