@@ -85,7 +85,7 @@ service cloud.firestore {
       match /admin_secrets/{secretId} {
         allow read: if isAuthenticated() && (
           isAdmin() || 
-          (isMentor() && resource.data.mentorId == request.auth.uid)
+          request.auth.uid == get(/databases/$(database)/documents/applications/$(appId)).data.userId
         );
         allow write: if isAuthenticated() && (
           isAdmin() ||

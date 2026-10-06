@@ -31,25 +31,37 @@ import {
 } from 'lucide-react';
 import { AnimatedNumber, AnimatedProgressRing, LivePulseBadge, CardHoverEffect } from '@/components/ui/animated';
 
+import { useAuthStore } from '@/store/authStore';
+
 const COLORS = ['#d40924', '#00C49F', '#FFBB28', '#0088FE', '#8884d8'];
 
 export default function AnalyticsPage() {
+  const { user } = useAuthStore();
   const [applications, setApplications] = useState<Application[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+    if (!isAdmin) {
+      setLoading(false);
+      return;
+    }
+
     const unsubApps = onSnapshot(collection(db, 'applications'), (snapshot) => {
       setApplications(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Application[]);
-    });
+    }, (err) => console.error('Analytics apps query error:', err));
 
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       setUsers(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() })) as UserProfile[]);
-    });
+    }, (err) => console.error('Analytics users query error:', err));
 
     const unsubMeetings = onSnapshot(collection(db, 'meetings'), (snapshot) => {
       setMeetings(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Meeting[]);
+      setLoading(false);
+    }, (err) => {
+      console.error('Analytics meetings query error:', err);
       setLoading(false);
     });
 
@@ -58,7 +70,7 @@ export default function AnalyticsPage() {
       unsubUsers();
       unsubMeetings();
     };
-  }, []);
+  }, [user]);
 
   if (loading) {
     return (

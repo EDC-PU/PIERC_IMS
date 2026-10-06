@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, onSnapshot, getDoc, getDocs, updateDoc, deleteDoc, collection, query, where, addDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, getDocs, updateDoc, deleteDoc, collection, query, where, addDoc, setDoc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import { Application, UserProfile, Cohort, GrantTransaction } from '@/types';
@@ -59,6 +59,7 @@ import {
   EyeOff,
   KeyRound,
   ShieldCheck,
+  ShieldAlert,
   Layers,
   MessageSquare,
   Coins,
@@ -130,6 +131,10 @@ export default function ApplicationDetailsPage() {
   const [showRevisionDialog, setShowRevisionDialog] = useState(false);
   const [phase2PPT, setPhase2PPT] = useState<File | null>(null);
   const [isUploadingPPT, setIsUploadingPPT] = useState(false);
+
+  // Access control & confidential credentials
+  const [accessDenied, setAccessDenied] = useState(false);
+  const [yuktiSecret, setYuktiSecret] = useState<{ yuktiPortalId?: string; yuktiPortalPassword?: string } | null>(null);
 
   // Yukti Portal Credential states
   const [yuktiId, setYuktiId] = useState('');
@@ -205,9 +210,17 @@ export default function ApplicationDetailsPage() {
     }
     setIsSavingYukti(true);
     try {
+      // Store credentials in isolated, restricted subcollection (Prevents public / mentor leak)
+      await setDoc(doc(db, 'applications', id, 'admin_secrets', 'yukti'), {
+        yuktiPortalId: yuktiId.trim(),
+        yuktiPortalPassword: yuktiPassword.trim(),
+        updatedAt: Date.now(),
+      }, { merge: true });
+
+      // Update public application document WITHOUT storing the plaintext password
       await updateDoc(doc(db, 'applications', id), {
         'documents.yuktiPortalId': yuktiId.trim(),
-        'documents.yuktiPortalPassword': yuktiPassword.trim(),
+        'documents.hasYuktiCredentials': true,
         updatedAt: Date.now(),
       });
 
@@ -315,7 +328,13 @@ export default function ApplicationDetailsPage() {
         setNewTeamMembers(data.data?.teamMembers || []);
         setDpiitNumber(data.data?.dpiitNumber || '');
         setSector(data.data?.sector || 'General');
+      } else {
+        setApplication(null);
       }
+      setLoading(false);
+    }, (error) => {
+      console.error('Application fetch error / permission denied:', error);
+      setAccessDenied(true);
       setLoading(false);
     });
 
@@ -325,15 +344,22 @@ export default function ApplicationDetailsPage() {
     const unsubscribeMeetings = onSnapshot(meetingsQuery, (snapshot) => {
       const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMeetings(list);
+    }, (error) => {
+      console.warn('Meetings query permission notice:', error);
     });
 
-    // 3. Fetch evaluations for this application
-    const evalCol = collection(db, 'evaluations');
-    const evalQuery = query(evalCol, where('applicationId', '==', id));
-    const evalUnsubscribe = onSnapshot(evalQuery, (snapshot) => {
-      const evals = snapshot.docs.map(doc => doc.data());
-      setAllEvaluations(evals.sort((a, b) => b.submittedAt - a.submittedAt));
-    });
+    // 3. Fetch evaluations for this application (Strictly Admin & Mentors only)
+    let evalUnsubscribe = () => { };
+    if (user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'mentor') {
+      const evalCol = collection(db, 'evaluations');
+      const evalQuery = query(evalCol, where('applicationId', '==', id));
+      evalUnsubscribe = onSnapshot(evalQuery, (snapshot) => {
+        const evals = snapshot.docs.map(doc => doc.data());
+        setAllEvaluations(evals.sort((a, b) => b.submittedAt - a.submittedAt));
+      }, (error) => {
+        console.warn('Evaluations permission notice:', error);
+      });
+    }
 
     // 4. Fetch mentors from users collection (Admins only)
     let usersUnsubscribe = () => { };
@@ -367,6 +393,20 @@ export default function ApplicationDetailsPage() {
       console.error("Error loading transactions in detail page: ", error);
     });
 
+    // 7. Securely fetch isolated administrative secrets (Yukti credentials)
+    let secretUnsubscribe = () => { };
+    const secretDocRef = doc(db, 'applications', id, 'admin_secrets', 'yukti');
+    secretUnsubscribe = onSnapshot(secretDocRef, (snap) => {
+      if (snap.exists()) {
+        const sData = snap.data();
+        setYuktiSecret(sData as any);
+        if (sData.yuktiPortalId) setYuktiId(sData.yuktiPortalId);
+        if (sData.yuktiPortalPassword) setYuktiPassword(sData.yuktiPortalPassword);
+      }
+    }, () => {
+      // Permission denied for non-owners/non-admins is expected and secure
+    });
+
     return () => {
       unsubscribe();
       unsubscribeMeetings();
@@ -374,6 +414,7 @@ export default function ApplicationDetailsPage() {
       usersUnsubscribe();
       cohortsUnsubscribe();
       unsubscribeTrans();
+      secretUnsubscribe();
     };
   }, [id, user]);
 
@@ -1003,12 +1044,53 @@ export default function ApplicationDetailsPage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center animate-pulse text-slate-400">Loading Application Details...</div>;
-  if (!application) return <div className="p-8 text-center text-rose-500 font-bold">Application not found</div>;
+  if (loading) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 space-y-3">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-sm font-semibold text-slate-500">Loading Application Details...</p>
+      </div>
+    );
+  }
+
+  if (accessDenied || !application) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 mb-2">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900">Access Denied</h2>
+        <p className="text-sm text-slate-500 max-w-md">
+          You do not have permission to view this application or the record does not exist.
+        </p>
+        <Button onClick={() => router.push('/dashboard/applications')} variant="outline" className="mt-4 font-bold">
+          Return to Applications
+        </Button>
+      </div>
+    );
+  }
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isMentor = user?.role === 'mentor' && user?.uid === application.mentorId;
   const isOwner = user?.uid === application.userId ||
     (Array.isArray(application.data?.teamMembers) && application.data.teamMembers.some((m: any) => m.email?.toLowerCase() === user?.email?.toLowerCase()));
+
+  if (!isAdmin && !isMentor && !isOwner) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 mb-2">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900">Access Denied</h2>
+        <p className="text-sm text-slate-500 max-w-md">
+          You are not authorized to view this confidential application. If you believe this is an error, please contact the PIERC administrator.
+        </p>
+        <Button onClick={() => router.push('/dashboard/applications')} variant="outline" className="mt-4 font-bold">
+          Return to Applications
+        </Button>
+      </div>
+    );
+  }
   const isRevisionNeeded = application.status === 'Revision Needed';
   const canEdit = isOwner && (isRevisionNeeded || (meetings.length === 0 && (application.status === 'Submitted' || application.status === 'Under Review')));
   const data = application.data || {};
@@ -3141,7 +3223,7 @@ export default function ApplicationDetailsPage() {
                         <Input
                           type={showYuktiPassword ? 'text' : 'password'}
                           placeholder="Enter your Yukti Portal Password"
-                          value={yuktiPassword || application.documents?.yuktiPortalPassword || ''}
+                          value={yuktiPassword || yuktiSecret?.yuktiPortalPassword || ''}
                           onChange={(e) => setYuktiPassword(e.target.value)}
                           className="rounded-xl bg-slate-50 border-none focus:ring-violet-300 h-11 font-bold pr-12"
                         />
@@ -3163,13 +3245,13 @@ export default function ApplicationDetailsPage() {
                       {isSavingYukti ? 'Saving...' : application.documents?.yuktiPortalId ? 'Update Credentials' : 'Submit Credentials'}
                     </Button>
                     <p className="text-[9px] text-slate-400 font-medium italic text-center">
-                      Your credentials are stored securely and visible only to PIERC administrators and your assigned mentor.
+                      Your credentials are stored securely and visible only to authorized PIERC administrators.
                     </p>
                   </div>
                 )}
 
-                {/* View credentials — visible to super_admin and assigned mentor only */}
-                {(user?.role === 'super_admin' || (user?.role === 'mentor' && user?.uid === application.mentorId)) && (
+                {/* View credentials — visible to super_admin and admin only */}
+                {(user?.role === 'super_admin' || user?.role === 'admin') && (
                   <div className="space-y-4">
                     {application.documents?.yuktiPortalId ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3182,8 +3264,8 @@ export default function ApplicationDetailsPage() {
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-black text-slate-900 break-all flex-1">
                               {showYuktiPassword
-                                ? application.documents.yuktiPortalPassword
-                                : '•'.repeat(Math.min(application.documents.yuktiPortalPassword?.length ?? 8, 12))}
+                                ? (yuktiSecret?.yuktiPortalPassword || '• • • • • • • •')
+                                : '•'.repeat(Math.min((yuktiSecret?.yuktiPortalPassword || '••••••••').length, 12))}
                             </p>
                             <button
                               type="button"

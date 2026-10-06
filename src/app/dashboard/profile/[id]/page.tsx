@@ -28,6 +28,7 @@ import Link from 'next/link';
 export default function ProfilePage() {
   const params = useParams();
   const id = params.id as string;
+  const { user: currentUser } = useAuthStore();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [userApps, setUserApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +56,12 @@ export default function ProfilePage() {
 
         setProfile(foundProfile);
 
-        if (foundProfile) {
+        // Security Guard: Only admins, mentors or the user themselves may view applications
+        const canViewApps = currentUser?.role === 'admin' || 
+          currentUser?.role === 'super_admin' || 
+          currentUser?.uid === foundProfile?.uid;
+
+        if (foundProfile && canViewApps) {
           const appsCol = collection(db, 'applications');
           const appsQ = query(appsCol, where('userId', '==', foundProfile.uid));
           const appsSnap = await getDocs(appsQ);
@@ -72,12 +78,13 @@ export default function ProfilePage() {
     };
 
     fetchUserAndApps();
-  }, [id]);
+  }, [id, currentUser]);
 
   if (loading) return <div className="p-8 text-center animate-pulse text-slate-400 font-bold">Loading Identity...</div>;
   if (!profile) return <div className="p-8 text-center text-slate-500 font-bold">Profile not found.</div>;
 
   const isInternal = profile.institute && (profile.uid.length < 20 || profile.displayName.toLowerCase().includes('staff') || profile.displayName.toLowerCase().includes('student'));
+  const canViewFullPII = currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.uid === profile.uid || currentUser?.role === 'mentor';
 
   return (
     <div className="space-y-8 p-6 md:p-8 animate-in fade-in duration-700">
@@ -112,11 +119,15 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
                   <div className="flex items-center space-x-3 text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-100">
                     <Mail className="h-4 w-4 text-primary/60" />
-                    <span className="text-sm font-bold truncate">{profile.email}</span>
+                    <span className="text-sm font-bold truncate">
+                      {canViewFullPII ? profile.email : profile.email.replace(/(.{2})(.*)(@.*)/, '$1***$3')}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-3 text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-100">
                     <Phone className="h-4 w-4 text-primary/60" />
-                    <span className="text-sm font-bold">{profile.contactNumber || profile.phoneNumber || 'N/A'}</span>
+                    <span className="text-sm font-bold">
+                      {canViewFullPII ? (profile.contactNumber || profile.phoneNumber || 'N/A') : '••••••••••'}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-3 text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-100">
                     <IdCard className="h-4 w-4 text-primary/60" />
