@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI("AIzaSyDHY4_6lfcyW1QsNC69U7V9I4uU1E52SIM");
+const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+const genAI = new GoogleGenerativeAI(apiKey);
 
 export async function classifySector(title: string, description: string) {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });

@@ -60,10 +60,12 @@ export default function UserDashboard({ user }: UserDashboardProps) {
   useEffect(() => {
     // 1. Fetch user's meetings
     const meetingsCol = collection(db, 'meetings');
-    const unsubscribeMeetings = onSnapshot(meetingsCol, (snapshot) => {
-      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Meeting[];
-      const userMeetings = list.filter(m => m && m.attendees && m.attendees.includes(user.uid));
+    const meetingsQuery = query(meetingsCol, where('attendees', 'array-contains', user.uid));
+    const unsubscribeMeetings = onSnapshot(meetingsQuery, (snapshot) => {
+      const userMeetings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Meeting[];
       setMeetings(userMeetings.sort((a, b) => (a.startTime || 0) - (b.startTime || 0)));
+    }, (error) => {
+      console.error('Meetings query error:', error);
     });
 
     // 2. Fetch user's applications

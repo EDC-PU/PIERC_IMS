@@ -28,6 +28,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (firebaseUser) {
+        // Synchronize session cookie for server-side Next.js middleware protection
+        firebaseUser.getIdToken().then((token) => {
+          document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax;`;
+        }).catch(console.error);
+
         const userDocRef = doc(db, 'users', firebaseUser.uid);
 
         // Use onSnapshot for real-time profile updates
@@ -80,6 +85,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }, false);
         });
       } else {
+        document.cookie = '__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;';
         setAuth(null, false);
       }
     });

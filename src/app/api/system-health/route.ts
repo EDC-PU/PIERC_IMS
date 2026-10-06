@@ -1,7 +1,38 @@
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb, adminStorage } from '@/lib/firebase-admin';
 
-export async function GET() {
+export async function GET(request: Request) {
+  // 1. Mandatory Admin Authentication Check (Prevents Information Disclosure [MED-01])
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Administrative credentials required.' },
+      { status: 401 }
+    );
+  }
+
+  const token = authHeader.split('Bearer ')[1]?.trim();
+  try {
+    const decodedToken = await adminAuth().verifyIdToken(token);
+    let role = decodedToken.role;
+    if (!role) {
+      const userDoc = await adminDb().collection('users').doc(decodedToken.uid).get();
+      role = userDoc.exists ? userDoc.data()?.role : 'user';
+    }
+
+    if (role !== 'admin' && role !== 'super_admin') {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: Insufficient privileges.' },
+        { status: 403 }
+      );
+    }
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Invalid administrative session.' },
+      { status: 401 }
+    );
+  }
+
   const results: any = {
     env: {
       status: 'SUCCESS',
@@ -59,7 +90,5 @@ export async function GET() {
     results.storage.message = error.message;
   }
 
-  const overallStatus = [results.firestore.status, results.auth.status, results.storage.status].every(s => s === 'SUCCESS') ? 'success' : 'warning';
-
-  return NextResponse.json({ ...results, overallStatus });
+  return NextResponse.json(results);
 }

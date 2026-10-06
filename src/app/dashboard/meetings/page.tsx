@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, addDoc, updateDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, doc, query, where } from 'firebase/firestore';
 import { Application, Meeting, UserProfile } from '@/types';
 import { triggerEmailNotification } from '@/lib/email-client';
 import { getMeetingScheduledEmailHtml, getMeetingCancelledEmailHtml } from '@/lib/email-templates';
@@ -116,20 +116,28 @@ export default function MeetingsPage() {
 
     // Fetch Applications
     const appsCol = collection(db, 'applications');
-    const unsubscribeApps = onSnapshot(appsCol, (snapshot) => {
+    const appsQuery = isAdmin
+      ? appsCol
+      : query(appsCol, where('userId', '==', currentUser.uid));
+    const unsubscribeApps = onSnapshot(appsQuery, (snapshot) => {
       const appList = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Application[];
       setApplications(appList);
+      setLoading(false);
+    }, (error) => {
+      console.error('Applications listener error:', error);
       setLoading(false);
     });
 
     // Fetch Meetings from top-level meetings collection
     const meetingsCol = collection(db, 'meetings');
-    const unsubscribeMeetings = onSnapshot(meetingsCol, (snapshot) => {
+    const meetingsQuery = isAdmin
+      ? meetingsCol
+      : query(meetingsCol, where('attendees', 'array-contains', currentUser.uid));
+    const unsubscribeMeetings = onSnapshot(meetingsQuery, (snapshot) => {
       const allMeetings = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Meeting[];
-      const filtered = currentUser.role === 'user'
-        ? allMeetings.filter(m => m.attendees?.includes(currentUser.uid))
-        : allMeetings;
-      setMeetings(filtered.sort((a, b) => a.startTime - b.startTime));
+      setMeetings(allMeetings.sort((a, b) => a.startTime - b.startTime));
+    }, (error) => {
+      console.error('Meetings listener error:', error);
     });
 
     let unsubscribeUsers: (() => void) | undefined;

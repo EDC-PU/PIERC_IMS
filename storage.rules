@@ -1,25 +1,49 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin'];
+    }
+
+    function isAppOwner(appId) {
+      return isAuthenticated() && 
+        firestore.get(/databases/(default)/documents/applications/$(appId)).data.userId == request.auth.uid;
+    }
+
+    // Pitch decks and application files: accessible only by app owner or admin (Prevents [CRIT-04] Exfiltration & Overwrite)
     match /applications/{appId}/{fileName} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (request.resource.size < 10 * 1024 * 1024); // 10MB limit
+      allow read: if isAppOwner(appId) || isAdmin();
+      allow write: if (isAppOwner(appId) || isAdmin()) && request.resource.size < 10 * 1024 * 1024;
     }
+
+    // Financial invoices: accessible only by app owner or admin
     match /applications/{appId}/invoices/{fileName} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (request.resource.size < 10 * 1024 * 1024); // 10MB limit
+      allow read: if isAppOwner(appId) || isAdmin();
+      allow write: if (isAppOwner(appId) || isAdmin()) && request.resource.size < 10 * 1024 * 1024;
     }
+
+    // Milestone documents
+    match /milestone-documents/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Event promotional materials: write restricted to admins
     match /event-flyers/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (request.resource.size < 10 * 1024 * 1024); // 10MB limit
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && request.resource.size < 10 * 1024 * 1024;
     }
-    match /milestone-documents/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (request.resource.size < 10 * 1024 * 1024); // 10MB limit
-    }
+
+    // User avatars / personal files: strictly owned by the authenticated user
     match /users/{userId}/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId && request.resource.size < 5 * 1024 * 1024;
     }
   }
 }

@@ -1,141 +1,177 @@
-  rules_version = '2';
-  service cloud.firestore {
-    match /databases/{database}/documents {
-      // Helper function to check if user is admin or super admin
-      function isAdmin() {
-        return request.auth != null && 
-          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin');
-      }
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Core Authentication & Role Checks
+    function isAuthenticated() {
+      return request.auth != null;
+    }
 
-      // Helper function to check if user is mentor
-      function isMentor() {
-        return request.auth != null && 
-          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'mentor';
-      }
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.get('role', '') in ['admin', 'super_admin'] ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin']));
+    }
 
-      // Helper function to check if user is team member of the application
-      function isTeamMember(appData) {
-        return request.auth != null && (
-          ('email' in request.auth.token && 
-           appData.get('data', {}).get('teamMembers', []).any(m, m.get('email', '') == request.auth.token.email || string(m.get('email', '')).lower() == string(request.auth.token.email).lower())) ||
-          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-           appData.get('data', {}).get('teamMembers', []).any(m, m.get('email', '') == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('email', '') || 
-             string(m.get('email', '')).lower() == string(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('email', '')).lower()
-           ))
-        );
-      }
+    function isMentor() {
+      return isAuthenticated() && 
+        (request.auth.token.get('role', '') == 'mentor' ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'mentor'));
+    }
 
-      // Users collection
-      match /users/{userId} {
-        allow read: if request.auth != null && (
-          request.auth.uid == userId || 
+    function isAppOwner(appData) {
+      return isAuthenticated() && appData.userId == request.auth.uid;
+    }
+
+    function isAssignedMentor(appData) {
+      return isMentor() && appData.get('mentorId', '') == request.auth.uid;
+    }
+
+    // Helper function to check if user is team member of the application
+    function isTeamMember(appData) {
+      return isAuthenticated() && (
+        ('email' in request.auth.token && 
+         appData.get('data', {}).get('teamMembers', []).any(m, m.get('email', '') == request.auth.token.email || string(m.get('email', '')).lower() == string(request.auth.token.email).lower())) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         appData.get('data', {}).get('teamMembers', []).any(m, m.get('email', '') == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('email', '') || 
+           string(m.get('email', '')).lower() == string(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('email', '')).lower()
+         ))
+      );
+    }
+
+    // Users Collection: Users read own profile or mentors/admins; role escalation prohibited
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId || 
+        isAdmin() || 
+        isMentor() ||
+        resource.data.role == 'mentor'
+      );
+      allow create: if isAuthenticated() && request.auth.uid == userId && (
+        !request.resource.data.keys().hasAll(['role']) || 
+        request.resource.data.role == 'user'
+      );
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        (request.auth.uid == userId && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
+        ))
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Applications Collection: Strict Ownership & Role-Based Access (Prevents BOLA/IDOR)
+    match /applications/{appId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid ||
+        isTeamMember(resource.data) ||
+        isAssignedMentor(resource.data)
+      );
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        isAssignedMentor(resource.data) ||
+        (isAppOwner(resource.data) && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'mentorId', 'mentorName', 'assignedCohortId', 'milestones', 'fundingPhases']) ||
+          request.resource.data.status in ['Draft', 'Submitted', 'Revision Submitted']
+        ))
+      );
+      allow delete: if isAdmin();
+
+      // Isolated confidential administrative credentials (e.g. Yukti portal logins)
+      match /admin_secrets/{secretId} {
+        allow read: if isAuthenticated() && (
           isAdmin() || 
-          isMentor() ||
-          resource.data.role == 'admin' ||
-          resource.data.role == 'super_admin' ||
-          resource.data.role == 'mentor'
+          (isMentor() && resource.data.mentorId == request.auth.uid)
         );
-        allow create: if request.auth != null && request.auth.uid == userId && (
-          !request.resource.data.keys().hasAll(['role']) || 
-          request.resource.data.role == 'user'
-        );
-        allow update: if request.auth != null && (
-          isAdmin() || 
-          (request.auth.uid == userId && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
-          ))
-        );
-        allow delete: if request.auth != null && isAdmin();
-      }
-
-      // Applications collection
-      match /applications/{appId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null;
-        allow update: if request.auth != null && (
-          isAdmin() || 
-          isMentor() || 
-          ((resource.data.userId == request.auth.uid || isTeamMember(resource.data)) && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status']) ||
-            request.resource.data.status == 'Submitted' ||
-            request.resource.data.status == 'Revision Submitted' ||
-            request.resource.data.status == 'Draft'
-          ))
-        );
-        allow delete: if request.auth != null && isAdmin();
-      }
-
-      // Programmes collection
-      match /programmes/{programmeId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && isAdmin();
-      }
-
-      // Meetings collection
-      match /meetings/{meetingId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && isAdmin();
-      }
-
-      // Cohorts collection
-      match /cohorts/{cohortId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && isAdmin();
-      }
-
-      // Enrollment slugs collection
-      match /enrollment_slugs/{enrollmentId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && (resource == null || resource.data.uid == request.auth.uid);
-      }
-
-      // Evaluations collection
-      match /evaluations/{evalId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && (isAdmin() || isMentor());
-      }
-
-      // Events collection
-      match /events/{eventId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null && isAdmin();
-        allow update: if request.auth != null && (isAdmin() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['registeredUsers']));
-      }
-
-      // Transactions collection
-      match /transactions/{transactionId} {
-        allow read: if request.auth != null && (
-          resource == null ||
-          resource.data.userId == request.auth.uid ||
+        allow write: if isAuthenticated() && (
           isAdmin() ||
-          isMentor()
-        );
-        allow create: if request.auth != null && (
-          request.resource.data.userId == request.auth.uid ||
-          isAdmin()
-        );
-        allow update: if request.auth != null && (
-          resource.data.userId == request.auth.uid ||
-          isAdmin()
-        );
-        allow delete: if request.auth != null && isAdmin();
-      }
-
-      // Notifications subcollection: notifications/{userId}/items/{itemId}
-      match /notifications/{userId}/items/{itemId} {
-        allow read: if request.auth != null && request.auth.uid == userId;
-        allow write: if request.auth != null;
-      }
-
-      // Messages subcollection: messages/{chatId}/messages/{messageId}
-      match /messages/{chatId}/messages/{messageId} {
-        allow read, write: if request.auth != null && (
-          chatId.split('_')[0] == request.auth.uid || 
-          chatId.split('_')[1] == request.auth.uid
+          request.auth.uid == get(/databases/$(database)/documents/applications/$(appId)).data.userId
         );
       }
     }
+
+    // Programmes Collection: Read by all authenticated; write by admin only
+    match /programmes/{programmeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Meetings Collection: Restricted to scheduled attendees and admins (Prevents data harvesting)
+    match /meetings/{meetingId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        request.auth.uid in resource.data.get('attendees', [])
+      );
+      allow write: if isAdmin();
+    }
+
+    // Cohorts Collection
+    match /cohorts/{cohortId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Enrollment Slugs Collection
+    match /enrollment_slugs/{enrollmentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    // Evaluations Collection: Strictly Evaluator & Admin access (Prevents confidential score leaks)
+    match /evaluations/{evalId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        (isMentor() && resource.data.evaluatorId == request.auth.uid)
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() || 
+        (isMentor() && request.resource.data.evaluatorId == request.auth.uid)
+      );
+    }
+
+    // Events Collection
+    match /events/{eventId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin();
+      allow update: if isAuthenticated() && (isAdmin() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['registeredUsers']));
+      allow delete: if isAdmin();
+    }
+
+    // Transactions Collection: User-scoped financial ledger
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        isMentor() ||
+        resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        request.resource.data.userId == request.auth.uid
+      );
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Notifications Subcollection: Read own; restricted write prevents notification injection phishing
+    match /notifications/{userId}/items/{itemId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated() && (isAdmin() || request.auth.uid == userId);
+      allow update, delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Direct Messages Subcollection: Strict participant matching
+    match /messages/{chatId}/messages/{messageId} {
+      allow read, write: if isAuthenticated() && (
+        chatId.split('_')[0] == request.auth.uid || 
+        chatId.split('_')[1] == request.auth.uid
+      );
+    }
   }
+}

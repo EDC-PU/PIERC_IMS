@@ -56,17 +56,16 @@ export default function ApplicationsPage() {
 
     const isAdmin = user.role === 'admin' || user.role === 'super_admin';
     const appsCol = collection(db, 'applications');
-    const unsubscribe = onSnapshot(appsCol, (snapshot) => {
-      const allApps = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Application[];
+    const appsQuery = isAdmin
+      ? appsCol
+      : query(appsCol, where('userId', '==', user.uid));
 
-      const filteredApps = isAdmin
-        ? allApps
-        : allApps.filter(app => 
-            app.userId === user.uid || 
-            (Array.isArray(app.data?.teamMembers) && app.data.teamMembers.some((m: any) => m.email?.toLowerCase() === user.email?.toLowerCase()))
-          );
-
-      setApplications(filteredApps.sort((a, b) => b.submittedAt - a.submittedAt));
+    const unsubscribe = onSnapshot(appsQuery, (snapshot) => {
+      const fetchedApps = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Application[];
+      setApplications(fetchedApps.sort((a, b) => b.submittedAt - a.submittedAt));
+      setLoading(false);
+    }, (err) => {
+      console.error('Applications load error:', err);
       setLoading(false);
     });
 
