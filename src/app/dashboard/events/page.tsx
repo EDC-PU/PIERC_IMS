@@ -16,6 +16,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AnimatedPillTabs } from '@/components/ui/animated';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Calendar,
@@ -47,6 +48,7 @@ export default function UserEventsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [modeFilter, setModeFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date-desc');
+  const [activeTab, setActiveTab] = useState('upcoming');
 
   useEffect(() => {
     if (!user) return;
@@ -364,18 +366,20 @@ export default function UserEventsPage() {
             </CardContent>
           </Card>
 
-          <Tabs defaultValue="upcoming" className="w-full">
-            <TabsList className="bg-slate-100 p-1 rounded-xl h-12 flex justify-start w-fit">
-            <TabsTrigger value="upcoming" className="rounded-lg font-bold text-xs uppercase px-4 flex items-center gap-1.5">
-              <CalendarDays className="h-4 w-4" /> Upcoming Events ({upcomingEvents.length})
-            </TabsTrigger>
-            <TabsTrigger value="past" className="rounded-lg font-bold text-xs uppercase px-4 flex items-center gap-1.5">
-              <History className="h-4 w-4" /> Past Events ({pastEvents.length})
-            </TabsTrigger>
-            <TabsTrigger value="registered" className="rounded-lg font-bold text-xs uppercase px-4 flex items-center gap-1.5">
-              <ClipboardCheck className="h-4 w-4" /> My Registrations ({registeredEvents.length})
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto pb-1">
+            <AnimatedPillTabs
+              options={[
+                { id: 'upcoming', label: 'Upcoming Events', count: upcomingEvents.length, icon: CalendarDays },
+                { id: 'past', label: 'Past Events', count: pastEvents.length, icon: History },
+                { id: 'registered', label: 'My Registrations', count: registeredEvents.length, icon: ClipboardCheck },
+              ]}
+              activeId={activeTab}
+              onChange={setActiveTab}
+              layoutId="user-events-tab-pill"
+            />
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
 
           <TabsContent value="upcoming" className="mt-6">
             {renderEventList(upcomingEvents)}

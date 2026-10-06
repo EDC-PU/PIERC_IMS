@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AnimatedNumber, CardHoverEffect, LivePulseBadge } from '@/components/ui/animated';
+import { AnimatedNumber, CardHoverEffect, LivePulseBadge, AnimatedPillTabs } from '@/components/ui/animated';
 import {
   Users,
   Rocket,
@@ -62,6 +62,7 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
   const [events, setEvents] = useState<PortalEvent[]>([]);
   const [usersList, setUsersList] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [analyticsTab, setAnalyticsTab] = useState('overview');
 
   useEffect(() => {
     // 1. Fetch applications
@@ -520,14 +521,21 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
       </div>
 
       {/* Analytics Tabs */}
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="bg-slate-100 p-1 rounded-xl h-12 flex justify-start w-fit">
-          <TabsTrigger value="overview" className="rounded-lg font-bold text-xs px-4">Overview</TabsTrigger>
-          <TabsTrigger value="applications" className="rounded-lg font-bold text-xs px-4">Applications</TabsTrigger>
-          <TabsTrigger value="funding" className="rounded-lg font-bold text-xs px-4">Funding & Infrastructure</TabsTrigger>
-          <TabsTrigger value="mentorship" className="rounded-lg font-bold text-xs px-4">Mentorship & Events</TabsTrigger>
-        </TabsList>
+      <div className="overflow-x-auto pb-1">
+        <AnimatedPillTabs
+          options={[
+            { id: 'overview', label: 'Overview', icon: TrendingUp },
+            { id: 'applications', label: 'Applications', icon: FileText, count: applications.length },
+            { id: 'funding', label: 'Funding & Infrastructure', icon: DollarSign },
+            { id: 'mentorship', label: 'Mentorship & Events', icon: Calendar },
+          ]}
+          activeId={analyticsTab}
+          onChange={setAnalyticsTab}
+          layoutId="admin-analytics-tabs"
+        />
+      </div>
 
+      <Tabs value={analyticsTab} onValueChange={setAnalyticsTab} className="w-full">
         {/* Tab 1: Overview Tab containing recommended layout charts */}
         <TabsContent value="overview" className="space-y-6 mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

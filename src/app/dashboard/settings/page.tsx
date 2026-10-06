@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AnimatedPillTabs } from '@/components/ui/animated';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { doc, updateDoc, setDoc, collection, onSnapshot } from 'firebase/firestore';
@@ -99,6 +100,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const { user, setUser } = useAuthStore();
   const isParulEmail = user?.email?.toLowerCase().endsWith('@paruluniversity.ac.in');
+  const [activeTab, setActiveTab] = useState('profile');
   const [notifPrefs, setNotifPrefs] = useState({
     applications: true,
     meetings: true,
@@ -261,14 +263,20 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="bg-slate-100 p-1 rounded-xl h-12 w-full sm:w-auto grid grid-cols-2 sm:flex">
-          <TabsTrigger value="profile" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm px-8">Profile</TabsTrigger>
-          <TabsTrigger value="account" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm px-8">Account</TabsTrigger>
-          {user?.role === 'super_admin' && (
-            <TabsTrigger value="programme" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm px-8">Programme Control</TabsTrigger>
-          )}
-        </TabsList>
+      <div className="overflow-x-auto pb-1">
+        <AnimatedPillTabs
+          options={[
+            { id: 'profile', label: 'Profile' },
+            { id: 'account', label: 'Account' },
+            ...(user?.role === 'super_admin' ? [{ id: 'programme', label: 'Programme Control' }] : []),
+          ]}
+          activeId={activeTab}
+          onChange={setActiveTab}
+          layoutId="settings-tab-pill"
+        />
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
 
         <TabsContent value="profile" className="space-y-6 outline-none">
           <Card className="border-none shadow-sm ring-1 ring-slate-200 overflow-hidden">

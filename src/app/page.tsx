@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
+import { AnimatedPillTabs } from '@/components/ui/animated';
 import { Rocket, Shield, Users, BarChart3, ChevronRight, CheckCircle2, Calendar, ArrowUpRight, LayoutDashboard, HelpCircle, ChevronDown, Sparkles } from 'lucide-react';
 
 const Facebook = ({ className }: { className?: string }) => (
@@ -74,6 +76,7 @@ const teamMembers = [
     id: 1,
     name: "Mr. Jay Sudani",
     position: "Chief Executive Officer",
+    category: "Leadership",
     image: "https://i.ibb.co/p6QwjPxk/DSC09250.jpg",
     facebook: "https://facebook.com",
     linkedIn: "https://linkedin.com"
@@ -82,6 +85,7 @@ const teamMembers = [
     id: 2,
     name: "Mr. Ajay Barot",
     position: "Strategic Lead",
+    category: "Leadership",
     image: "https://i.ibb.co/8gtzBGsf/IMG-5509-1.png",
     facebook: "https://facebook.com",
     linkedIn: "https://linkedin.com"
@@ -90,6 +94,7 @@ const teamMembers = [
     id: 3,
     name: "Hardik Kharva",
     position: "Deputy Director",
+    category: "Leadership",
     image: "https://i.ibb.co/0pSb7B8w/hardik.jpg",
     facebook: "https://facebook.com",
     linkedIn: "https://linkedin.com"
@@ -98,6 +103,7 @@ const teamMembers = [
     id: 4,
     name: "Mr. Hutesh Baviskar",
     position: "Incubation Manager",
+    category: "Incubation",
     image: "https://i.ibb.co/zT49sqfY/DSC08987.jpg",
     facebook: "https://facebook.com",
     linkedIn: "https://linkedin.com"
@@ -106,6 +112,7 @@ const teamMembers = [
     id: 5,
     name: "Mrs. Sonal Sudani",
     position: "Incubation Manager",
+    category: "Incubation",
     image: "https://i.ibb.co/pvCHVy9S/DSC09018.jpg",
     facebook: "https://facebook.com",
     linkedIn: "https://linkedin.com"
@@ -114,6 +121,7 @@ const teamMembers = [
     id: 6,
     name: "Pancham Baria",
     position: "Centre Head, Surat Startup Studio",
+    category: "Startup Studios",
     image: "https://i.ibb.co/twTnffw1/DSC08998.jpg",
     facebook: "https://facebook.com",
     linkedIn: "https://linkedin.com"
@@ -122,6 +130,7 @@ const teamMembers = [
     id: 7,
     name: "Juned Shaikh",
     position: "Centre Head, Ahmedabad Startup Studio",
+    category: "Startup Studios",
     image: "https://i.ibb.co/LzjZN9Jk/juned-sheikh.jpg",
     facebook: "https://facebook.com",
     linkedIn: "https://linkedin.com"
@@ -130,6 +139,7 @@ const teamMembers = [
     id: 8,
     name: "Anup Chaudhari",
     position: "Manager, Incubation Program",
+    category: "Incubation",
     image: "https://i.ibb.co/JWn1khBV/anup.jpg",
     facebook: "https://facebook.com",
     linkedIn: "https://linkedin.com"
@@ -138,6 +148,7 @@ const teamMembers = [
     id: 9,
     name: "Prashant Khanna",
     position: "Manager, Incubation Program",
+    category: "Incubation",
     image: "https://i.ibb.co/BbqJKQs/DSC09001.jpg",
     facebook: "https://facebook.com",
     linkedIn: "https://linkedin.com"
@@ -146,6 +157,7 @@ const teamMembers = [
     id: 10,
     name: "Himanshu Das",
     position: "Fablab Engineer",
+    category: "Tech & FabLab",
     image: "https://i.ibb.co/5gSbw7M3/himanshu.jpg",
     facebook: null,
     linkedIn: "https://linkedin.com"
@@ -154,6 +166,7 @@ const teamMembers = [
     id: 11,
     name: "Tushar Thakur",
     position: "Assistant Manager",
+    category: "Incubation",
     image: "https://i.ibb.co/pjrgBqM3/DSC09006.jpg",
     facebook: "https://facebook.com",
     linkedIn: "https://linkedin.com"
@@ -162,6 +175,7 @@ const teamMembers = [
     id: 12,
     name: "Paritosh Sharma",
     position: "Assistant Manager",
+    category: "Incubation",
     image: "https://i.ibb.co/jPJ0gtSs/paritosh.jpg",
     facebook: "https://facebook.com",
     linkedIn: "https://linkedin.com"
@@ -170,6 +184,7 @@ const teamMembers = [
     id: 13,
     name: "Shlok Solanki",
     position: "Assistant Social Media Manager",
+    category: "Tech & Media",
     image: "https://i.ibb.co/whJRV9rr/DSC09030.jpg",
     facebook: null,
     linkedIn: "https://linkedin.com"
@@ -178,6 +193,7 @@ const teamMembers = [
     id: 14,
     name: "Soor Solanki",
     position: "Facility Manager, Vadodara Startup Studio",
+    category: "Startup Studios",
     image: "https://i.ibb.co/1Y3YTM7B/DSC09023.jpg",
     facebook: null,
     linkedIn: "https://linkedin.com"
@@ -187,6 +203,11 @@ const teamMembers = [
 export default function LandingPage() {
   const { user } = useAuthStore();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [teamFilter, setTeamFilter] = useState('All');
+
+  const filteredTeam = teamFilter === 'All'
+    ? teamMembers
+    : teamMembers.filter((m) => m.category === teamFilter);
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50/30">
@@ -394,43 +415,71 @@ export default function LandingPage() {
         {/* Team Section */}
         <section id="team" className="py-24 px-6 lg:px-12 bg-white/40 backdrop-blur-3xl">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-20 space-y-4">
+            <div className="text-center mb-10 space-y-4">
               <h2 className="text-sm font-black text-primary uppercase tracking-[0.3em]">Our People</h2>
               <h3 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900">Meet the PIERC Team</h3>
               <p className="text-slate-500 max-w-2xl mx-auto font-medium">The dedicated professionals driving innovation and supporting entrepreneurial dreams at Parul University.</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {teamMembers.map((member) => (
-                <div key={member.id} className="group glass-card p-4 hover:border-primary/30 transition-all duration-500 hover:-translate-y-2">
-                  <div className="relative aspect-[4/5] rounded-2xl overflow-hidden mb-6">
-                    <div className="absolute inset-0 bg-primary/10 group-hover:bg-transparent transition-colors duration-500" />
-                    <img
-                      src={member.image}
-                      alt={member.name}
-                      className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-                      <div className="flex justify-center gap-3">
-                        {member.linkedIn && (
-                          <Link href={member.linkedIn} target="_blank" className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-xl flex items-center justify-center text-slate-900 hover:bg-primary hover:text-white transition-all shadow-lg">
-                            <Linkedin className="h-5 w-5" />
-                          </Link>
-                        )}
-                        {member.facebook && (
-                          <Link href={member.facebook} target="_blank" className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-xl flex items-center justify-center text-slate-900 hover:bg-primary hover:text-white transition-all shadow-lg">
-                            <Facebook className="h-5 w-5" />
-                          </Link>
-                        )}
+
+            {/* Smooth Pill Filter Bar */}
+            <div className="flex justify-center mb-12 overflow-x-auto pb-2">
+              <AnimatedPillTabs
+                options={[
+                  { id: 'All', label: 'All Team', count: teamMembers.length },
+                  { id: 'Leadership', label: 'Leadership', count: teamMembers.filter(t => t.category === 'Leadership').length },
+                  { id: 'Incubation', label: 'Incubation', count: teamMembers.filter(t => t.category === 'Incubation').length },
+                  { id: 'Startup Studios', label: 'Startup Studios', count: teamMembers.filter(t => t.category === 'Startup Studios').length },
+                  { id: 'Tech & FabLab', label: 'Tech & FabLab', count: teamMembers.filter(t => t.category === 'Tech & FabLab').length },
+                  { id: 'Tech & Media', label: 'Media & Outreach', count: teamMembers.filter(t => t.category === 'Tech & Media').length },
+                ]}
+                activeId={teamFilter}
+                onChange={setTeamFilter}
+                layoutId="team-filter-pill"
+              />
+            </div>
+
+            <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              <AnimatePresence mode="popLayout">
+                {filteredTeam.map((member) => (
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, scale: 0.94 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.94 }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                    key={member.id}
+                    className="group glass-card p-4 hover:border-primary/30 transition-all duration-500 hover:-translate-y-2"
+                  >
+                    <div className="relative aspect-[4/5] rounded-2xl overflow-hidden mb-6">
+                      <div className="absolute inset-0 bg-primary/10 group-hover:bg-transparent transition-colors duration-500" />
+                      <img
+                        src={member.image}
+                        alt={member.name}
+                        className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                        <div className="flex justify-center gap-3">
+                          {member.linkedIn && (
+                            <Link href={member.linkedIn} target="_blank" className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-xl flex items-center justify-center text-slate-900 hover:bg-primary hover:text-white transition-all shadow-lg">
+                              <Linkedin className="h-5 w-5" />
+                            </Link>
+                          )}
+                          {member.facebook && (
+                            <Link href={member.facebook} target="_blank" className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-xl flex items-center justify-center text-slate-900 hover:bg-primary hover:text-white transition-all shadow-lg">
+                              <Facebook className="h-5 w-5" />
+                            </Link>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="space-y-1 text-center">
-                    <h4 className="text-lg font-black text-slate-900 group-hover:text-primary transition-colors">{member.name}</h4>
-                    <p className="text-xs text-slate-500 font-bold">{member.position}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                    <div className="space-y-1 text-center">
+                      <h4 className="text-lg font-black text-slate-900 group-hover:text-primary transition-colors">{member.name}</h4>
+                      <p className="text-xs text-slate-500 font-bold">{member.position}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
           </div>
         </section>
 

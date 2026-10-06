@@ -21,6 +21,7 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AnimatedPillTabs } from '@/components/ui/animated';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -976,11 +977,19 @@ export default function AnnounceEventPage() {
           </Dialog>
         </div>
 
+        <div className="overflow-x-auto pb-1">
+          <AnimatedPillTabs
+            options={[
+              { id: 'all_events', label: 'All Events', count: events.length, icon: CalendarDays },
+              { id: 'participation', label: 'Participation Registry', icon: UserCheck },
+            ]}
+            activeId={activeTab}
+            onChange={setActiveTab}
+            layoutId="announce-event-tabs"
+          />
+        </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-slate-100 p-1 rounded-xl h-12">
-            <TabsTrigger value="all_events" className="rounded-lg font-bold text-xs uppercase">All Events</TabsTrigger>
-            <TabsTrigger value="participation" className="rounded-lg font-bold text-xs uppercase">Participation Registry</TabsTrigger>
-          </TabsList>
 
           <TabsContent value="all_events" className="mt-6">
             <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden">

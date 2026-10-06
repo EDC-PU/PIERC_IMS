@@ -15,9 +15,11 @@ interface AnimatedPillTabsProps {
   tabs?: (TabOption | string)[];
   activeId?: string;
   activeTab?: string;
-  onChange: (id: string) => void;
+  value?: string;
+  onChange?: (id: string) => void;
+  onValueChange?: (id: string) => void;
   className?: string;
-  pillColor?: string; // background of active pill
+  pillColor?: string; // custom background class, defaults to bg-[#D91A2A]
   layoutId?: string;
 }
 
@@ -26,15 +28,25 @@ export function AnimatedPillTabs({
   tabs,
   activeId,
   activeTab,
+  value,
   onChange,
+  onValueChange,
   className = '',
+  pillColor,
   layoutId = 'activeTabPill',
 }: AnimatedPillTabsProps) {
   const rawList = tabs || options || [];
   const normalizedTabs: TabOption[] = rawList.map((item) =>
     typeof item === 'string' ? { id: item, label: item } : item
   );
-  const currentActive = activeTab !== undefined ? activeTab : (activeId || '');
+  const currentActive = value !== undefined 
+    ? value 
+    : (activeTab !== undefined ? activeTab : (activeId || (normalizedTabs[0]?.id ?? '')));
+
+  const handleSelect = (id: string) => {
+    if (onValueChange) onValueChange(id);
+    if (onChange) onChange(id);
+  };
 
   return (
     <div
@@ -47,7 +59,7 @@ export function AnimatedPillTabs({
         return (
           <button
             key={tab.id}
-            onClick={() => onChange(tab.id)}
+            onClick={() => handleSelect(tab.id)}
             type="button"
             className={`relative px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer select-none flex items-center gap-2 ${
               isActive ? 'text-white' : 'text-slate-600 hover:text-slate-900'
@@ -56,7 +68,7 @@ export function AnimatedPillTabs({
             {isActive && (
               <motion.div
                 layoutId={layoutId}
-                className="absolute inset-0 bg-[#d40924] rounded-xl shadow-md shadow-red-500/20"
+                className={`absolute inset-0 rounded-xl shadow-md shadow-red-500/20 ${pillColor || 'bg-[#D91A2A]'}`}
                 transition={{
                   type: 'spring',
                   stiffness: 400,
