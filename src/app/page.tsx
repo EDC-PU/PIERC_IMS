@@ -1,9 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
-import { Rocket, Shield, Users, BarChart3, ChevronRight, CheckCircle2, Calendar, ArrowUpRight, LayoutDashboard } from 'lucide-react';
+import { Rocket, Shield, Users, BarChart3, ChevronRight, CheckCircle2, Calendar, ArrowUpRight, LayoutDashboard, HelpCircle, ChevronDown, Sparkles } from 'lucide-react';
 
 const Facebook = ({ className }: { className?: string }) => (
   <svg
@@ -40,6 +41,33 @@ const Linkedin = ({ className }: { className?: string }) => (
     <circle cx="4" cy="4" r="2" />
   </svg>
 );
+
+const faqs = [
+  {
+    question: "What is PIERC (Parul Innovation & Entrepreneurship Research Centre)?",
+    answer: "PIERC is the official startup incubation centre of Parul University, registered as a Section 8 non-profit company. It serves as an end-to-end catalyst providing grant funding, FabLab prototyping infrastructure, mentor networks, and co-working spaces to student, alumni, and faculty entrepreneurs across Gujarat and India."
+  },
+  {
+    question: "Who is eligible to apply for incubation at portal.pierc.org?",
+    answer: "Parul University students, alumni, faculty members, and external startup innovators are eligible. Whether you are at the initial idea stage, proof-of-concept (POC), minimum viable product (MVP), or ready to scale, you can submit your application on the portal."
+  },
+  {
+    question: "What grants and funding opportunities are accessible through PIERC?",
+    answer: "Incubated innovators can access Government of Gujarat SSIP 2.0 (Student Startup & Innovation Policy) grants up to ₹2.5 Lakhs for prototyping and ₹5 Lakhs for patent filing, DST NIDHI-PRAYAS grants up to ₹10 Lakhs, and institutional angel/seed funding up to ₹10–25 Lakhs per venture."
+  },
+  {
+    question: "What facilities and startup studios does PIERC provide across Gujarat?",
+    answer: "PIERC operates regional Startup Studios across Vadodara, Ahmedabad, Surat, and Rajkot with dedicated and flexible co-working spaces, high-tech FabLab 3D printing and IoT hardware labs, legal IPR support, and investor demo days."
+  },
+  {
+    question: "How does the evaluation and cohort onboarding process work?",
+    answer: "After submitting your proposal on portal.pierc.org, it undergoes Phase 1 preliminary evaluation. Shortlisted startups present their pitch deck in Phase 2 before an expert committee. Selected startups are matched with mentors, assigned to a cohort, and receive milestone-based grant funding."
+  },
+  {
+    question: "Does PIERC assist with DPIIT recognition and Government Yukti Portal onboarding?",
+    answer: "Yes, PIERC guides incubated ventures through DPIIT startup recognition, company incorporation, and seamless onboarding to the Government of India Yukti Innovation Portal for national visibility and grants."
+  }
+];
 
 const teamMembers = [
   {
@@ -158,6 +186,7 @@ const teamMembers = [
 
 export default function LandingPage() {
   const { user } = useAuthStore();
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50/30">
@@ -178,6 +207,7 @@ export default function LandingPage() {
           <Link href="#events" className="hover:text-primary transition-all">Events</Link>
           <Link href="#team" className="hover:text-primary transition-all">Team</Link>
           <Link href="#programs" className="hover:text-primary transition-all">Programs</Link>
+          <Link href="#faq" className="hover:text-primary transition-all">FAQ</Link>
           <Link href="#contact" className="hover:text-primary transition-all">Contact</Link>
         </nav>
         <div className="flex gap-4">
@@ -400,6 +430,78 @@ export default function LandingPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section (AEO / GEO Knowledge Base) */}
+        <section id="faq" className="py-24 px-6 lg:px-12 bg-white/70 border-t border-slate-100">
+          <div className="max-w-4xl mx-auto space-y-12">
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
+                <HelpCircle className="h-4 w-4" />
+                Frequently Asked Questions
+              </div>
+              <h2 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
+                Everything you need to know about PIERC Incubation
+              </h2>
+              <p className="text-slate-600 text-base max-w-2xl mx-auto">
+                Comprehensive answers to common questions about funding, eligibility, FabLab access, and how PIERC empowers ventures from idea to scale.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {faqs.map((faq, index) => {
+                const isOpen = openFaq === index;
+                return (
+                  <div
+                    key={index}
+                    className="border border-slate-200/80 rounded-2xl bg-white overflow-hidden transition-all duration-200 shadow-sm hover:shadow-md"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaq(isOpen ? null : index)}
+                      className="w-full flex items-center justify-between p-6 text-left gap-4 cursor-pointer focus:outline-none"
+                      aria-expanded={isOpen}
+                    >
+                      <span className="font-bold text-slate-900 text-base lg:text-lg">
+                        {faq.question}
+                      </span>
+                      <span
+                        className={`p-2 rounded-full bg-slate-100 text-slate-600 shrink-0 transition-transform duration-300 ${
+                          isOpen ? 'rotate-180 bg-primary/10 text-primary' : ''
+                        }`}
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <div className="px-6 pb-6 pt-1 text-slate-600 text-sm lg:text-base leading-relaxed border-t border-slate-100/60 bg-slate-50/50">
+                        {faq.answer}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="p-8 rounded-3xl bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 text-center space-y-4">
+              <div className="inline-flex p-3 rounded-2xl bg-primary/10 text-primary">
+                <Sparkles className="h-6 w-6" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">Have a unique idea or research proposal?</h3>
+              <p className="text-sm text-slate-600 max-w-xl mx-auto">
+                Our incubation managers and mentors are ready to guide you. Submit your venture proposal through the official portal today.
+              </p>
+              <div className="pt-2">
+                <Button
+                  className="rounded-xl shadow-lg shadow-red-200/50 font-bold px-8 h-12 border-none text-white"
+                  style={{ backgroundColor: '#D91A2A', color: '#FFFFFF' }}
+                  asChild
+                >
+                  <Link href="/register">Apply for Incubation Now</Link>
+                </Button>
+              </div>
             </div>
           </div>
         </section>
