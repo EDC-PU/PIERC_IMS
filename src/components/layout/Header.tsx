@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { toast } from 'sonner';
-import { 
-  Bell, 
-  Search, 
+import {
+  Bell,
+  Search,
   ChevronDown,
   User as UserIcon,
   Settings,
@@ -15,13 +15,13 @@ import {
   LogOut,
   Menu
 } from 'lucide-react';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -52,7 +52,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
     <header className="h-16 bg-white border-b flex items-center justify-between px-6 shrink-0">
       <div className="flex items-center flex-1 max-w-md gap-3">
         {onMenuClick && (
-          <button 
+          <button
             onClick={onMenuClick}
             className="lg:hidden p-2 -ml-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
           >
@@ -60,7 +60,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
           </button>
         )}
         <Link href="/dashboard" className="lg:hidden flex items-center">
-          <img src="/logo.svg" alt="PIERC Logo" className="h-8 w-auto object-contain" />
+          <img src="https://firebasestorage.googleapis.com/v0/b/pierc-portal-9bd82.firebasestorage.app/o/logo.svg?alt=media&token=52188887-32e9-4dcf-bec6-dde7175eaa86" alt="PIERC Logo" className="h-8 w-auto object-contain" />
         </Link>
         <div className="relative w-full hidden md:block">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
@@ -107,7 +107,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
               <span className="font-bold text-sm">Support</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="my-1" />
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={handleSignOut}
               className="rounded-xl p-3 cursor-pointer group text-rose-600 focus:text-rose-600 focus:bg-rose-50"
             >

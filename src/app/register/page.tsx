@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
-import { 
-  createUserWithEmailAndPassword, 
-  updateProfile, 
-  signInWithPopup, 
-  GoogleAuthProvider 
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+  signInWithPopup,
+  GoogleAuthProvider
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -47,7 +47,7 @@ export default function RegisterPage() {
     try {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(user, { displayName: name });
-      
+
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         email: user.email,
@@ -56,7 +56,7 @@ export default function RegisterPage() {
         onboardingCompleted: false,
         createdAt: Date.now(),
       });
-      
+
       toast.success('Account created successfully');
       router.push('/dashboard');
     } catch (error: any) {
@@ -71,11 +71,11 @@ export default function RegisterPage() {
     const provider = new GoogleAuthProvider();
     try {
       const { user } = await signInWithPopup(auth, provider);
-      
+
       // Check if user profile exists
       const userDocRef = doc(db, 'users', user.uid);
       const snapshot = await getDoc(userDocRef);
-      
+
       if (!snapshot.exists()) {
         await setDoc(userDocRef, {
           uid: user.uid,
@@ -86,7 +86,7 @@ export default function RegisterPage() {
           createdAt: Date.now(),
         });
       }
-      
+
       toast.success('Welcome to PIERC!');
       router.push('/dashboard');
     } catch (error: any) {
@@ -109,7 +109,7 @@ export default function RegisterPage() {
           <div className="flex justify-center mb-2">
             <Link href="/" className="inline-block transition-transform hover:scale-105">
               <img
-                src="/logo.svg"
+                src="https://firebasestorage.googleapis.com/v0/b/pierc-portal-9bd82.firebasestorage.app/o/logo.svg?alt=media&token=52188887-32e9-4dcf-bec6-dde7175eaa86"
                 alt="PIERC Logo"
                 className="h-16 w-auto object-contain"
               />
@@ -123,8 +123,8 @@ export default function RegisterPage() {
           </div>
         </CardHeader>
         <CardContent className="grid gap-6">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full h-12 rounded-xl font-bold border-2 flex items-center justify-center gap-2 hover:bg-slate-50 transition-all"
             onClick={handleGoogleSignIn}
             disabled={loading}
@@ -150,36 +150,36 @@ export default function RegisterPage() {
           <form onSubmit={handleRegister} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-slate-500">Full Name</Label>
-              <Input 
-                id="name" 
-                placeholder="John Doe" 
+              <Input
+                id="name"
+                placeholder="John Doe"
                 className="h-12 rounded-xl"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                required 
+                required
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-slate-500">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="m@example.com" 
+              <Input
+                id="email"
+                type="email"
+                placeholder="m@example.com"
                 className="h-12 rounded-xl"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required 
+                required
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-slate-500">Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
+              <Input
+                id="password"
+                type="password"
                 className="h-12 rounded-xl"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required 
+                required
               />
             </div>
             <Button type="submit" className="w-full h-12 rounded-xl font-bold shadow-lg shadow-primary/20 mt-2" disabled={loading}>

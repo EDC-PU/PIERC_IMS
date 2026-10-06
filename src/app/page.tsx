@@ -195,7 +195,7 @@ export default function LandingPage() {
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center">
             <img
-              src="/logo.svg"
+              src="https://firebasestorage.googleapis.com/v0/b/pierc-portal-9bd82.firebasestorage.app/o/logo.svg?alt=media&token=52188887-32e9-4dcf-bec6-dde7175eaa86"
               alt="PIERC Logo"
               className="h-10 w-auto object-contain"
             />
@@ -468,9 +468,8 @@ export default function LandingPage() {
                         {faq.question}
                       </span>
                       <span
-                        className={`p-2 rounded-full bg-slate-100 text-slate-600 shrink-0 transition-transform duration-300 ${
-                          isOpen ? 'rotate-180 bg-primary/10 text-primary' : ''
-                        }`}
+                        className={`p-2 rounded-full bg-slate-100 text-slate-600 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 bg-primary/10 text-primary' : ''
+                          }`}
                       >
                         <ChevronDown className="h-4 w-4" />
                       </span>
@@ -514,7 +513,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <Link href="/" className="flex items-center">
                 <img
-                  src="/logo.svg"
+                  src="https://firebasestorage.googleapis.com/v0/b/pierc-portal-9bd82.firebasestorage.app/o/logo.svg?alt=media&token=52188887-32e9-4dcf-bec6-dde7175eaa86"
                   alt="PIERC Logo"
                   className="h-12 w-auto object-contain"
                 />

@@ -5,7 +5,7 @@ export default function JsonLd() {
     name: 'Parul Innovation and Entrepreneurship Research Center',
     alternateName: ['PIERC', 'PIERC IMS', 'EDC Parul University'],
     url: 'https://portal.pierc.org',
-    logo: 'https://portal.pierc.org/logo.svg',
+    logo: 'https://portal.pierc.orghttps://firebasestorage.googleapis.com/v0/b/pierc-portal-9bd82.firebasestorage.app/o/logo.svg?alt=media&token=52188887-32e9-4dcf-bec6-dde7175eaa86',
     image: 'https://portal.pierc.org/og-image.png',
     description:
       'Parul Innovation & Entrepreneurship Research Centre (PIERC) is a Section 8 incubator fostering student, alumni, and faculty startups through seed funding, SSIP grants, mentorship, and acceleration at Parul University.',

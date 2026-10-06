@@ -4,23 +4,23 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { doc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
@@ -115,7 +115,7 @@ export default function OnboardingForm() {
       if (isParulEmail && values.enrollmentNumber && values.enrollmentNumber.trim() !== '') {
         const slugDocRef = doc(db, 'enrollment_slugs', values.enrollmentNumber);
         const slugSnap = await getDoc(slugDocRef);
-        
+
         if (slugSnap.exists() && slugSnap.data()?.uid !== user.uid) {
           toast.error('This Enrollment Number is already registered with another account.');
           setLoading(false);
@@ -162,7 +162,7 @@ export default function OnboardingForm() {
       <CardHeader className="text-center pb-8">
         <div className="flex justify-center mb-6">
           <img
-            src="/logo.svg"
+            src="https://firebasestorage.googleapis.com/v0/b/pierc-portal-9bd82.firebasestorage.app/o/logo.svg?alt=media&token=52188887-32e9-4dcf-bec6-dde7175eaa86"
             alt="PIERC Logo"
             className="h-16 w-auto object-contain"
           />
@@ -197,11 +197,11 @@ export default function OnboardingForm() {
                   <FormItem>
                     <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Email Address</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="name@example.com" 
-                        {...field} 
-                        className="h-12 rounded-xl bg-slate-50 border-slate-200 text-slate-500 font-medium cursor-not-allowed" 
-                        disabled 
+                      <Input
+                        placeholder="name@example.com"
+                        {...field}
+                        className="h-12 rounded-xl bg-slate-50 border-slate-200 text-slate-500 font-medium cursor-not-allowed"
+                        disabled
                       />
                     </FormControl>
                     <FormMessage />

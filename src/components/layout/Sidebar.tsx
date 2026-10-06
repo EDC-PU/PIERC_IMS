@@ -239,7 +239,7 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
         <div className="p-6 border-b bg-slate-50/50 flex items-center justify-between">
           <Link href="/dashboard" className="block" onClick={() => setIsOpen?.(false)}>
             <img
-              src="/logo.svg"
+              src="https://firebasestorage.googleapis.com/v0/b/pierc-portal-9bd82.firebasestorage.app/o/logo.svg?alt=media&token=52188887-32e9-4dcf-bec6-dde7175eaa86"
               alt="PIERC Logo"
               className="h-12 w-auto object-contain"
             />

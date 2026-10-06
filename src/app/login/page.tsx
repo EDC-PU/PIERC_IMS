@@ -55,10 +55,10 @@ export default function LoginPage() {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      
+
       const userDocRef = doc(db, 'users', user.uid);
       const snapshot = await getDoc(userDocRef);
-      
+
       if (!snapshot.exists()) {
         await setDoc(userDocRef, {
           uid: user.uid,
@@ -70,7 +70,7 @@ export default function LoginPage() {
           createdAt: Date.now(),
         });
       }
-      
+
       toast.success('Logged in with Google');
       router.push('/dashboard');
     } catch (error: any) {
@@ -93,7 +93,7 @@ export default function LoginPage() {
           <div className="flex justify-center mb-2">
             <Link href="/" className="inline-block transition-transform hover:scale-105">
               <img
-                src="/logo.svg"
+                src="https://firebasestorage.googleapis.com/v0/b/pierc-portal-9bd82.firebasestorage.app/o/logo.svg?alt=media&token=52188887-32e9-4dcf-bec6-dde7175eaa86"
                 alt="PIERC Logo"
                 className="h-16 w-auto object-contain"
               />
@@ -107,8 +107,8 @@ export default function LoginPage() {
           </div>
         </CardHeader>
         <CardContent className="grid gap-6">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full h-12 rounded-xl font-bold border-2 flex items-center justify-center gap-2 hover:bg-slate-50 transition-all"
             onClick={handleGoogleLogin}
             disabled={loading}
@@ -134,14 +134,14 @@ export default function LoginPage() {
           <form onSubmit={handleEmailLogin} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-slate-500">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="m@example.com" 
+              <Input
+                id="email"
+                type="email"
+                placeholder="m@example.com"
                 className="h-12 rounded-xl"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required 
+                required
               />
             </div>
             <div className="grid gap-2">
@@ -151,13 +151,13 @@ export default function LoginPage() {
                   Forgot password?
                 </Button>
               </div>
-              <Input 
-                id="password" 
-                type="password" 
+              <Input
+                id="password"
+                type="password"
                 className="h-12 rounded-xl"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required 
+                required
               />
             </div>
             <Button type="submit" className="w-full h-12 rounded-xl font-bold shadow-lg shadow-primary/20 mt-2" disabled={loading}>
