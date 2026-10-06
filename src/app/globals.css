@@ -100,7 +100,18 @@
     @apply bg-clip-text text-transparent bg-gradient-to-br from-red-500 to-rose-700;
   }
   .animate-page-entry {
-    @apply animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out fill-mode-forwards;
+    animation: pageFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -109,18 +120,23 @@
   *::before,
   *::after {
     @apply border-border outline-ring/50;
-    animation: none !important;
-    transition: none !important;
-  }
-
-  .animate-spin {
-    animation: spin 1s linear infinite !important;
   }
 
   body {
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-sans;
+    @apply font-sans scroll-smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
