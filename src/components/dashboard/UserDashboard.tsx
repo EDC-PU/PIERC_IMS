@@ -366,8 +366,8 @@ export default function UserDashboard({ user }: UserDashboardProps) {
               <LivePulseBadge label="Auto-Updating" variant="primary" pulse />
             </CardHeader>
             <CardContent className="p-8 pt-12">
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-[300px] w-full min-w-0">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <LineChart data={tractionData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'black', fill: '#94a3b8'}} />

@@ -56,8 +56,16 @@ import {
   Download,
   Sparkles,
   ExternalLink,
-  Loader2
+  Loader2,
+  Check,
+  ChevronDown,
+  X
 } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isPast } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -105,10 +113,11 @@ export default function MeetingsPage() {
   const [meetingDate, setMeetingDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [meetingTime, setMeetingTime] = useState('10:00');
   const [mode, setMode] = useState<'Online' | 'Offline'>('Offline');
-  const [venue, setVenue] = useState('PIERC Office');
+  const [venue, setVenue] = useState('PIERC Office, BBA Building, Behind Admin Block, Parul University, Vadodara.');
   const [meetingLink, setMeetingLink] = useState('https://meet.google.com/');
   const [isGeneratingMeet, setIsGeneratingMeet] = useState(false);
-  const [selectedEvaluator, setSelectedEvaluator] = useState<string>('');
+  const [selectedEvaluators, setSelectedEvaluators] = useState<string[]>([]);
+  const [evaluatorSearch, setEvaluatorSearch] = useState('');
   const [evaluations, setEvaluations] = useState<any>({});
   const [activePhase, setActivePhase] = useState('phase1');
 
@@ -312,7 +321,7 @@ export default function MeetingsPage() {
         const isPhase1 = activePhase === 'phase1';
         const attendeesList = Array.from(new Set([
           currentUser!.uid,
-          ...(!isPhase1 && selectedEvaluator ? [selectedEvaluator] : []),
+          ...(!isPhase1 && selectedEvaluators.length > 0 ? selectedEvaluators : []),
           app.userId
         ]));
 
@@ -337,7 +346,7 @@ export default function MeetingsPage() {
         // Push Notifications to all attendees
         const attendees = Array.from(new Set([
           app.userId,
-          ...(!isPhase1 && selectedEvaluator ? [selectedEvaluator] : []),
+          ...(!isPhase1 && selectedEvaluators.length > 0 ? selectedEvaluators : []),
           currentUser!.uid
         ]));
         const notifyPromises = attendees.map(uid =>
@@ -360,8 +369,10 @@ export default function MeetingsPage() {
           ...(app.data?.teamMembers || []).map((m: any) => m.email)
         ].filter(Boolean);
 
-        const mentorEmail = !isPhase1 && selectedEvaluator ? allUsers[selectedEvaluator]?.email : null;
-        const allRecipientEmails = [...teamEmails, ...(mentorEmail ? [mentorEmail] : [])].filter(Boolean);
+        const mentorEmails = !isPhase1 && selectedEvaluators.length > 0
+          ? selectedEvaluators.map(uid => allUsers[uid]?.email).filter(Boolean)
+          : [];
+        const allRecipientEmails = [...teamEmails, ...mentorEmails].filter(Boolean);
 
         if (allRecipientEmails.length > 0) {
           const formattedDate = format(startTimestamp, 'MMMM dd, yyyy');
@@ -387,6 +398,7 @@ export default function MeetingsPage() {
       await Promise.all(promises);
       toast.success(`Scheduled meetings for ${selectedApps.length} project(s)`);
       setSelectedApps([]);
+      setSelectedEvaluators([]);
     } catch (error) {
       console.error('Scheduling error:', error);
       toast.error('Scheduling failed. Please check your inputs.');
@@ -574,7 +586,7 @@ export default function MeetingsPage() {
           activeId={activePhase}
           onChange={(val) => {
             setActivePhase(val);
-            setSelectedEvaluator('');
+            setSelectedEvaluators([]);
           }}
           layoutId="meeting-phase-pill"
         />
@@ -585,7 +597,7 @@ export default function MeetingsPage() {
         className="w-full"
         onValueChange={(val) => {
           setActivePhase(val);
-          setSelectedEvaluator('');
+          setSelectedEvaluators([]);
         }}
       >
 
@@ -744,7 +756,7 @@ export default function MeetingsPage() {
                             <Input
                               value={venue}
                               onChange={(e) => setVenue(e.target.value)}
-                              placeholder="PIERC Office"
+                              placeholder="PIERC Office, BBA Building, Behind Admin Block, Parul University, Vadodara."
                               className="pl-10 rounded-xl h-11 bg-slate-50 border-none focus:ring-primary/20"
                             />
                           </div>
@@ -756,18 +768,145 @@ export default function MeetingsPage() {
                         )}
                       </div>
                       {activePhase !== 'phase1' && (
-                        <div className="space-y-1">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evaluator / Panelist</Label>
-                          <Select onValueChange={(val) => setSelectedEvaluator(val || '')} value={selectedEvaluator}>
-                            <SelectTrigger className="rounded-xl h-11">
-                              <SelectValue>
-                                {selectedEvaluator ? allUsers[selectedEvaluator]?.displayName : "Choose an evaluator"}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl shadow-2xl border-none ring-1 ring-slate-100">
-                              {evaluators.map(ev => <SelectItem key={ev.uid} value={ev.uid}>{ev.displayName}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                              Evaluators / Panelists
+                            </Label>
+                            {selectedEvaluators.length > 0 && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-primary">
+                                  {selectedEvaluators.length} selected
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setSelectedEvaluators([]);
+                                  }}
+                                  className="text-[10px] font-bold text-rose-500 hover:text-rose-700 hover:underline cursor-pointer"
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          <Popover>
+                            <PopoverTrigger className="w-full flex items-center justify-between px-3.5 h-11 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-all text-xs font-bold text-slate-700 shadow-xs outline-none cursor-pointer">
+                              <span className="truncate">
+                                {selectedEvaluators.length === 0
+                                  ? "Choose evaluators (select multiple)..."
+                                  : selectedEvaluators.length === 1
+                                    ? (allUsers[selectedEvaluators[0]]?.displayName || "1 evaluator selected")
+                                    : `${selectedEvaluators.length} evaluators selected`}
+                              </span>
+                              <ChevronDown className="h-4 w-4 text-slate-400 shrink-0 ml-2" />
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[300px] p-2.5 rounded-2xl shadow-2xl border border-slate-100 bg-white z-50" align="start">
+                              {/* Search & Actions Header */}
+                              <div className="space-y-2 mb-2">
+                                <div className="relative">
+                                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                                  <Input
+                                    value={evaluatorSearch}
+                                    onChange={(e) => setEvaluatorSearch(e.target.value)}
+                                    placeholder="Search evaluators..."
+                                    className="pl-8 h-8 text-xs rounded-lg bg-slate-50 border-slate-100"
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between text-[11px] font-bold px-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const allFilteredUids = evaluators
+                                        .filter(ev => (ev.displayName || ev.email || '').toLowerCase().includes(evaluatorSearch.toLowerCase()))
+                                        .map(ev => ev.uid);
+                                      setSelectedEvaluators(Array.from(new Set([...selectedEvaluators, ...allFilteredUids])));
+                                    }}
+                                    className="text-primary hover:underline cursor-pointer"
+                                  >
+                                    Select All
+                                  </button>
+                                  {selectedEvaluators.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedEvaluators([])}
+                                      className="text-slate-400 hover:text-rose-600 hover:underline cursor-pointer"
+                                    >
+                                      Clear All
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Evaluators List with checkboxes */}
+                              <div className="max-h-56 overflow-y-auto space-y-1 pr-1">
+                                {evaluators
+                                  .filter(ev => (ev.displayName || ev.email || '').toLowerCase().includes(evaluatorSearch.toLowerCase()))
+                                  .map(ev => {
+                                    const isSelected = selectedEvaluators.includes(ev.uid);
+                                    return (
+                                      <div
+                                        key={ev.uid}
+                                        onClick={() => {
+                                          setSelectedEvaluators(prev =>
+                                            prev.includes(ev.uid) ? prev.filter(id => id !== ev.uid) : [...prev, ev.uid]
+                                          );
+                                        }}
+                                        className={cn(
+                                          "flex items-center justify-between p-2 rounded-xl cursor-pointer transition-colors text-xs font-bold select-none",
+                                          isSelected ? "bg-primary/10 text-primary" : "text-slate-700 hover:bg-slate-50"
+                                        )}
+                                      >
+                                        <div className="flex items-center gap-2.5 truncate">
+                                          <div className={cn(
+                                            "w-4 h-4 rounded-md border flex items-center justify-center transition-all shrink-0",
+                                            isSelected ? "bg-primary border-primary text-white" : "border-slate-300 bg-white"
+                                          )}>
+                                            {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                                          </div>
+                                          <span className="truncate">{ev.displayName || ev.email}</span>
+                                        </div>
+                                        <Badge variant="outline" className="text-[9px] uppercase px-1.5 py-0 font-bold border-slate-200 text-slate-400 shrink-0 ml-2">
+                                          {ev.role}
+                                        </Badge>
+                                      </div>
+                                    );
+                                  })}
+                                {evaluators.filter(ev => (ev.displayName || ev.email || '').toLowerCase().includes(evaluatorSearch.toLowerCase())).length === 0 && (
+                                  <p className="text-xs text-slate-400 text-center py-4 italic">No evaluators found</p>
+                                )}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+
+                          {/* Removable chips of selected evaluators */}
+                          {selectedEvaluators.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1 max-h-28 overflow-y-auto">
+                              {selectedEvaluators.map(uid => (
+                                <span
+                                  key={uid}
+                                  className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200/80 text-slate-800 text-[10px] font-bold py-1 pl-2.5 pr-1.5 rounded-lg border border-slate-200 shadow-2xs transition-all"
+                                >
+                                  <span className="truncate max-w-[120px]">{allUsers[uid]?.displayName || uid}</span>
+                                  <button
+                                    type="button"
+                                    aria-label={`Remove ${allUsers[uid]?.displayName || uid}`}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setSelectedEvaluators(prev => prev.filter(id => id !== uid));
+                                    }}
+                                    className="h-4 w-4 rounded-md flex items-center justify-center hover:bg-rose-100 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer shrink-0"
+                                  >
+                                    <X className="w-3 h-3 pointer-events-none" />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

@@ -220,7 +220,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent className="min-w-0">
                 <div className="h-[300px] w-full min-w-0">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <BarChart layout="vertical" data={funnelData} margin={{ left: 10, right: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
                       <XAxis type="number" hide />
@@ -251,7 +251,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent className="min-w-0">
                 <div className="h-[300px] w-full min-w-0">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <LineChart data={growthData} margin={{ left: -15, right: 15 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                       <XAxis dataKey="month" stroke="#64748b" fontSize={11} tickLine={false} />
@@ -274,8 +274,8 @@ export default function AnalyticsPage() {
                 <CardDescription>Breakdown of active startup projects across technology sectors.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-[300px] w-full min-w-0">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <PieChart>
                       <Pie
                         data={sectorData}

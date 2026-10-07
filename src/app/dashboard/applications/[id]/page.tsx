@@ -68,8 +68,16 @@ import {
   Check,
   X,
   Search,
-  Receipt
+  Receipt,
+  AlertCircle,
+  XCircle
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import {
   BarChart,
   Bar,
@@ -151,6 +159,7 @@ export default function ApplicationDetailsPage() {
 
   // Mentor Assignment states
   const [mentors, setMentors] = useState<UserProfile[]>([]);
+  const [usersMap, setUsersMap] = useState<Record<string, UserProfile>>({});
   const [showCohortDialog, setShowCohortDialog] = useState(false);
   const [cohortMentorId, setCohortMentorId] = useState('');
   const [cohorts, setCohorts] = useState<any[]>([]);
@@ -375,14 +384,21 @@ export default function ApplicationDetailsPage() {
       });
     }
 
-    // 4. Fetch mentors from users collection (Admins only)
+    // 4. Fetch mentors & users collection (Admins & Mentors)
     let usersUnsubscribe = () => { };
-    if (user?.role === 'admin' || user?.role === 'super_admin') {
+    if (user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'mentor') {
       const usersCol = collection(db, 'users');
       usersUnsubscribe = onSnapshot(usersCol, (snapshot) => {
-        const mentorList = snapshot.docs
-          .map(doc => doc.data() as UserProfile)
-          .filter(u => u.role === 'mentor');
+        const uMap: Record<string, UserProfile> = {};
+        const mentorList: UserProfile[] = [];
+        snapshot.docs.forEach(docSnap => {
+          const profile = { id: docSnap.id, ...docSnap.data() } as unknown as UserProfile;
+          uMap[docSnap.id] = profile;
+          if (profile.role === 'mentor') {
+            mentorList.push(profile);
+          }
+        });
+        setUsersMap(uMap);
         setMentors(mentorList);
       }, (err) => {
         console.warn('Users/mentors fetch notice:', err?.message);
@@ -2962,8 +2978,8 @@ export default function ApplicationDetailsPage() {
                     {txPhases.length > 0 && (
                       <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
                         <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Utilization Graph</h4>
-                        <div className="h-[180px] w-full">
-                          <ResponsiveContainer width="100%" height="100%">
+                        <div className="h-[180px] w-full min-w-0">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <BarChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 'bold', fill: '#94a3b8' }} />
@@ -3397,21 +3413,37 @@ export default function ApplicationDetailsPage() {
                     <div key={m.id} className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div className="space-y-2">
-                          <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] uppercase tracking-widest px-3">
-                            {m.mode} Session
-                          </Badge>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] uppercase tracking-widest px-3">
+                              {m.mode} Session
+                            </Badge>
+                            {m.status === 'Absent' ? (
+                              <Badge className="bg-amber-100 text-amber-800 border border-amber-300 font-black text-[10px] uppercase tracking-wider px-3 py-1 flex items-center gap-1.5 shadow-sm">
+                                <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
+                                <span>Candidate Marked Absent</span>
+                              </Badge>
+                            ) : m.status === 'Completed' ? (
+                              <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-300 font-black text-[10px] uppercase tracking-wider px-3 py-1 flex items-center gap-1.5 shadow-sm">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                                <span>Session Completed</span>
+                              </Badge>
+                            ) : m.status === 'Cancelled' ? (
+                              <Badge className="bg-rose-100 text-rose-800 border border-rose-300 font-black text-[10px] uppercase tracking-wider px-3 py-1 flex items-center gap-1.5 shadow-sm">
+                                <XCircle className="h-3.5 w-3.5 text-rose-600" />
+                                <span>Session Cancelled</span>
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-blue-100 text-blue-800 border border-blue-200 font-black text-[10px] uppercase tracking-wider px-3 py-1 flex items-center gap-1.5 shadow-sm">
+                                <Clock className="h-3.5 w-3.5 text-blue-600" />
+                                <span>Scheduled</span>
+                              </Badge>
+                            )}
+                          </div>
                           <h3 className="text-lg font-black text-slate-900">{m.title}</h3>
                           <div className="flex flex-wrap gap-4 text-xs font-bold text-slate-500 uppercase tracking-tight">
                             <span className="flex items-center"><Clock className="h-3.5 w-3.5 mr-1.5 text-primary/60" /> {format(m.startTime, 'MMM dd, yyyy @ HH:mm')}</span>
                             <span className="flex items-center"><MapPin className="h-3.5 w-3.5 mr-1.5 text-primary/60" /> {m.location}</span>
                           </div>
-                        </div>
-                        <div className="flex -space-x-2">
-                          {m.attendees?.map((uid: string, i: number) => (
-                            <div key={i} title={uid} className="h-8 w-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-black uppercase shadow-sm overflow-hidden">
-                              {uid.substring(0, 2)}
-                            </div>
-                          ))}
                         </div>
                       </div>
                     </div>

@@ -507,8 +507,8 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
                 </div>
               </CardHeader>
               <CardContent className="p-6 pt-10">
-                <div className="h-[280px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-[280px] w-full min-w-0">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <AreaChart data={chartData}>
                       <defs>
                         <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
@@ -534,8 +534,8 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
                 <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Distribution by Maturity</CardDescription>
               </CardHeader>
               <CardContent className="p-6 flex flex-col items-center justify-center">
-                <div className="h-[220px] w-full flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-[220px] w-full min-w-0 flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <PieChart>
                       <Pie
                         data={stageData}
@@ -750,8 +750,8 @@ export default function SuperAdminDashboard({ user }: SuperAdminDashboardProps) 
                 <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Distribution across tech categories</CardDescription>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-[250px] w-full min-w-0">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <RechartsBarChart data={sectorData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} />
