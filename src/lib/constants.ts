@@ -45,8 +45,6 @@ export const institutes = [
   "Parul Institute of Public Health",
   "Parul Sevashram Hospital",
   "Rajkot Homoeopathic Medical College",
-  "RDC",
+  "PIERC",
   "School of Pharmacy",
-  "University Office",
-  "Parul Aarogya Seva Mandal",
 ];
