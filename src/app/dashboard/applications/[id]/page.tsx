@@ -3825,13 +3825,16 @@ export default function ApplicationDetailsPage() {
       {/* Split In-App Pitch Deck Modal Viewer */}
       {application?.documents && (
         <Dialog open={showPitchDeckModal} onOpenChange={setShowPitchDeckModal}>
-          <DialogContent className="max-w-6xl w-[95vw] h-[90vh] p-0 overflow-hidden bg-slate-950 border-slate-800">
+          <DialogContent 
+            showCloseButton={false}
+            className="!max-w-[96vw] sm:!max-w-[94vw] md:!max-w-[90vw] lg:!max-w-[1400px] xl:!max-w-[1550px] w-[96vw] h-[92vh] max-h-[96vh] p-0 overflow-hidden bg-slate-950 border-slate-800 rounded-3xl ring-0 shadow-2xl"
+          >
             <SplitPitchDeckViewer
               documents={application.documents}
               startupTitle={application.data?.startupTitle || application.programmeTitle || 'Application Pitch Deck'}
               applicantName={application.userName}
               defaultDocument={modalDocKey}
-              className="h-full border-none rounded-none min-h-[500px]"
+              className="h-full w-full border-none rounded-none min-h-[500px]"
               onClose={() => setShowPitchDeckModal(false)}
             />
           </DialogContent>

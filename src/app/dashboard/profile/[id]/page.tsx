@@ -10,13 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  Mail, 
-  Phone, 
-  Building2, 
-  Rocket, 
-  MessageSquare, 
-  ChevronRight, 
+import {
+  Mail,
+  Phone,
+  Building2,
+  Rocket,
+  MessageSquare,
+  ChevronRight,
   ExternalLink,
   ShieldCheck,
   Calendar,
@@ -41,7 +41,7 @@ export default function ProfilePage() {
       try {
         const userDocRef = doc(db, 'users', id);
         const userSnap = await getDoc(userDocRef);
-        
+
         let foundProfile: UserProfile | null = null;
         if (userSnap.exists()) {
           foundProfile = { uid: userSnap.id, ...userSnap.data() } as UserProfile;
@@ -49,7 +49,7 @@ export default function ProfilePage() {
           const usersCol = collection(db, 'users');
           const q = query(usersCol, where('enrollmentNumber', '==', id));
           const slugSnap = await getDocs(q);
-          
+
           if (!slugSnap.empty) {
             const docSnap = slugSnap.docs[0];
             foundProfile = { uid: docSnap.id, ...docSnap.data() } as UserProfile;
@@ -59,8 +59,8 @@ export default function ProfilePage() {
         setProfile(foundProfile);
 
         // Security Guard: Only admins, mentors or the user themselves may view applications
-        const canViewApps = currentUser?.role === 'admin' || 
-          currentUser?.role === 'super_admin' || 
+        const canViewApps = currentUser?.role === 'admin' ||
+          currentUser?.role === 'super_admin' ||
           currentUser?.uid === foundProfile?.uid;
 
         if (foundProfile && canViewApps) {
@@ -174,12 +174,6 @@ export default function ProfilePage() {
                     <Phone className="h-4 w-4 text-primary/60" />
                     <span className="text-sm font-bold">
                       {canViewFullPII ? (profile.contactNumber || profile.phoneNumber || 'N/A') : '••••••••••'}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <IdCard className="h-4 w-4 text-primary/60" />
-                    <span className="text-sm font-black tracking-wider uppercase">
-                      {isInternal ? `MIS: ${profile.uid.substring(0, 10)}` : `System ID: ${profile.uid.substring(0, 8)}`}
                     </span>
                   </div>
                   <div className="flex items-center space-x-3 text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-100">

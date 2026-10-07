@@ -43,7 +43,13 @@ service firebase.storage {
     // User avatars / personal files: strictly owned by the authenticated user
     match /users/{userId}/{allPaths=**} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.uid == userId && request.resource.size < 5 * 1024 * 1024;
+      allow write: if isAuthenticated() && request.auth.uid == userId && request.resource.size <= 5 * 1024 * 1024;
+    }
+
+    // Chat attachments (Images and Documents under 5MB strictly)
+    match /chat_attachments/{chatId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.resource.size <= 5 * 1024 * 1024;
     }
   }
 }

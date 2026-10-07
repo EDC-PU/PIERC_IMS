@@ -7,20 +7,20 @@ import { Application, Meeting, UserProfile } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  Check, 
-  Rocket, 
-  FileText, 
-  Video, 
-  Award, 
-  Coins, 
-  ArrowRight, 
-  Sparkles, 
-  Clock, 
-  AlertCircle, 
-  ChevronRight, 
-  Calendar, 
-  ShieldCheck, 
+import {
+  Check,
+  Rocket,
+  FileText,
+  Video,
+  Award,
+  Coins,
+  ArrowRight,
+  Sparkles,
+  Clock,
+  AlertCircle,
+  ChevronRight,
+  Calendar,
+  ShieldCheck,
   ExternalLink,
   Lock,
   Layers,
@@ -69,16 +69,16 @@ export default function FounderMilestoneTracker({
   // Helper flags
   const isSubmitted = !!latestApp && appStatus !== 'Draft';
   const isPhase1Done = [
-    'Phase 2 Selected', 
-    'Phase 2 Evaluation', 
-    'Cohort Selected', 
+    'Phase 2 Selected',
+    'Phase 2 Evaluation',
+    'Cohort Selected',
     'Incubated'
   ].includes(appStatus) || !!evaluations.Phase_1;
 
   const isPhase1Active = (isSubmitted && !isPhase1Done) || appStatus === 'Phase 1 Evaluation' || !!phase1Meeting;
 
   const isPhase2Done = [
-    'Cohort Selected', 
+    'Cohort Selected',
     'Incubated'
   ].includes(appStatus) || !!evaluations.Phase_2;
 
@@ -102,8 +102,8 @@ export default function FounderMilestoneTracker({
       description: 'Your startup submission is audited by the PIERC scrutiny committee for initial eligibility, prototype viability, and domain alignment.',
       deliverables: ['Startup Value Proposition', 'Founding Team Credentials', 'Initial Pitch Deck'],
       perksUnlocked: ['Direct access to PIERC community', 'Official Application ID', 'Scrutiny audit review'],
-      status: isSubmitted 
-        ? (isPhase1Done || isPhase1Active ? 'completed' : 'current') 
+      status: isSubmitted
+        ? (isPhase1Done || isPhase1Active ? 'completed' : 'current')
         : (isRevisionNeeded ? 'action_needed' : 'current'),
     },
     {
@@ -116,8 +116,8 @@ export default function FounderMilestoneTracker({
       description: 'Present your prototype and problem statement in a 10-minute live presentation before the internal evaluation panel.',
       deliverables: ['Live Pitch Deck Presentation', 'Product / Architecture Demo', 'Q&A Defense'],
       perksUnlocked: ['1-on-1 Evaluator Feedback Report', 'Shortlisting for Seed Grants'],
-      status: isPhase1Done 
-        ? 'completed' 
+      status: isPhase1Done
+        ? 'completed'
         : (isPhase1Active ? (isRevisionNeeded ? 'action_needed' : 'current') : 'upcoming'),
     },
     {
@@ -130,8 +130,8 @@ export default function FounderMilestoneTracker({
       description: 'Deep technical and commercial evaluation with senior external industry mentors, patent attorneys, and sector specialists.',
       deliverables: ['Financial & Cost Projections', 'Intellectual Property Roadmap', 'Pilot Traction Review'],
       perksUnlocked: ['Patent Filing Grant Eligibility', 'Industry Expert Advisory Access'],
-      status: isPhase2Done 
-        ? 'completed' 
+      status: isPhase2Done
+        ? 'completed'
         : (isPhase2Active ? 'current' : 'upcoming'),
     },
     {
@@ -144,8 +144,8 @@ export default function FounderMilestoneTracker({
       description: 'Official selection into the PIERC Incubation Cohort. Finalization of the incubation agreement and milestones roadmap.',
       deliverables: ['Incubation Agreement Signoff', 'Quarterly Milestone Setting', 'Co-Founder Equity Deed'],
       perksUnlocked: ['Dedicated Co-Working & Prototyping Lab Space', 'Official PIERC Incubatee Badge'],
-      status: isCohortSelected 
-        ? 'completed' 
+      status: isCohortSelected
+        ? 'completed'
         : (isCohortActive ? 'current' : 'upcoming'),
     },
     {
@@ -158,8 +158,8 @@ export default function FounderMilestoneTracker({
       description: 'Full-throttle incubation backing. Seed grant milestone tranches, prototyping lab access, and VC demo day presentations.',
       deliverables: ['Milestone Expenditure Audits', 'Monthly Traction Reports', 'Investor Demo Day Pitch'],
       perksUnlocked: ['Up to ₹5 Lakhs Seed Grants', 'Access to Startup Nivesh Angel Syndicate', 'Cloud & Tech Credits'],
-      status: isIncubated 
-        ? 'completed' 
+      status: isIncubated
+        ? 'completed'
         : (isIncubatedActive ? 'current' : 'upcoming'),
     },
   ];
@@ -177,7 +177,7 @@ export default function FounderMilestoneTracker({
 
   return (
     <Card className="border-none shadow-xl ring-1 ring-slate-200/90 rounded-3xl overflow-hidden bg-white">
-      
+
       {/* Top Header Bar */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-6 sm:p-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -206,8 +206,8 @@ export default function FounderMilestoneTracker({
                 <span className="text-xs font-black text-white">{progressPercent}%</span>
               </div>
               <div className="w-36 h-2 bg-white/20 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-amber-400 via-rose-500 to-primary rounded-full transition-all duration-700 ease-out" 
+                <div
+                  className="h-full bg-gradient-to-r from-amber-400 via-rose-500 to-primary rounded-full transition-all duration-700 ease-out"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
@@ -223,13 +223,13 @@ export default function FounderMilestoneTracker({
       <div className="p-6 sm:p-8 bg-slate-50/50 border-b border-slate-100 overflow-x-auto">
         <div className="min-w-[680px]">
           <div className="relative flex items-center justify-between">
-            
+
             {/* Background Connector Line */}
             <div className="absolute top-5 left-8 right-8 h-1 bg-slate-200 -z-0 rounded-full" />
-            
+
             {/* Colored Active Connector Line */}
-            <div 
-              className="absolute top-5 left-8 h-1 bg-gradient-to-r from-emerald-500 via-rose-500 to-primary -z-0 rounded-full transition-all duration-500" 
+            <div
+              className="absolute top-5 left-8 h-1 bg-gradient-to-r from-emerald-500 via-rose-500 to-primary -z-0 rounded-full transition-all duration-500"
               style={{ width: `${(Math.max(0, completedCount) / (stages.length - 1)) * 90}%` }}
             />
 
@@ -238,8 +238,8 @@ export default function FounderMilestoneTracker({
               const IconComp = stage.icon;
 
               return (
-                <div 
-                  key={stage.id} 
+                <div
+                  key={stage.id}
                   className="relative z-10 flex flex-col items-center cursor-pointer group"
                   onClick={() => setSelectedStageIndex(idx)}
                 >
@@ -307,7 +307,7 @@ export default function FounderMilestoneTracker({
       {/* Interactive Detail Box for Selected Stage */}
       <div className="p-6 sm:p-8 bg-white">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* Stage Overview & Deliverables (Left 8 cols) */}
           <div className="lg:col-span-8 space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
@@ -315,7 +315,7 @@ export default function FounderMilestoneTracker({
                 <div className={cn(
                   "w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm",
                   activeStage.status === 'completed' ? "bg-emerald-100 text-emerald-700" :
-                  activeStage.status === 'current' ? "bg-primary/10 text-primary" : "bg-slate-100 text-slate-500"
+                    activeStage.status === 'current' ? "bg-primary/10 text-primary" : "bg-slate-100 text-slate-500"
                 )}>
                   {activeStage.stageNumber}
                 </div>
@@ -364,8 +364,8 @@ export default function FounderMilestoneTracker({
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {activeStage.deliverables.map((item, i) => (
-                  <div 
-                    key={i} 
+                  <div
+                    key={i}
                     className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-start gap-2.5"
                   >
                     <CheckCircle2 className={cn(
@@ -410,7 +410,7 @@ export default function FounderMilestoneTracker({
 
           {/* Stage Perks & Direct Action CTA (Right 4 cols) */}
           <div className="lg:col-span-4 space-y-6 lg:border-l lg:border-slate-100 lg:pl-8">
-            
+
             {/* Unlocked Perks Card */}
             <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/5 via-slate-50 to-rose-50/30 border border-primary/10 space-y-3">
               <div className="flex items-center space-x-2">
@@ -445,8 +445,8 @@ export default function FounderMilestoneTracker({
                 </Link>
               ) : (
                 <Link href={`/dashboard/applications/${latestApp.id}`} className="block">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full h-12 rounded-xl font-bold border-slate-200 hover:bg-slate-50 text-slate-800 text-xs shadow-xs"
                   >
                     View Application & Scorecards <ChevronRight className="h-4 w-4 ml-1" />
@@ -455,7 +455,7 @@ export default function FounderMilestoneTracker({
               )}
 
               <p className="text-[10px] text-center text-slate-400 font-medium">
-                Need guidance? Reach out to the incubation cell at <span className="underline">pierc@paruluniversity.ac.in</span>
+                Need guidance? Reach out to the incubation centre at <span className="underline">pierc@paruluniversity.ac.in</span>
               </p>
             </div>
 

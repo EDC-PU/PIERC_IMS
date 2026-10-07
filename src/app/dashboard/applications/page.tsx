@@ -386,10 +386,10 @@ export default function ApplicationsPage() {
           primaryAction={
             !isAdmin
               ? {
-                  label: "Apply to Programme",
-                  href: "/dashboard/programmes",
-                  icon: <Rocket className="h-4 w-4" />,
-                }
+                label: "Apply to Programme",
+                href: "/dashboard/programmes",
+                icon: <Rocket className="h-4 w-4" />,
+              }
               : undefined
           }
           className="my-8"
@@ -432,7 +432,6 @@ export default function ApplicationsPage() {
                         </div>
                         <div>
                           <p className="font-black text-slate-900 leading-tight tracking-tight break-words whitespace-normal">{app.data?.startupTitle || app.programmeTitle}</p>
-                          <p className="text-[10px] font-bold text-slate-400 mt-1 tracking-widest">{app.id.substring(0, 8)}</p>
                         </div>
                       </div>
                     </TableCell>

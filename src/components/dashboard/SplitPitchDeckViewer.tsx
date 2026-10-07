@@ -1,17 +1,17 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { 
-  FileText, 
-  Maximize2, 
-  Minimize2, 
-  ExternalLink, 
-  Download, 
-  Eye, 
-  EyeOff, 
-  Sparkles, 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  FileText,
+  Maximize2,
+  Minimize2,
+  ExternalLink,
+  Download,
+  Eye,
+  EyeOff,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
   X,
   FileCheck2,
   Layers,
@@ -88,7 +88,7 @@ export default function SplitPitchDeckViewer({
   }
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className={cn(
         "flex flex-col h-full min-h-[620px] bg-slate-900 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl transition-all duration-300",
@@ -98,7 +98,7 @@ export default function SplitPitchDeckViewer({
     >
       {/* Top Header Control Bar */}
       <div className="bg-slate-950/90 backdrop-blur-md px-4 py-3 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
-        
+
         {/* Document Switcher / Info */}
         <div className="flex items-center space-x-3 min-w-0">
           <div className="w-8 h-8 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0">
@@ -148,7 +148,7 @@ export default function SplitPitchDeckViewer({
 
         {/* Actions Controls (Zoom, New Tab, Fullscreen, Close) */}
         <div className="flex items-center space-x-1.5 shrink-0">
-          
+
           {/* Open in New Window */}
           <a
             href={activeUrl}
@@ -208,10 +208,7 @@ export default function SplitPitchDeckViewer({
 
         {/* Floating Quick Action Footer inside Viewer */}
         <div className="bg-slate-950/80 backdrop-blur-md px-4 py-2 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Interactive In-App Pitch Deck Mode</span>
-          </div>
+
           <span className="hidden sm:inline text-slate-500">
             Scroll to navigate slides • Use controls at top for fullscreen
           </span>
