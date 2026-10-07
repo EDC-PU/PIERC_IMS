@@ -1490,11 +1490,11 @@ export default function ApplicationDetailsPage() {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-6 border-b">
         <div className="flex items-center gap-5">
-          <AnimatedProgressRing 
-            value={getReadinessScore(application.status)} 
-            size={64} 
-            strokeWidth={5} 
-            label="Milestone" 
+          <AnimatedProgressRing
+            value={getReadinessScore(application.status)}
+            size={64}
+            strokeWidth={5}
+            label="Milestone"
           />
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-3">
@@ -1513,7 +1513,6 @@ export default function ApplicationDetailsPage() {
               )}
             </div>
             <div className="flex items-center space-x-4 text-xs font-medium text-slate-400">
-              <span className="flex items-center"><Hash className="h-3 w-3 mr-1" /> {application.id}</span>
               <span className="flex items-center"><Clock className="h-3 w-3 mr-1" /> Applied on {format(application.submittedAt, 'MMM dd, yyyy')}</span>
             </div>
           </div>
@@ -2052,7 +2051,7 @@ export default function ApplicationDetailsPage() {
               <InfoBlock label="Contact" value={application.userContact} />
               <InfoBlock label="Category" value={application.userCategory || application.data?.applicantType || application.data?.category} />
               <InfoBlock label="Institute" value={application.userInstitute} />
-              <InfoBlock label="Enrollment" value={application.userEnrollment} />
+              <InfoBlock label="Enrollment/ PUMIS ID" value={application.userEnrollment} />
               <InfoBlock label="Gender" value={application.userGender} />
               <InfoBlock label="Social Category" value={application.userSocialCategory} />
               {application.userCaste && <InfoBlock label="Caste" value={application.userCaste} />}
@@ -3081,16 +3080,16 @@ export default function ApplicationDetailsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 self-end sm:self-auto">
-                    <Button 
-                      variant="default" 
-                      className="rounded-xl font-bold text-xs gap-1.5" 
+                    <Button
+                      variant="default"
+                      className="rounded-xl font-bold text-xs gap-1.5"
                       onClick={() => { setModalDocKey('pitchDeck'); setShowPitchDeckModal(true); }}
                     >
                       <Eye className="h-4 w-4" /> Preview In-App
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      className="rounded-xl font-bold text-xs gap-1.5" 
+                    <Button
+                      variant="outline"
+                      className="rounded-xl font-bold text-xs gap-1.5"
                       onClick={() => window.open(application.documents.pitchDeck, '_blank')}
                     >
                       <Download className="h-4 w-4" /> Download
@@ -3111,16 +3110,16 @@ export default function ApplicationDetailsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 self-end sm:self-auto">
-                    <Button 
-                      variant="default" 
-                      className="rounded-xl bg-emerald-600 hover:bg-emerald-700 font-bold text-xs gap-1.5 text-white" 
+                    <Button
+                      variant="default"
+                      className="rounded-xl bg-emerald-600 hover:bg-emerald-700 font-bold text-xs gap-1.5 text-white"
                       onClick={() => { setModalDocKey('phase2PPT'); setShowPitchDeckModal(true); }}
                     >
                       <Eye className="h-4 w-4" /> Preview In-App
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      className="rounded-xl font-bold text-xs gap-1.5" 
+                    <Button
+                      variant="outline"
+                      className="rounded-xl font-bold text-xs gap-1.5"
                       onClick={() => window.open(application.documents.phase2PPT, '_blank')}
                     >
                       <Download className="h-4 w-4" /> Download
@@ -3486,7 +3485,7 @@ export default function ApplicationDetailsPage() {
                       value={Math.round(
                         ((application.milestones || []).filter(m => m.status === 'Completed').length /
                           (application.milestones || []).length) *
-                          100
+                        100
                       )}
                       size={44}
                       strokeWidth={4}
