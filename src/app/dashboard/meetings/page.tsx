@@ -394,7 +394,7 @@ export default function MeetingsPage() {
             }),
             calendarEvent: {
               title: `${phaseTitle}: ${startupName}`,
-              description: `PIERC IMS Evaluation Session\nStartup: ${startupName}\nPhase: ${phaseTitle}\nMode: ${mode} (${locationDetails})${meetingLink ? `\nJoin Link: ${meetingLink}` : ''}\n\nView details: ${window.location.origin}/dashboard/meetings`,
+              description: `PIERC Evaluation Session\nStartup: ${startupName}\nPhase: ${phaseTitle}\nMode: ${mode} (${locationDetails})${meetingLink ? `\nJoin Link: ${meetingLink}` : ''}\n\nView details: ${window.location.origin}/dashboard/meetings`,
               location: mode === 'Online' && meetingLink ? meetingLink : locationDetails,
               startTime: startTimestamp,
               endTime: startTimestamp + (60 * 60 * 1000),

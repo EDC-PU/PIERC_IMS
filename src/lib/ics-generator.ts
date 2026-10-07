@@ -94,7 +94,7 @@ export function generateIcsCalendar(options: CalendarEventPayload): string {
   const rawLines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//PIERC IMS//Parul Innovation & Entrepreneurship Research Centre (PIERC) Calendar//EN',
+    'PRODID:-//PIERC//Parul Innovation & Entrepreneurship Research Centre (PIERC) Calendar//EN',
     'CALSCALE:GREGORIAN',
     `METHOD:${method}`,
     'BEGIN:VEVENT',

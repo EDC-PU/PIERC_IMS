@@ -423,7 +423,7 @@ export default function AnnounceEventPage() {
             html: emailHtml,
             calendarEvent: {
               title: title.trim(),
-              description: `${finalDescription}\n\nFormat: ${mode}\nLocation/Link: ${linkOrLocation}\n\nPIERC IMS Innovation Portal`,
+              description: `${finalDescription}\n\nFormat: ${mode}\nLocation/Link: ${linkOrLocation}\n\n PIERC  Incubation Management System`,
               location: linkOrLocation,
               startTime: eventStart,
               durationMinutes: 60,
