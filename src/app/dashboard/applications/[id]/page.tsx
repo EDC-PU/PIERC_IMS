@@ -339,20 +339,27 @@ export default function ApplicationDetailsPage() {
       }
       setLoading(false);
     }, (error) => {
-      console.error('Application fetch error / permission denied:', error);
+      console.warn('Application fetch notice / permission denied:', error?.message);
       setAccessDenied(true);
       setLoading(false);
     });
 
-    // 2. Fetch meetings for this application
-    const meetingsCol = collection(db, 'meetings');
-    const meetingsQuery = query(meetingsCol, where('applicationId', '==', id));
-    const unsubscribeMeetings = onSnapshot(meetingsQuery, (snapshot) => {
-      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setMeetings(list);
-    }, (error) => {
-      console.warn('Meetings query permission notice:', error);
-    });
+    // 2. Fetch meetings for this application (Scoped to attendees for non-admins)
+    let unsubscribeMeetings = () => { };
+    if (user) {
+      const meetingsCol = collection(db, 'meetings');
+      const isPrivileged = user.role === 'admin' || user.role === 'super_admin';
+      const meetingsQuery = isPrivileged
+        ? query(meetingsCol, where('applicationId', '==', id))
+        : query(meetingsCol, where('applicationId', '==', id), where('attendees', 'array-contains', user.uid));
+
+      unsubscribeMeetings = onSnapshot(meetingsQuery, (snapshot) => {
+        const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setMeetings(list);
+      }, (error) => {
+        console.warn('Meetings query notice:', error?.message);
+      });
+    }
 
     // 3. Fetch evaluations for this application (Strictly Admin & Mentors only)
     let evalUnsubscribe = () => { };
@@ -363,7 +370,7 @@ export default function ApplicationDetailsPage() {
         const evals = snapshot.docs.map(doc => doc.data());
         setAllEvaluations(evals.sort((a, b) => b.submittedAt - a.submittedAt));
       }, (error) => {
-        console.warn('Evaluations permission notice:', error);
+        console.warn('Evaluations permission notice:', error?.message);
       });
     }
 
@@ -376,6 +383,8 @@ export default function ApplicationDetailsPage() {
           .map(doc => doc.data() as UserProfile)
           .filter(u => u.role === 'mentor');
         setMentors(mentorList);
+      }, (err) => {
+        console.warn('Users/mentors fetch notice:', err?.message);
       });
     }
 
@@ -386,32 +395,44 @@ export default function ApplicationDetailsPage() {
       cohortsUnsubscribe = onSnapshot(cohortsCol, (snapshot) => {
         const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setCohorts(list);
+      }, (err) => {
+        console.warn('Cohorts fetch notice:', err?.message);
       });
     }
 
-    // 6. Fetch transactions for this application
-    const transCol = collection(db, 'transactions');
-    const transQuery = query(transCol, where('applicationId', '==', id));
-    const unsubscribeTrans = onSnapshot(transQuery, (snapshot) => {
-      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as GrantTransaction[];
-      setTransactions(list.sort((a, b) => b.createdAt - a.createdAt));
-    }, (error) => {
-      console.error("Error loading transactions in detail page: ", error);
-    });
+    // 6. Fetch transactions for this application (Scoped by role to prevent IDOR/permission crashes)
+    let unsubscribeTrans = () => { };
+    if (user) {
+      const isPrivileged = user.role === 'admin' || user.role === 'super_admin' || user.role === 'mentor';
+      const transCol = collection(db, 'transactions');
+      const transQuery = isPrivileged
+        ? query(transCol, where('applicationId', '==', id))
+        : query(transCol, where('applicationId', '==', id), where('userId', '==', user.uid));
+
+      unsubscribeTrans = onSnapshot(transQuery, (snapshot) => {
+        const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as GrantTransaction[];
+        setTransactions(list.sort((a, b) => b.createdAt - a.createdAt));
+      }, (error) => {
+        console.warn("Transactions query notice: ", error?.message);
+      });
+    }
 
     // 7. Securely fetch isolated administrative secrets (Yukti credentials)
     let secretUnsubscribe = () => { };
-    const secretDocRef = doc(db, 'applications', id, 'admin_secrets', 'yukti');
-    secretUnsubscribe = onSnapshot(secretDocRef, (snap) => {
-      if (snap.exists()) {
-        const sData = snap.data();
-        setYuktiSecret(sData as any);
-        if (sData.yuktiPortalId) setYuktiId(sData.yuktiPortalId);
-        if (sData.yuktiPortalPassword) setYuktiPassword(sData.yuktiPortalPassword);
-      }
-    }, () => {
-      // Permission denied for non-owners/non-admins is expected and secure
-    });
+    if (user) {
+      const secretDocRef = doc(db, 'applications', id, 'admin_secrets', 'yukti');
+      secretUnsubscribe = onSnapshot(secretDocRef, (snap) => {
+        if (snap.exists()) {
+          const sData = snap.data();
+          setYuktiSecret(sData as any);
+          if (sData.yuktiPortalId) setYuktiId(sData.yuktiPortalId);
+          if (sData.yuktiPortalPassword) setYuktiPassword(sData.yuktiPortalPassword);
+        }
+      }, (err) => {
+        // Expected permission denied for non-owners/non-admins
+        console.warn('Yukti secret notice:', err?.message);
+      });
+    }
 
     return () => {
       unsubscribe();
@@ -444,6 +465,8 @@ export default function ApplicationDetailsPage() {
       if (snapshot.exists()) {
         setAssignedCohort({ id: snapshot.id, ...snapshot.data() } as Cohort);
       }
+    }, (err) => {
+      console.warn('Cohort fetch notice:', err?.message);
     });
     return () => unsubscribe();
   }, [application?.cohortId]);
