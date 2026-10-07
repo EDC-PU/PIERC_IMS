@@ -20,7 +20,7 @@ interface EmailTemplateOptions {
  * Standard base layout for all transactional emails.
  */
 export function getEmailHtmlTemplate(options: EmailTemplateOptions): string {
-  const logoUrl = options.logoUrl || 'https://www.pierc.org/_next/static/media/PIERC.959ad75d.svg';
+  const logoUrl = options.logoUrl || 'cid:pierc-logo';
   const headerColor = options.headerColor || '#d40924'; // PIERC Red
 
   let alertBoxHtml = '';
@@ -84,8 +84,8 @@ export function getEmailHtmlTemplate(options: EmailTemplateOptions): string {
                 
                 <!-- Logo Header -->
                 <tr>
-                  <td align="center" style="padding: 32px 32px 24px 32px; border-bottom: 1px solid #f1f5f9;">
-                    <img src="${logoUrl}" alt="PIERC Logo" style="height: 64px; width: auto; display: block;" height="48" />
+                  <td align="center" style="padding: 28px 32px 20px 32px; border-bottom: 1px solid #f1f5f9; text-align: center;">
+                    <img src="${logoUrl}" alt="PIERC Logo" style="height: 52px; width: auto; max-width: 180px; display: block; margin: 0 auto; border: 0; outline: none;" height="52" />
                   </td>
                 </tr>
                 
@@ -397,6 +397,9 @@ export function getMeetingScheduledEmailHtml(options: {
       </p>
       <p style="margin-bottom: 8px; line-height: 1.6;">
         Please mark your calendars and join the session on time.
+      </p>
+      <p style="margin-top: 14px; margin-bottom: 0; font-size: 13px; color: #64748b; line-height: 1.5;">
+        📎 <em>A calendar invitation (<code>.ics</code>) is attached to this email. Open or tap it to automatically add this session to your calendar.</em>
       </p>
     `,
     alertType: 'info',

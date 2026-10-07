@@ -1,4 +1,7 @@
 import { auth } from '@/lib/firebase';
+import type { CalendarEventPayload } from '@/lib/ics-generator';
+
+export type { CalendarEventPayload };
 
 /**
  * Client-side helper to trigger email notifications via the server-side API.
@@ -9,6 +12,9 @@ export async function triggerEmailNotification(options: {
   subject: string;
   html: string;
   attachPhase2Template?: boolean;
+  calendarEvent?: CalendarEventPayload;
+  icsContent?: string;
+  icsFilename?: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const headers: Record<string, string> = {

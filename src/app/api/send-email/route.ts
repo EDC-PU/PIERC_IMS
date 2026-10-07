@@ -37,13 +37,18 @@ export async function POST(request: Request) {
     let callerRole = decodedToken.role;
 
     if (!callerRole) {
-      // Lookup role from Firestore users collection
-      const userDoc = await adminDb().collection('users').doc(callerUid).get();
-      callerRole = userDoc.exists ? userDoc.data()?.role : 'user';
+      try {
+        // Lookup role from Firestore users collection
+        const userDoc = await adminDb().collection('users').doc(callerUid).get();
+        callerRole = userDoc.exists ? userDoc.data()?.role : 'user';
+      } catch (dbError: any) {
+        console.warn('Unable to fetch callerRole from adminDb in send-email, defaulting to user:', dbError?.message || dbError);
+        callerRole = 'user';
+      }
     }
 
     const body = await request.json();
-    const { to, subject, html, attachPhase2Template } = body;
+    const { to, subject, html, attachPhase2Template, calendarEvent, icsContent, icsFilename } = body;
 
     if (!to || !subject || !html) {
       return NextResponse.json(
@@ -72,7 +77,15 @@ export async function POST(request: Request) {
     }
 
     // 4. Dispatch Email securely
-    const result = await sendEmail({ to, subject, html, attachPhase2Template });
+    const result = await sendEmail({
+      to,
+      subject,
+      html,
+      attachPhase2Template,
+      calendarEvent,
+      icsContent,
+      icsFilename,
+    });
 
     if (result.success) {
       return NextResponse.json({ success: true, messageId: result.messageId });

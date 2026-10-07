@@ -163,10 +163,10 @@ export default function CohortsPage() {
         endDate: editCohortEndDate || null,
         whatsappLink: editCohortWhatsappLink.trim() || null
       });
-      
+
       toast.success('Cohort updated successfully!');
       setShowEditDialog(false);
-      
+
       // Determine if there are startups in this cohort to notify
       const cohortApps = applications.filter(app => app.cohortId === editingCohort.id);
       if (cohortApps.length > 0) {
@@ -185,7 +185,7 @@ export default function CohortsPage() {
 
   const handleSendEmails = async (send: boolean) => {
     if (!editingCohort) return;
-    
+
     if (!send) {
       setShowConfirmEmailDialog(false);
       setEditingCohort(null);
@@ -195,7 +195,7 @@ export default function CohortsPage() {
     setIsSendingEmails(true);
     try {
       const cohortApps = applications.filter(app => app.cohortId === editingCohort.id);
-      
+
       // Collect all recipient emails
       const emails: string[] = [];
       cohortApps.forEach(app => {
@@ -223,10 +223,24 @@ export default function CohortsPage() {
           viewLink: `${window.location.origin}/dashboard/applications`
         });
 
+        const calendarEvent = editCohortStartDate ? {
+          title: `Cohort: ${editCohortName}`,
+          description: `PIERC Incubation Program Cohort: ${editCohortName}\nSchedule: ${formattedStart} to ${formattedEnd}\n\nPortal: ${window.location.origin}/dashboard/applications`,
+          startTime: editCohortStartDate,
+          endTime: editCohortEndDate || editCohortStartDate,
+          isAllDay: true,
+          url: `${window.location.origin}/dashboard/applications`,
+          status: 'CONFIRMED' as const,
+          method: 'REQUEST' as const,
+          organizerName: 'Parul Innovation & Entrepreneurship Research Centre (PIERC)',
+          filename: `cohort-${editCohortName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.ics`,
+        } : undefined;
+
         await triggerEmailNotification({
           to: uniqueEmails,
           subject: `🗓️ Cohort Schedule Confirmed: ${editCohortName}`,
-          html: emailHtml
+          html: emailHtml,
+          calendarEvent,
         });
 
         toast.success(`Emails sent successfully to ${uniqueEmails.length} recipient(s)!`);

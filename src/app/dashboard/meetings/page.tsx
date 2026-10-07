@@ -392,6 +392,18 @@ export default function MeetingsPage() {
               meetingLink: meetingLink || undefined,
               viewLink: `${window.location.origin}/dashboard/meetings`,
             }),
+            calendarEvent: {
+              title: `${phaseTitle}: ${startupName}`,
+              description: `PIERC IMS Evaluation Session\nStartup: ${startupName}\nPhase: ${phaseTitle}\nMode: ${mode} (${locationDetails})${meetingLink ? `\nJoin Link: ${meetingLink}` : ''}\n\nView details: ${window.location.origin}/dashboard/meetings`,
+              location: mode === 'Online' && meetingLink ? meetingLink : locationDetails,
+              startTime: startTimestamp,
+              endTime: startTimestamp + (60 * 60 * 1000),
+              url: meetingLink || `${window.location.origin}/dashboard/meetings`,
+              status: 'CONFIRMED',
+              method: 'REQUEST',
+              organizerName: 'Parul Innovation & Entrepreneurship Research Centre (PIERC)',
+              filename: `meeting-${startupName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.ics`,
+            },
           }).catch(err => console.error('Failed to send meeting scheduling email:', err));
         }
       });
@@ -428,6 +440,17 @@ export default function MeetingsPage() {
               formattedDate,
               formattedTime,
             }),
+            calendarEvent: {
+              title: meeting.title,
+              description: `This session has been cancelled in the PIERC Portal.`,
+              location: meeting.location || (meeting.mode === 'Online' ? meeting.link : undefined),
+              startTime: meeting.startTime,
+              endTime: meeting.endTime || (meeting.startTime + 30 * 60 * 1000),
+              status: 'CANCELLED',
+              method: 'CANCEL',
+              organizerName: 'Parul Innovation & Entrepreneurship Research Centre (PIERC)',
+              filename: 'cancelled-meeting.ics',
+            },
           }).catch(err => console.error('Failed to send meeting cancellation email:', err));
         }
       }

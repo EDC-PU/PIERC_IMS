@@ -170,15 +170,15 @@ export default function AnnounceEventPage() {
         ctx.fillRect(0, 0, 600, 600);
 
         const scale = zoom;
-        
+
         ctx.save();
         ctx.translate(300, 300);
         ctx.translate(panX * (600 / 256), panY * (600 / 256));
         ctx.scale(scale, scale);
-        
+
         const renderWidth = image.width * (600 / Math.max(image.width, image.height));
         const renderHeight = image.height * (600 / Math.max(image.width, image.height));
-        
+
         ctx.drawImage(
           image,
           -renderWidth / 2,
@@ -407,10 +407,32 @@ export default function AnnounceEventPage() {
             ctaLink: uploadedFlyerUrl || 'https://pierc-portal-9bd82.web.app/dashboard'
           });
 
+          let eventStart: Date;
+          try {
+            eventStart = new Date(`${date}T${time || '10:00'}:00`);
+            if (isNaN(eventStart.getTime())) {
+              eventStart = new Date(date);
+            }
+          } catch {
+            eventStart = new Date();
+          }
+
           const response = await triggerEmailNotification({
             to: uniqueEmails,
             subject: emailSubject,
-            html: emailHtml
+            html: emailHtml,
+            calendarEvent: {
+              title: title.trim(),
+              description: `${finalDescription}\n\nFormat: ${mode}\nLocation/Link: ${linkOrLocation}\n\nPIERC IMS Innovation Portal`,
+              location: linkOrLocation,
+              startTime: eventStart,
+              durationMinutes: 60,
+              url: (mode === 'Online' && linkOrLocation.startsWith('http')) ? linkOrLocation : (uploadedFlyerUrl || 'https://pierc-portal-9bd82.web.app/dashboard'),
+              status: 'CONFIRMED',
+              method: 'REQUEST',
+              organizerName: 'Parul Innovation & Entrepreneurship Research Centre (PIERC)',
+              filename: `event-${title.trim().toLowerCase().replace(/[^a-z0-9]/g, '-')}.ics`,
+            },
           });
 
           if (response.success) {
@@ -803,7 +825,7 @@ export default function AnnounceEventPage() {
                     <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
                       Position and Crop Square Flyer (Drag to Position, Slide to Zoom)
                     </span>
-                    <div 
+                    <div
                       className="relative w-64 h-64 border rounded-xl overflow-hidden cursor-move bg-slate-200 select-none"
                       onMouseDown={(e) => {
                         setIsDragging(true);
@@ -959,7 +981,7 @@ export default function AnnounceEventPage() {
                     onClick={(e) => handleAnnounce(e, 'draft')}
                     className="h-11 px-5 rounded-xl border-slate-200 font-bold text-xs uppercase w-full sm:w-auto"
                   >
-                    {submitting ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null} 
+                    {submitting ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
                     {editingEvent ? 'Save as Draft' : 'Save as Draft'}
                   </Button>
                   <Button
@@ -968,7 +990,7 @@ export default function AnnounceEventPage() {
                     onClick={(e) => handleAnnounce(e, 'published')}
                     className="h-11 px-6 rounded-xl bg-[#D91A2A] text-white hover:bg-[#D91A2A]/90 font-black text-xs uppercase tracking-wider w-full sm:w-auto"
                   >
-                    {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null} 
+                    {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
                     {editingEvent ? 'Update & Publish' : 'Announce & Publish'}
                   </Button>
                 </div>
@@ -1028,8 +1050,8 @@ export default function AnnounceEventPage() {
                             <TableCell>
                               <div className="space-y-1">
                                 <span className="font-black text-slate-900 block text-xs">{event.title}</span>
-                                <span 
-                                  className="text-[10px] font-medium text-slate-500 block truncate max-w-xs" 
+                                <span
+                                  className="text-[10px] font-medium text-slate-500 block truncate max-w-xs"
                                   title={event.description.replace(/<[^>]*>/g, '')}
                                 >
                                   {event.description.replace(/<[^>]*>/g, '') || 'No description'}
