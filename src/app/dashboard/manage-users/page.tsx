@@ -62,6 +62,8 @@ export default function ManageUsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('name-asc');
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'super_admin') {
@@ -106,9 +108,6 @@ export default function ManageUsersPage() {
       </div>
     );
   }
-
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('name-asc');
 
   const filteredUsers = users.filter(u => {
     const name = u.displayName || '';

@@ -112,9 +112,10 @@ export default function ApplicationDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const { user } = useAuthStore();
+  const { user, originalUser } = useAuthStore();
   const [application, setApplication] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [allEvaluations, setAllEvaluations] = useState<any[]>([]);
   const [assignedCohort, setAssignedCohort] = useState<Cohort | null>(null);
@@ -1125,21 +1126,33 @@ export default function ApplicationDetailsPage() {
   const isGrowthPad = application.programmeId.toLowerCase().includes('growth');
   const hasBeenSelectedForPhase2 = application.timeline?.some((event: any) => event.status === 'Phase 2 Selected') || false;
 
-  const handleDelete = async () => {
-    if (user?.role !== 'super_admin' || !application) return;
-    try {
-      // Notify the applicant before deletion
-      await addDoc(collection(db, 'notifications', application.userId, 'items'), {
-        userId: application.userId,
-        title: 'Application Record Removed',
-        message: `Your application for ${application.programmeTitle} (${application.data?.startupTitle || 'Innovation'}) has been permanently removed from the portal by an administrator.`,
-        type: 'error',
-        read: false,
-        timestamp: Date.now(),
-        link: '/dashboard/applications'
-      });
+  const isSuperAdminOrAdmin = user?.role === 'super_admin' || user?.role === 'admin' || originalUser?.role === 'super_admin';
 
-      // Send deletion email notification to applicant and team members
+  const handleDelete = async () => {
+    if (!isSuperAdminOrAdmin || !application) {
+      toast.error('Only administrators can permanently delete applications.');
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      // 1. Notify the applicant before deletion if userId exists (non-blocking)
+      if (application.userId) {
+        try {
+          await addDoc(collection(db, 'notifications', application.userId, 'items'), {
+            userId: application.userId,
+            title: 'Application Record Removed',
+            message: `Your application for ${application.programmeTitle} (${application.data?.startupTitle || 'Innovation'}) has been permanently removed from the portal by an administrator.`,
+            type: 'error',
+            read: false,
+            timestamp: Date.now(),
+            link: '/dashboard/applications'
+          });
+        } catch (notifErr) {
+          console.warn('Could not send notification for deleted application:', notifErr);
+        }
+      }
+
+      // 2. Send deletion email notification to applicant and team members (non-blocking)
       const recipientEmails = [
         application.userEmail,
         ...(application.data?.teamMembers || []).map((m: any) => m.email)
@@ -1147,21 +1160,31 @@ export default function ApplicationDetailsPage() {
 
       if (recipientEmails.length > 0) {
         const startupName = application.data?.startupName || application.data?.startupTitle || 'Your Innovation Project';
-        triggerEmailNotification({
-          to: recipientEmails,
-          subject: `⚠️ Application Permanently Removed: ${startupName}`,
-          html: getApplicationRemovedEmailHtml({
-            startupName,
-            programmeTitle: application.programmeTitle,
-          }),
-        }).catch(err => console.error('Failed to send deletion confirmation email:', err));
+        try {
+          await triggerEmailNotification({
+            to: recipientEmails,
+            subject: `⚠️ Application Permanently Removed: ${startupName}`,
+            html: getApplicationRemovedEmailHtml({
+              startupName,
+              programmeTitle: application.programmeTitle,
+            }),
+          });
+        } catch (emailErr) {
+          console.warn('Failed to send deletion confirmation email:', emailErr);
+        }
       }
 
+      // 3. Delete application document from Firestore
       await deleteDoc(doc(db, 'applications', id));
       toast.success('Application deleted permanently');
       router.push('/dashboard/applications');
-    } catch (error) {
-      toast.error('Failed to delete application');
+    } catch (error: any) {
+      console.error('Failed to delete application:', error);
+      toast.error('Failed to delete application', {
+        description: error?.message || 'Permission denied or network error.'
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1870,10 +1893,10 @@ export default function ApplicationDetailsPage() {
               </DialogContent>
             </Dialog>
 
-            {user?.role === 'super_admin' && (
+            {isSuperAdminOrAdmin && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" className="rounded-xl h-11 text-rose-600 hover:bg-rose-50">
+                  <Button variant="ghost" className="rounded-xl h-11 text-rose-600 hover:bg-rose-50 font-bold" disabled={isDeleting}>
                     <Trash2 className="h-4 w-4 mr-2" /> Delete
                   </Button>
                 </AlertDialogTrigger>
@@ -1888,12 +1911,23 @@ export default function ApplicationDetailsPage() {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter className="pt-6">
-                    <AlertDialogCancel className="rounded-xl h-11 border-slate-200 font-bold">Cancel Action</AlertDialogCancel>
+                    <AlertDialogCancel className="rounded-xl h-11 border-slate-200 font-bold" disabled={isDeleting}>Cancel Action</AlertDialogCancel>
                     <AlertDialogAction
-                      className="rounded-xl h-11 bg-rose-600 hover:bg-rose-700 font-bold"
-                      onClick={handleDelete}
+                      className="rounded-xl h-11 bg-rose-600 hover:bg-rose-700 font-bold text-white flex items-center gap-2"
+                      disabled={isDeleting}
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        await handleDelete();
+                      }}
                     >
-                      Confirm Deletion
+                      {isDeleting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Deleting...</span>
+                        </>
+                      ) : (
+                        <span>Confirm Deletion</span>
+                      )}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

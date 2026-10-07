@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
-import { db } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { collection, onSnapshot, addDoc, updateDoc, doc, query, where } from 'firebase/firestore';
 import { Application, Meeting, UserProfile } from '@/types';
 import { triggerEmailNotification } from '@/lib/email-client';
@@ -52,7 +53,10 @@ import {
   LayoutDashboard,
   Send,
   MoreVertical,
-  Download
+  Download,
+  Sparkles,
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isPast } from 'date-fns';
 import { toast } from 'sonner';
@@ -80,7 +84,7 @@ export default function MeetingsPage() {
   const filteredAndSortedMeetings = meetings
     .filter(m => {
       const queryText = searchQuery.toLowerCase();
-      const matchesSearch = 
+      const matchesSearch =
         m.title.toLowerCase().includes(queryText) ||
         (m.description && m.description.toLowerCase().includes(queryText)) ||
         (m.location && m.location.toLowerCase().includes(queryText)) ||
@@ -103,9 +107,54 @@ export default function MeetingsPage() {
   const [mode, setMode] = useState<'Online' | 'Offline'>('Offline');
   const [venue, setVenue] = useState('PIERC Office');
   const [meetingLink, setMeetingLink] = useState('https://meet.google.com/');
+  const [isGeneratingMeet, setIsGeneratingMeet] = useState(false);
   const [selectedEvaluator, setSelectedEvaluator] = useState<string>('');
   const [evaluations, setEvaluations] = useState<any>({});
   const [activePhase, setActivePhase] = useState('phase1');
+
+  // Auto-generate Google Meet link via Google Meet API
+  const handleCreateViaGoogleMeetApi = async () => {
+    setIsGeneratingMeet(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/meetings.space.created');
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken;
+
+      if (!token) {
+        throw new Error('Google OAuth access token was not returned. Please check popup permissions.');
+      }
+
+      // Call Google Meet REST API v2 spaces endpoint
+      const res = await fetch('https://meet.googleapis.com/v2/spaces', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error.message || 'Google Meet API returned an error');
+      }
+
+      if (data.meetingUri) {
+        setMeetingLink(data.meetingUri);
+        toast.success('Live Google Meet space generated!', {
+        });
+      }
+    } catch (err: any) {
+      console.warn('Google Meet API creation error:', err);
+      toast.error('Google Meet space notice', {
+        description: err?.message || 'Could not create space automatically. Please open meet.google.com/new to get your link.'
+      });
+    } finally {
+      setIsGeneratingMeet(false);
+    }
+  };
 
   useEffect(() => {
     if (!currentUser) return;
@@ -416,16 +465,16 @@ export default function MeetingsPage() {
   const todaysCount = meetings.filter(m => isSameDay(m.startTime, new Date())).length;
   const meetingTabs = isAdmin
     ? [
-        { id: 'phase1', label: `Phase 1 (${phase1Apps.length})` },
-        { id: 'phase2', label: `Phase 2 (${phase2Apps.length})` },
-        { id: 'review', label: `Review Meeting (${reviewApps.length})` },
-        { id: 'calendar', label: 'Calendar View' },
-        { id: 'history', label: 'History' },
-      ]
+      { id: 'phase1', label: `Phase 1 (${phase1Apps.length})` },
+      { id: 'phase2', label: `Phase 2 (${phase2Apps.length})` },
+      { id: 'review', label: `Review Meeting (${reviewApps.length})` },
+      { id: 'calendar', label: 'Calendar View' },
+      { id: 'history', label: 'History' },
+    ]
     : [
-        { id: 'calendar', label: 'Calendar View' },
-        { id: 'history', label: 'History' },
-      ];
+      { id: 'calendar', label: 'Calendar View' },
+      { id: 'history', label: 'History' },
+    ];
 
   if (loading) return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -531,9 +580,9 @@ export default function MeetingsPage() {
         />
       </div>
 
-      <Tabs 
+      <Tabs
         value={activePhase}
-        className="w-full" 
+        className="w-full"
         onValueChange={(val) => {
           setActivePhase(val);
           setSelectedEvaluator('');
@@ -590,7 +639,7 @@ export default function MeetingsPage() {
                                   <Checkbox checked={selectedApps.includes(app.id)} onCheckedChange={() => toggleSelect(app.id)} className="rounded-md h-5 w-5 border-slate-300" />
                                 </TableCell>
                                 <TableCell className="py-6 max-w-[220px] md:max-w-[320px] whitespace-normal break-words">
-                                  <Link 
+                                  <Link
                                     href={`/dashboard/applications/${app.id}`}
                                     onClick={(e) => e.stopPropagation()}
                                     className={cn("font-bold text-sm break-words whitespace-normal hover:underline", selectedApps.includes(app.id) ? "text-primary" : "text-slate-900")}
@@ -600,7 +649,7 @@ export default function MeetingsPage() {
                                   <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-wider break-words whitespace-normal">{app.programmeTitle}</p>
                                 </TableCell>
                                 <TableCell className="py-6 max-w-[160px] whitespace-normal break-words">
-                                  <Link 
+                                  <Link
                                     href={`/dashboard/profile/${app.userId}`}
                                     onClick={(e) => e.stopPropagation()}
                                     className="text-xs font-black text-slate-700 hover:text-primary hover:underline transition-colors break-words whitespace-normal"
@@ -632,12 +681,12 @@ export default function MeetingsPage() {
                     <div className="space-y-4">
                       <div className="space-y-1">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Meeting Date</Label>
-                        <Input 
-                          type="date" 
-                          value={meetingDate} 
-                          onChange={(e) => setMeetingDate(e.target.value)} 
+                        <Input
+                          type="date"
+                          value={meetingDate}
+                          onChange={(e) => setMeetingDate(e.target.value)}
                           min={format(new Date(), 'yyyy-MM-dd')}
-                          className="rounded-xl h-11" 
+                          className="rounded-xl h-11"
                         />
                       </div>
                       <div className="space-y-1">
@@ -651,30 +700,59 @@ export default function MeetingsPage() {
                           <Button variant={mode === 'Online' ? 'default' : 'outline'} className="flex-1 rounded-xl h-11 text-xs font-bold" onClick={() => setMode('Online')}>Online</Button>
                         </div>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                          {mode === 'Online' ? 'Meeting Link' : 'Venue'}
-                        </Label>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            {mode === 'Online' ? 'Meeting Link' : 'Venue'}
+                          </Label>
+                          {mode === 'Online' && (
+                            <div className="flex items-center gap-1.5">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleCreateViaGoogleMeetApi}
+                                disabled={isGeneratingMeet}
+                                className="h-6 px-2 text-[10px] font-bold text-primary hover:text-primary hover:bg-primary/10 rounded-lg flex items-center gap-1 transition-colors"
+                                title="Auto-generate live Google Meet link using Google Meet API"
+                              >
+                                {isGeneratingMeet ? (
+                                  <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                                ) : (
+                                  <Sparkles className="h-3 w-3 text-primary" />
+                                )}
+                                <span>Auto-Generate</span>
+                              </Button>
+
+                            </div>
+                          )}
+                        </div>
                         {mode === 'Online' ? (
                           <div className="relative">
-                            <Video className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                            <Input 
-                              value={meetingLink} 
-                              onChange={(e) => setMeetingLink(e.target.value)} 
-                              placeholder="https://meet.google.com/..." 
-                              className="pl-10 rounded-xl h-11 bg-slate-50 border-none focus:ring-primary/20" 
+                            <Video className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+                            <Input
+                              value={meetingLink}
+                              onChange={(e) => setMeetingLink(e.target.value)}
+                              placeholder="https://meet.google.com/..."
+                              className="pl-10 pr-24 rounded-xl h-11 bg-slate-50 border-none focus:ring-primary/20 text-xs font-mono"
                             />
+
                           </div>
                         ) : (
                           <div className="relative">
                             <MapPin className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                            <Input 
-                              value={venue} 
-                              onChange={(e) => setVenue(e.target.value)} 
+                            <Input
+                              value={venue}
+                              onChange={(e) => setVenue(e.target.value)}
                               placeholder="PIERC Office"
-                              className="pl-10 rounded-xl h-11 bg-slate-50 border-none focus:ring-primary/20" 
+                              className="pl-10 rounded-xl h-11 bg-slate-50 border-none focus:ring-primary/20"
                             />
                           </div>
+                        )}
+                        {mode === 'Online' && (
+                          <p className="text-[10px] text-slate-400">
+                            Click <strong className="text-slate-600">Auto-Generate</strong> to provision a real space with Google Meet.
+                          </p>
                         )}
                       </div>
                       {activePhase !== 'phase1' && (
@@ -772,8 +850,8 @@ export default function MeetingsPage() {
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input 
-                placeholder="Search sessions by title, description, mode, location..." 
+              <Input
+                placeholder="Search sessions by title, description, mode, location..."
                 className="h-12 pl-12 rounded-2xl border-slate-100 bg-white shadow-sm focus:ring-primary/20 transition-all font-medium text-sm text-slate-800"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -873,13 +951,13 @@ export default function MeetingsPage() {
                         const pending = phaseKey === 'Phase_1'
                           ? []
                           : evaluatorIds.filter(uid =>
-                              !evaluations[m.applicationId]?.[uid]?.[phaseKey]
-                            );
+                            !evaluations[m.applicationId]?.[uid]?.[phaseKey]
+                          );
 
                         return (
                           <TableRow key={m.id} className="border-slate-100 hover:bg-slate-50/50 transition-colors">
                             <TableCell className="py-8 pl-8 max-w-xs whitespace-normal break-words">
-                              <Link 
+                              <Link
                                 href={`/dashboard/applications/${m.applicationId}`}
                                 className="font-black text-sm text-primary leading-tight uppercase tracking-tight break-words whitespace-normal hover:underline"
                               >
@@ -888,7 +966,7 @@ export default function MeetingsPage() {
                               <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase break-words whitespace-normal">
                                 by{' '}
                                 {app ? (
-                                  <Link 
+                                  <Link
                                     href={`/dashboard/profile/${app.userId}`}
                                     className="hover:text-primary hover:underline transition-colors font-black text-slate-500"
                                   >
@@ -905,9 +983,9 @@ export default function MeetingsPage() {
                             </TableCell>
                             <TableCell className="py-8">
                               {m.mode === 'Online' && m.link ? (
-                                <a 
-                                  href={m.link} 
-                                  target="_blank" 
+                                <a
+                                  href={m.link}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-primary hover:underline font-black text-xs flex items-center"
                                 >
@@ -920,8 +998,8 @@ export default function MeetingsPage() {
                               <Badge className={cn(
                                 "mt-2 font-black text-[9px] uppercase tracking-widest px-2 py-0.5 border-none rounded-full w-fit block",
                                 m.status === 'Scheduled' ? 'bg-blue-100 text-blue-700' :
-                                m.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
-                                m.status === 'Absent' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
+                                  m.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
+                                    m.status === 'Absent' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
                               )}>
                                 {m.status}
                               </Badge>
@@ -973,19 +1051,19 @@ export default function MeetingsPage() {
                                     <MoreVertical className="h-4 w-4" />
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="rounded-2xl shadow-2xl border border-slate-100 p-2 bg-white min-w-[150px]">
-                                    <DropdownMenuItem 
+                                    <DropdownMenuItem
                                       className="rounded-xl p-3 cursor-pointer hover:bg-slate-50 text-slate-700 hover:text-primary font-bold text-xs outline-none"
                                       onClick={() => handleUpdateMeetingStatus(m, 'Absent')}
                                     >
                                       Mark as Absent
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem 
+                                    <DropdownMenuItem
                                       className="rounded-xl p-3 cursor-pointer hover:bg-slate-50 text-slate-700 hover:text-primary font-bold text-xs outline-none"
                                       onClick={() => handleUpdateMeetingStatus(m, 'Completed')}
                                     >
                                       Mark as Completed
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem 
+                                    <DropdownMenuItem
                                       className="rounded-xl p-3 cursor-pointer hover:bg-slate-50 text-slate-700 hover:text-primary font-bold text-xs outline-none"
                                       onClick={() => handleUpdateMeetingStatus(m, 'Cancelled')}
                                     >

@@ -13,7 +13,10 @@ import {
   Settings,
   HelpCircle,
   LogOut,
-  Menu
+  Menu,
+  UserCog,
+  UserCheck,
+  ShieldAlert
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -24,10 +27,12 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { buttonVariants } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/authStore';
 import NotificationCenter from './NotificationCenter';
 import CommandPalette from './CommandPalette';
+import ImpersonateModal from './ImpersonateModal';
 import { UserProfile } from '@/types';
 
 interface HeaderProps {
@@ -37,7 +42,11 @@ interface HeaderProps {
 
 export default function Header({ user, onMenuClick }: HeaderProps) {
   const router = useRouter();
+  const { originalUser, isImpersonating, stopImpersonation } = useAuthStore();
   const [commandOpen, setCommandOpen] = useState(false);
+  const [impersonateOpen, setImpersonateOpen] = useState(false);
+
+  const isSuperAdmin = user.role === 'super_admin' || originalUser?.role === 'super_admin';
 
   // Global Cmd+K / Ctrl+K listener
   useEffect(() => {
@@ -100,7 +109,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
           </button>
         </div>
 
-        <div className="flex items-center space-x-1.5 sm:space-x-4 shrink-0">
+        <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
           {/* Mobile Search Button */}
           <button
             type="button"
@@ -110,6 +119,45 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
           >
             <Search className="h-5 w-5" />
           </button>
+
+          {/* Super Admin Impersonation Action in Navigation Bar */}
+          {isSuperAdmin && (
+            <>
+              {isImpersonating ? (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs shadow-2xs">
+                  <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                  <span className="hidden xl:inline text-slate-500 font-medium">Viewing as:</span>
+                  <span className="font-black max-w-[110px] truncate text-amber-950">{user.displayName || user.email}</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      stopImpersonation();
+                      toast.success('Exited impersonation mode', {
+                        description: 'Restored Super Admin account access.'
+                      });
+                      window.location.href = '/dashboard';
+                    }}
+                    className="h-6 px-2 text-[10px] font-black rounded-lg bg-amber-800 hover:bg-amber-900 text-white shadow-2xs ml-0.5"
+                  >
+                    Exit
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setImpersonateOpen(true)}
+                  className="rounded-xl border-amber-300/90 bg-amber-50/70 hover:bg-amber-100 text-amber-900 font-bold text-xs h-9 px-2.5 sm:px-3 gap-1.5 shadow-2xs hover:border-amber-400 transition-all flex items-center"
+                  title="Super Admin: Impersonate any user by Email or Enrollment/PUMIS ID"
+                >
+                  <UserCog className="h-4 w-4 text-amber-700 shrink-0" />
+                  <span className="hidden sm:inline">Impersonate</span>
+                </Button>
+              )}
+            </>
+          )}
 
           <NotificationCenter />
 
@@ -152,6 +200,37 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
                   <span className="font-bold text-sm">🚀 Apply for Incubation</span>
                 </DropdownMenuItem>
               </Link>
+
+              {/* Impersonate dropdown item for Super Admin */}
+              {isSuperAdmin && (
+                <>
+                  <DropdownMenuSeparator className="my-1" />
+                  {isImpersonating ? (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        stopImpersonation();
+                        toast.success('Exited impersonation mode', {
+                          description: 'Restored Super Admin account access.'
+                        });
+                        window.location.href = '/dashboard';
+                      }}
+                      className="rounded-xl p-3 cursor-pointer group text-amber-700 focus:bg-amber-50 focus:text-amber-800 font-bold"
+                    >
+                      <UserCheck className="mr-3 h-4 w-4 text-amber-600" />
+                      <span className="font-bold text-sm">Exit Impersonation</span>
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      onClick={() => setImpersonateOpen(true)}
+                      className="rounded-xl p-3 cursor-pointer group text-amber-800 focus:bg-amber-50 focus:text-amber-900 font-bold"
+                    >
+                      <UserCog className="mr-3 h-4 w-4 text-amber-600" />
+                      <span className="font-bold text-sm">Impersonate User</span>
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+
               <DropdownMenuSeparator className="my-1" />
               <DropdownMenuItem
                 onClick={handleSignOut}
@@ -171,6 +250,14 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
         isOpen={commandOpen} 
         onClose={() => setCommandOpen(false)} 
       />
+
+      {/* Super Admin Impersonation Modal */}
+      {isSuperAdmin && (
+        <ImpersonateModal
+          open={impersonateOpen}
+          onOpenChange={setImpersonateOpen}
+        />
+      )}
     </>
   );
 }

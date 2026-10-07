@@ -58,6 +58,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               updateDoc(userDocRef, patchUpdates).catch(console.error);
             }
 
+            // Check for active impersonation session if user is super_admin
+            if (updatedProfile.role === 'super_admin' && typeof window !== 'undefined') {
+              try {
+                const stored = sessionStorage.getItem('pierc_impersonation');
+                if (stored) {
+                  const parsed = JSON.parse(stored);
+                  if (parsed.targetUser && parsed.originalUid === firebaseUser.uid) {
+                    useAuthStore.setState({
+                      originalUser: updatedProfile,
+                      user: parsed.targetUser,
+                      isImpersonating: true,
+                      loading: false,
+                    });
+                    return;
+                  }
+                }
+              } catch (e) {
+                console.warn('Failed restoring impersonation:', e);
+              }
+            }
+
             setAuth(updatedProfile, false);
           } else {
             // If profile doesn't exist yet, set basic info but don't hang
@@ -86,6 +107,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
       } else {
         document.cookie = '__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;';
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('pierc_impersonation');
+        }
         setAuth(null, false);
       }
     });

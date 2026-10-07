@@ -14,6 +14,13 @@ service cloud.firestore {
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin']));
     }
 
+    function isSuperAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.get('role', '') == 'super_admin' ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin'));
+    }
+
     function isMentor() {
       return isAuthenticated() && 
         (request.auth.token.get('role', '') == 'mentor' ||
@@ -106,7 +113,15 @@ service cloud.firestore {
         isAdmin() || 
         request.auth.uid in resource.data.get('attendees', [])
       );
-      allow write: if isAdmin();
+      allow create: if isAuthenticated() && (
+        isAdmin() || 
+        request.auth.uid in request.resource.data.get('attendees', [])
+      );
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        request.auth.uid in resource.data.get('attendees', [])
+      );
+      allow delete: if isAdmin();
     }
 
     // Cohorts Collection
@@ -172,6 +187,33 @@ service cloud.firestore {
         chatId.split('_')[0] == request.auth.uid || 
         chatId.split('_')[1] == request.auth.uid
       );
+    }
+
+    // Message Groups: Super Admin creates/manages groups; members can read and post
+    match /message_groups/{groupId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        request.auth.uid in resource.data.get('members', [])
+      );
+      allow create: if isSuperAdmin();
+      allow update: if isAuthenticated() && (
+        isSuperAdmin() || 
+        isAdmin() ||
+        request.auth.uid in resource.data.get('members', [])
+      );
+      allow delete: if isSuperAdmin();
+
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && (
+          isAdmin() || 
+          request.auth.uid in get(/databases/$(database)/documents/message_groups/$(groupId)).data.get('members', [])
+        );
+        allow create: if isAuthenticated() && (
+          isAdmin() || 
+          request.auth.uid in get(/databases/$(database)/documents/message_groups/$(groupId)).data.get('members', [])
+        );
+        allow update, delete: if isSuperAdmin() || (isAuthenticated() && resource.data.senderId == request.auth.uid);
+      }
     }
   }
 }
