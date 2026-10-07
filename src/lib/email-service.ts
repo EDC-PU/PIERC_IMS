@@ -43,7 +43,7 @@ export async function sendEmail({
     }
 
     const mailOptions: any = {
-      from: `"PIERC Portal" <${process.env.GMAIL_EMAIL}>`,
+      from: `"Parul Innovation & Entrepreneurship Research Centre (PIERC)" <${process.env.GMAIL_EMAIL}>`,
       to: recipient,
       subject: subject,
       html: html,

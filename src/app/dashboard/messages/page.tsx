@@ -675,7 +675,7 @@ function MessagesContent() {
                   Hello <strong>${selectedChat.displayName || 'User'}</strong>,
                 </p>
                 <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
-                  You have received a new message from <strong>${senderName}</strong> on the PIERC Portal:
+                  You have received a new message from <strong>${senderName}</strong> on the PIERC:
                 </p>
                 <div style="background-color: #f8fafc; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0; color: #0f172a; font-size: 14px; font-weight: 500; margin-bottom: 20px;">
                   "${notificationPreview}"
@@ -735,7 +735,7 @@ function MessagesContent() {
         if (messages.length > 0 && messages[messages.length - 1].id === messageId) {
           await updateDoc(doc(db, 'message_groups', selectedGroup.id), {
             lastMessage: editingText.trim()
-          }).catch(() => {});
+          }).catch(() => { });
         }
       } else if (selectedChat) {
         const chatId = [user.uid, selectedChat.uid].sort().join('_');
