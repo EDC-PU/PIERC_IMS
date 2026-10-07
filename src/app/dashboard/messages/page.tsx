@@ -23,10 +23,12 @@ import {
   Video,
   Info,
   Hash,
-  CheckCircle2
+  CheckCircle2,
+  ArrowLeft
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { UserProfile } from '@/types';
+import { cn } from '@/lib/utils';
 
 interface Message {
   id: string;
@@ -219,10 +221,13 @@ function MessagesContent() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-200 animate-in fade-in zoom-in-95 duration-500">
+    <div className="flex h-[calc(100vh-8.5rem)] sm:h-[calc(100vh-10rem)] md:h-[calc(100vh-12rem)] overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-2xl ring-1 ring-slate-200 animate-in fade-in zoom-in-95 duration-500">
       {/* Sidebar */}
-      <div className="w-full md:w-80 flex flex-col border-r bg-slate-50/50 backdrop-blur-xl">
-        <div className="p-6 space-y-4">
+      <div className={cn(
+        "w-full md:w-80 flex-col border-r bg-slate-50/50 backdrop-blur-xl shrink-0",
+        selectedChat ? "hidden md:flex" : "flex"
+      )}>
+        <div className="p-4 sm:p-6 space-y-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-black tracking-tight text-slate-900">Messages</h1>
             <Button variant="ghost" size="icon" className="rounded-full bg-white shadow-sm ring-1 ring-slate-100">
@@ -277,23 +282,35 @@ function MessagesContent() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="hidden md:flex flex-1 flex-col bg-white">
+      <div className={cn(
+        "flex-1 flex-col bg-white min-w-0",
+        selectedChat ? "flex" : "hidden md:flex"
+      )}>
         {selectedChat ? (
           <>
             {/* Header */}
-            <div className="p-4 border-b flex justify-between items-center bg-white/80 backdrop-blur-md sticky top-0 z-10">
-              <div className="flex items-center">
-                <Avatar className="h-10 w-10 ring-2 ring-primary/10">
+            <div className="p-3 sm:p-4 border-b flex justify-between items-center bg-white/80 backdrop-blur-md sticky top-0 z-10">
+              <div className="flex items-center min-w-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSelectedChat(null)}
+                  className="md:hidden mr-2 -ml-1 rounded-xl text-slate-500 hover:bg-slate-100 shrink-0"
+                  aria-label="Back to conversations"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <Avatar className="h-9 sm:h-10 w-9 sm:w-10 ring-2 ring-primary/10 shrink-0">
                   <AvatarImage src={selectedChat.photoURL} />
                   <AvatarFallback className="bg-primary text-white font-bold">{(selectedChat.displayName || selectedChat.email || 'U')[0].toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <div className="ml-4">
-                  <h2 className="font-black text-slate-900 text-sm">{selectedChat.displayName || selectedChat.email || 'User'}</h2>
+                <div className="ml-3 sm:ml-4 min-w-0">
+                  <h2 className="font-black text-slate-900 text-sm truncate">{selectedChat.displayName || selectedChat.email || 'User'}</h2>
                   <div className="flex items-center text-[10px] text-emerald-500 font-black uppercase tracking-widest">
                   </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1 shrink-0">
                 <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary rounded-xl"><Phone className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary rounded-xl"><Video className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary rounded-xl"><Info className="h-4 w-4" /></Button>
@@ -343,25 +360,25 @@ function MessagesContent() {
               </ScrollArea>
 
               {/* Input */}
-              <div className="p-6 bg-white border-t">
-                <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
-                  <div className="flex-1 relative">
+              <div className="p-3 sm:p-4 bg-white border-t">
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex-1 relative min-w-0">
                     <Input
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder={`Write to ${selectedChat.displayName || selectedChat.email || 'User'}...`}
-                      className="h-14 rounded-2xl bg-slate-50 border-none px-6 focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                      className="h-11 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 border-none px-4 sm:px-6 text-sm focus:ring-2 focus:ring-primary/20 transition-all font-medium"
                     />
-                    <div className="absolute right-4 top-4 flex items-center space-x-2 text-slate-300">
+                    <div className="hidden sm:flex absolute right-4 top-4 items-center space-x-2 text-slate-300">
                       <Button type="button" variant="ghost" size="icon" className="h-6 w-6 hover:text-primary"><Clock className="h-4 w-4" /></Button>
                     </div>
                   </div>
                   <Button
                     type="submit"
-                    className="h-14 w-14 rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center p-0 transition-transform hover:scale-105 active:scale-95"
+                    className="h-11 sm:h-14 w-11 sm:w-14 rounded-xl sm:rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center p-0 transition-transform hover:scale-105 active:scale-95 shrink-0"
                     disabled={!newMessage.trim()}
                   >
-                    <Send className="h-5 w-5" />
+                    <Send className="h-4 sm:h-5 w-4 sm:w-5" />
                   </Button>
                 </form>
               </div>

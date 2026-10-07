@@ -81,7 +81,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50/50 p-6 relative overflow-hidden">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50/50 p-4 sm:p-6 relative overflow-hidden">
       {/* Background Decor */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 opacity-30">
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-page-entry" />

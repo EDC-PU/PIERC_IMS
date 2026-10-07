@@ -62,33 +62,33 @@ export default function ProgrammesPage() {
             className="group relative flex flex-col glass-card border-white/50 p-1 hover:border-primary/20 transition-all duration-500 hover:scale-[1.01]"
           >
             {/* Card Content Interior */}
-            <div className="bg-white/40 rounded-xl p-8 flex-1 flex flex-col h-full">
-              <div className="flex justify-between items-start mb-8">
+            <div className="bg-white/40 rounded-xl p-5 sm:p-8 flex-1 flex flex-col h-full">
+              <div className="flex justify-between items-start mb-6 sm:mb-8">
                 <div className={cn(
-                  "p-4 rounded-2xl shadow-lg transition-transform group-hover:scale-110 duration-500",
+                  "p-3 sm:p-4 rounded-2xl shadow-lg transition-transform group-hover:scale-110 duration-500",
                   prog.id === 'incubation' ? "bg-gradient-to-br from-orange-400 to-rose-500 text-white" :
                     prog.id === 'growthpad' ? "bg-gradient-to-br from-blue-400 to-indigo-600 text-white" :
                       prog.id === 'need-based' ? "bg-gradient-to-br from-emerald-400 to-teal-600 text-white" :
                         "bg-gradient-to-br from-purple-400 to-fuchsia-600 text-white"
                 )}>
-                  {prog.id === 'incubation' && <Rocket className="h-8 w-8" />}
-                  {prog.id === 'growthpad' && <Zap className="h-8 w-8" />}
-                  {prog.id === 'need-based' && <Target className="h-8 w-8" />}
-                  {prog.id === 'startup-nivesh' && <Users className="h-8 w-8" />}
+                  {prog.id === 'incubation' && <Rocket className="h-6 w-6 sm:h-8 sm:w-8" />}
+                  {prog.id === 'growthpad' && <Zap className="h-6 w-6 sm:h-8 sm:w-8" />}
+                  {prog.id === 'need-based' && <Target className="h-6 w-6 sm:h-8 sm:w-8" />}
+                  {prog.id === 'startup-nivesh' && <Users className="h-6 w-6 sm:h-8 sm:w-8" />}
                 </div>
                 <Badge className={cn(
-                  "px-4 py-1.5 rounded-full font-black tracking-widest text-[10px] uppercase shadow-sm border-none",
+                  "px-3 sm:px-4 py-1 sm:py-1.5 rounded-full font-black tracking-widest text-[9px] sm:text-[10px] uppercase shadow-sm border-none",
                   prog.active ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"
                 )}>
                   {prog.active ? "Applications Open" : "Closed"}
                 </Badge>
               </div>
 
-              <div className="space-y-4 mb-8 flex-1">
-                <h3 className="text-2xl font-black text-slate-900 group-hover:text-primary transition-colors">{prog.title}</h3>
-                <p className="text-slate-500 font-medium leading-relaxed">{prog.description}</p>
+              <div className="space-y-4 mb-6 sm:mb-8 flex-1">
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 group-hover:text-primary transition-colors">{prog.title}</h3>
+                <p className="text-slate-500 font-medium leading-relaxed text-sm sm:text-base">{prog.description}</p>
 
-                <div className="grid grid-cols-2 gap-4 pt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-4">
                   <div className="space-y-1">
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Eligibility</span>
                     <p className="text-xs font-bold text-slate-700 leading-tight">{prog.eligibility}</p>

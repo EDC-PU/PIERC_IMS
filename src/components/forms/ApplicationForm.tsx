@@ -204,18 +204,18 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
 
   return (
     <Card className="max-w-4xl mx-auto overflow-hidden border-none shadow-2xl ring-1 ring-slate-200">
-      <CardHeader className="bg-slate-50/50 border-b pb-8">
+      <CardHeader className="bg-slate-50/50 border-b p-5 sm:p-8">
         <div className="flex items-center space-x-3 mb-2">
           <div className="p-2 bg-primary/10 rounded-lg">
             <Rocket className="h-5 w-5 text-primary" />
           </div>
           <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Programme Application</span>
         </div>
-        <CardTitle className="text-3xl font-black tracking-tight text-slate-900">{programmeTitle}</CardTitle>
+        <CardTitle className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">{programmeTitle}</CardTitle>
         <CardDescription className="text-slate-500 font-medium">Please provide all necessary details about your startup to complete the application.</CardDescription>
       </CardHeader>
       
-      <CardContent className="pt-10">
+      <CardContent className="p-4 sm:p-8 pt-6 sm:pt-10">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-12">
             
@@ -298,78 +298,80 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
                         </div>
                         
                         <div className="border rounded-2xl overflow-hidden bg-slate-50/30">
-                          <Table>
-                            <TableHeader className="bg-slate-100/50">
-                              <TableRow className="border-slate-100">
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3">Name</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3">Email</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3">Phone</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3 text-right">Action</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {form.watch('teamMembers')?.map((member: any, index: number) => (
-                                <TableRow key={index} className="border-slate-100 bg-white/50">
-                                  <TableCell className="py-2">
-                                    <Input 
-                                      placeholder="Full Name" 
-                                      className="h-9 text-xs rounded-lg border-none bg-transparent focus:ring-1 focus:ring-primary/20"
-                                      value={member.name}
-                                      onChange={(e) => {
-                                        const team = [...form.getValues('teamMembers')];
-                                        team[index].name = e.target.value;
-                                        form.setValue('teamMembers', team);
-                                      }}
-                                    />
-                                  </TableCell>
-                                  <TableCell className="py-2">
-                                    <Input 
-                                      placeholder="Email" 
-                                      className="h-9 text-xs rounded-lg border-none bg-transparent focus:ring-1 focus:ring-primary/20"
-                                      value={member.email}
-                                      onChange={(e) => {
-                                        const email = e.target.value;
-                                        if (email.toLowerCase() === user?.email?.toLowerCase()) {
-                                          toast.error('You are already the primary applicant. No need to add yourself to the team list.');
-                                          return;
-                                        }
-                                        const team = [...form.getValues('teamMembers')];
-                                        team[index].email = email;
-                                        form.setValue('teamMembers', team);
-                                      }}
-                                    />
-                                  </TableCell>
-                                  <TableCell className="py-2">
-                                    <Input 
-                                      placeholder="Phone" 
-                                      className="h-9 text-xs rounded-lg border-none bg-transparent focus:ring-1 focus:ring-primary/20"
-                                      value={member.phone}
-                                      onChange={(e) => {
-                                        const team = [...form.getValues('teamMembers')];
-                                        team[index].phone = e.target.value;
-                                        form.setValue('teamMembers', team);
-                                      }}
-                                    />
-                                  </TableCell>
-                                  <TableCell className="py-2 text-right">
-                                    <Button 
-                                      type="button" 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50 rounded-lg"
-                                      onClick={() => {
-                                        const team = [...form.getValues('teamMembers')];
-                                        team.splice(index, 1);
-                                        form.setValue('teamMembers', team);
-                                      }}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </TableCell>
+                          <div className="overflow-x-auto">
+                            <Table className="min-w-[500px]">
+                              <TableHeader className="bg-slate-100/50">
+                                <TableRow className="border-slate-100">
+                                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3">Name</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3">Email</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3">Phone</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3 text-right">Action</TableHead>
                                 </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
+                              </TableHeader>
+                              <TableBody>
+                                {form.watch('teamMembers')?.map((member: any, index: number) => (
+                                  <TableRow key={index} className="border-slate-100 bg-white/50">
+                                    <TableCell className="py-2">
+                                      <Input 
+                                        placeholder="Full Name" 
+                                        className="h-9 text-xs rounded-lg border-none bg-transparent focus:ring-1 focus:ring-primary/20"
+                                        value={member.name}
+                                        onChange={(e) => {
+                                          const team = [...form.getValues('teamMembers')];
+                                          team[index].name = e.target.value;
+                                          form.setValue('teamMembers', team);
+                                        }}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="py-2">
+                                      <Input 
+                                        placeholder="Email" 
+                                        className="h-9 text-xs rounded-lg border-none bg-transparent focus:ring-1 focus:ring-primary/20"
+                                        value={member.email}
+                                        onChange={(e) => {
+                                          const email = e.target.value;
+                                          if (email.toLowerCase() === user?.email?.toLowerCase()) {
+                                            toast.error('You are already the primary applicant. No need to add yourself to the team list.');
+                                            return;
+                                          }
+                                          const team = [...form.getValues('teamMembers')];
+                                          team[index].email = email;
+                                          form.setValue('teamMembers', team);
+                                        }}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="py-2">
+                                      <Input 
+                                        placeholder="Phone" 
+                                        className="h-9 text-xs rounded-lg border-none bg-transparent focus:ring-1 focus:ring-primary/20"
+                                        value={member.phone}
+                                        onChange={(e) => {
+                                          const team = [...form.getValues('teamMembers')];
+                                          team[index].phone = e.target.value;
+                                          form.setValue('teamMembers', team);
+                                        }}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="py-2 text-right">
+                                      <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50 rounded-lg"
+                                        onClick={() => {
+                                          const team = [...form.getValues('teamMembers')];
+                                          team.splice(index, 1);
+                                          form.setValue('teamMembers', team);
+                                        }}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
                         </div>
                       </FormItem>
                     )}
@@ -573,85 +575,87 @@ export default function ApplicationForm({ programmeId, programmeTitle }: { progr
                         </div>
                         
                         <div className="border rounded-2xl overflow-hidden bg-slate-50/30">
-                          <Table>
-                            <TableHeader className="bg-slate-100/50">
-                              <TableRow className="border-slate-100">
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3">Name</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3">Email</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3">Phone</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3 text-right">Action</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {form.watch('teamMembers')?.map((member: any, index: number) => (
-                                <TableRow key={index} className="border-slate-100 bg-white/50">
-                                  <TableCell className="py-2">
-                                    <Input 
-                                      placeholder="Full Name" 
-                                      className="h-9 text-xs rounded-lg border-none bg-transparent focus:ring-1 focus:ring-primary/20"
-                                      value={member.name}
-                                      onChange={(e) => {
-                                        const team = [...form.getValues('teamMembers')];
-                                        team[index].name = e.target.value;
-                                        form.setValue('teamMembers', team);
-                                      }}
-                                    />
-                                  </TableCell>
-                                  <TableCell className="py-2">
-                                    <Input 
-                                      placeholder="Email" 
-                                      className="h-9 text-xs rounded-lg border-none bg-transparent focus:ring-1 focus:ring-primary/20"
-                                      value={member.email}
-                                      onChange={(e) => {
-                                        const email = e.target.value;
-                                        if (email.toLowerCase() === user?.email?.toLowerCase()) {
-                                          toast.error('You are already the primary applicant. No need to add yourself to the team list.');
-                                          return;
-                                        }
-                                        const team = [...form.getValues('teamMembers')];
-                                        team[index].email = email;
-                                        form.setValue('teamMembers', team);
-                                      }}
-                                    />
-                                  </TableCell>
-                                  <TableCell className="py-2">
-                                    <Input 
-                                      placeholder="Phone" 
-                                      className="h-9 text-xs rounded-lg border-none bg-transparent focus:ring-1 focus:ring-primary/20"
-                                      value={member.phone}
-                                      onChange={(e) => {
-                                        const team = [...form.getValues('teamMembers')];
-                                        team[index].phone = e.target.value;
-                                        form.setValue('teamMembers', team);
-                                      }}
-                                    />
-                                  </TableCell>
-                                  <TableCell className="py-2 text-right">
-                                    <Button 
-                                      type="button" 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50 rounded-lg"
-                                      onClick={() => {
-                                        const team = [...form.getValues('teamMembers')];
-                                        team.splice(index, 1);
-                                        form.setValue('teamMembers', team);
-                                      }}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </TableCell>
+                          <div className="overflow-x-auto">
+                            <Table className="min-w-[500px]">
+                              <TableHeader className="bg-slate-100/50">
+                                <TableRow className="border-slate-100">
+                                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3">Name</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3">Email</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3">Phone</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 py-3 text-right">Action</TableHead>
                                 </TableRow>
-                              ))}
-                              {(!form.watch('teamMembers') || form.watch('teamMembers').length === 0) && (
-                                <TableRow>
-                                  <TableCell colSpan={4} className="py-8 text-center text-slate-400 text-xs font-medium italic">
-                                    No team members added yet. Click 'Add Member' to start.
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                            </TableBody>
-                          </Table>
+                              </TableHeader>
+                              <TableBody>
+                                {form.watch('teamMembers')?.map((member: any, index: number) => (
+                                  <TableRow key={index} className="border-slate-100 bg-white/50">
+                                    <TableCell className="py-2">
+                                      <Input 
+                                        placeholder="Full Name" 
+                                        className="h-9 text-xs rounded-lg border-none bg-transparent focus:ring-1 focus:ring-primary/20"
+                                        value={member.name}
+                                        onChange={(e) => {
+                                          const team = [...form.getValues('teamMembers')];
+                                          team[index].name = e.target.value;
+                                          form.setValue('teamMembers', team);
+                                        }}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="py-2">
+                                      <Input 
+                                        placeholder="Email" 
+                                        className="h-9 text-xs rounded-lg border-none bg-transparent focus:ring-1 focus:ring-primary/20"
+                                        value={member.email}
+                                        onChange={(e) => {
+                                          const email = e.target.value;
+                                          if (email.toLowerCase() === user?.email?.toLowerCase()) {
+                                            toast.error('You are already the primary applicant. No need to add yourself to the team list.');
+                                            return;
+                                          }
+                                          const team = [...form.getValues('teamMembers')];
+                                          team[index].email = email;
+                                          form.setValue('teamMembers', team);
+                                        }}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="py-2">
+                                      <Input 
+                                        placeholder="Phone" 
+                                        className="h-9 text-xs rounded-lg border-none bg-transparent focus:ring-1 focus:ring-primary/20"
+                                        value={member.phone}
+                                        onChange={(e) => {
+                                          const team = [...form.getValues('teamMembers')];
+                                          team[index].phone = e.target.value;
+                                          form.setValue('teamMembers', team);
+                                        }}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="py-2 text-right">
+                                      <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50 rounded-lg"
+                                        onClick={() => {
+                                          const team = [...form.getValues('teamMembers')];
+                                          team.splice(index, 1);
+                                          form.setValue('teamMembers', team);
+                                        }}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                                {(!form.watch('teamMembers') || form.watch('teamMembers').length === 0) && (
+                                  <TableRow>
+                                    <TableCell colSpan={4} className="py-8 text-center text-slate-400 text-xs font-medium italic">
+                                      No team members added yet. Click 'Add Member' to start.
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
                         </div>
                         <FormMessage />
                       </FormItem>

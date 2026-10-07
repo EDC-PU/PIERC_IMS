@@ -112,16 +112,16 @@ export default function StartupsDirectory() {
   );
 
   return (
-    <div className="space-y-8 p-6 md:p-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">Startup Directory</h1>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">Startup Directory</h1>
           <p className="text-slate-500 font-medium mt-1">
             Exploring <span className="font-bold text-slate-900"><AnimatedNumber value={startups.length} /></span> ventures in the PIERC ecosystem.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={handleExportStartups} className="rounded-xl font-bold flex items-center gap-2 border-slate-200 h-11 px-6 shadow-sm bg-white hover:bg-slate-50">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="outline" onClick={handleExportStartups} className="rounded-xl font-bold flex items-center gap-2 border-slate-200 h-11 px-4 sm:px-6 shadow-sm bg-white hover:bg-slate-50">
             <Download className="h-4 w-4" /> Export CSV
           </Button>
           <div className="bg-slate-100 p-1 rounded-xl flex">

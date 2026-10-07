@@ -1474,7 +1474,7 @@ export default function ApplicationDetailsPage() {
   };
 
   return (
-    <div className="space-y-8 p-6 md:p-8 animate-in fade-in duration-700">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-700">
       <Button
         variant="ghost"
         onClick={() => router.back()}

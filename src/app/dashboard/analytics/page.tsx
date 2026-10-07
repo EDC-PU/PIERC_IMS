@@ -218,13 +218,13 @@ export default function AnalyticsPage() {
                   <LivePulseBadge label="Pipeline Rate" variant="neutral" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="h-[300px] w-full">
+              <CardContent className="min-w-0">
+                <div className="h-[300px] w-full min-w-0">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart layout="vertical" data={funnelData} margin={{ left: 40, right: 20 }}>
+                    <BarChart layout="vertical" data={funnelData} margin={{ left: 10, right: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
                       <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" stroke="#64748b" fontSize={11} width={120} tickLine={false} />
+                      <YAxis dataKey="name" type="category" stroke="#64748b" fontSize={10} width={100} tickLine={false} />
                       <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
                       <Bar dataKey="value" radius={[0, 8, 8, 0]} isAnimationActive={true} animationDuration={1200} animationEasing="ease-out">
                         {funnelData.map((entry, index) => (
@@ -239,7 +239,7 @@ export default function AnalyticsPage() {
           </CardHoverEffect>
 
           <CardHoverEffect delay={0.25}>
-            <Card className="border-none shadow-md rounded-2xl glass-card h-full">
+            <Card className="border-none shadow-md rounded-2xl glass-card h-full min-w-0">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
@@ -249,10 +249,10 @@ export default function AnalyticsPage() {
                   <LivePulseBadge label="Trending Up" variant="success" pulse />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="h-[300px] w-full">
+              <CardContent className="min-w-0">
+                <div className="h-[300px] w-full min-w-0">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={growthData} margin={{ right: 20 }}>
+                    <LineChart data={growthData} margin={{ left: -15, right: 15 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                       <XAxis dataKey="month" stroke="#64748b" fontSize={11} tickLine={false} />
                       <YAxis stroke="#64748b" fontSize={11} tickLine={false} />

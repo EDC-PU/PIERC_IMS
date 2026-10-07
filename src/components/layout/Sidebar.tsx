@@ -224,24 +224,24 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
       {/* Mobile Sidebar backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-primary backdrop-blur-sm lg:hidden transition-opacity duration-300 animate-in fade-in"
+          className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm lg:hidden transition-opacity duration-300 animate-in fade-in"
           onClick={() => setIsOpen?.(false)}
         />
       )}
       <aside className={cn(
-        "bg-white border-r flex flex-col shadow-sm transition-all duration-300 z-50 shrink-0",
+        "bg-white border-r flex flex-col shadow-2xl lg:shadow-sm transition-transform duration-300 z-50 shrink-0",
         // Desktop styles
-        "lg:flex lg:w-70 lg:static lg:h-auto",
-        // Mobile styles
-        "fixed inset-y-0 left-0 w-70 h-full lg:translate-x-0 transform",
-        isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        "lg:flex lg:w-72 lg:static lg:h-auto lg:translate-x-0",
+        // Mobile & Tablet drawer styles
+        "fixed inset-y-0 left-0 w-72 max-w-[85vw] h-full transform",
+        isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="p-6 border-b bg-slate-50/50 flex items-center justify-between">
+        <div className="p-4 sm:p-6 border-b bg-slate-50/50 flex items-center justify-between">
           <Link href="/dashboard" className="block" onClick={() => setIsOpen?.(false)}>
             <img
               src="https://firebasestorage.googleapis.com/v0/b/pierc-portal-9bd82.firebasestorage.app/o/logo.svg?alt=media&token=52188887-32e9-4dcf-bec6-dde7175eaa86"
               alt="PIERC Logo"
-              className="h-12 w-auto object-contain"
+              className="h-10 sm:h-12 w-auto object-contain"
             />
           </Link>
           {setIsOpen && (
@@ -253,14 +253,14 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
             </button>
           )}
         </div>
-        <nav className="flex-1 p-6 space-y-2 overflow-y-auto">
+        <nav className="flex-1 p-3 sm:p-6 space-y-1 sm:space-y-2 overflow-y-auto">
           {filteredItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               onClick={() => setIsOpen?.(false)}
               className={cn(
-                "flex items-center justify-between px-4 py-3 rounded-2xl transition-all duration-300 group",
+                "flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl transition-all duration-300 group",
                 pathname === item.href
                   ? "text-white shadow-xl shadow-primary/20 scale-[1.02]"
                   : "text-slate-500 hover:bg-slate-50 hover:text-primary"
@@ -292,13 +292,13 @@ export default function Sidebar({ user, isOpen = false, setIsOpen }: SidebarProp
             </Link>
           ))}
         </nav>
-        <div className="p-6 border-t bg-slate-50/30">
+        <div className="p-4 sm:p-6 border-t bg-slate-50/30">
           <button
             onClick={() => {
               setIsOpen?.(false);
               handleLogout();
             }}
-            className="flex items-center space-x-3 px-4 py-3 w-full text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded-2xl transition-all font-bold text-[13px]"
+            className="flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 w-full text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded-2xl transition-all font-bold text-[13px]"
           >
             <LogOut className="h-5 w-5" />
             <span>Logout Session</span>

@@ -428,10 +428,10 @@ export default function MeetingsPage() {
   if (loading) return <div className="p-8 text-center animate-pulse text-slate-400 font-bold">Loading Evaluation Pipeline...</div>;
 
   return (
-    <div className="space-y-8 p-6 md:p-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">Evaluation & Review Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">Evaluation & Review Dashboard</h1>
           <p className="text-slate-500 font-medium mt-1">Coordinate multi-phase evaluations and project selection panels.</p>
         </div>
         <div>

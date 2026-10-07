@@ -5,40 +5,40 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
 } from '@/components/ui/card';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  ShieldCheck, 
-  Search, 
-  MoreVertical, 
-  UserPlus, 
-  ShieldAlert, 
-  Mail, 
+import {
+  ShieldCheck,
+  Search,
+  MoreVertical,
+  UserPlus,
+  ShieldAlert,
+  Mail,
   Phone,
   Building,
   UserCog,
@@ -164,32 +164,34 @@ export default function ManageUsersPage() {
           <h1 className="text-4xl font-black tracking-tight text-slate-900">User Management</h1>
           <p className="text-slate-500 font-medium mt-1">Manage platform roles and access levels for all members.</p>
         </div>
-        <div className="flex items-center space-x-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-80">
             <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="Search by name or email..." 
-              className="pl-10 h-11 rounded-xl bg-white border-slate-200 focus:ring-2 focus:ring-primary/20"
+            <Input
+              placeholder="Search by name or email..."
+              className="pl-10 h-11 rounded-xl bg-white border-slate-200 focus:ring-2 focus:ring-primary/20 w-full"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button variant="outline" onClick={handleExportUsers} className="h-11 rounded-xl font-bold flex items-center gap-2 border-slate-200 bg-white hover:bg-slate-50">
-            <Download className="h-4 w-4" /> Export CSV
-          </Button>
-          <Button className="h-11 rounded-xl shadow-lg shadow-primary/20 font-bold">
-            <UserPlus className="mr-2 h-4 w-4" /> Add Member
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleExportUsers} className="flex-1 sm:flex-none h-11 rounded-xl font-bold flex items-center justify-center gap-2 border-slate-200 bg-white hover:bg-slate-50 text-xs sm:text-sm">
+              <Download className="h-4 w-4" /> Export CSV
+            </Button>
+            <Button className="flex-1 sm:flex-none h-11 rounded-xl shadow-lg shadow-primary/20 font-bold flex items-center justify-center text-xs sm:text-sm">
+              <UserPlus className="mr-1.5 sm:mr-2 h-4 w-4" /> Add Member
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Filters Bar */}
       <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-slate-50/50">
-        <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
-          <div className="flex-1"></div>
-          <div className="flex gap-2 shrink-0">
-            <select 
-              className="h-11 px-4 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+        <CardContent className="p-3 sm:p-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div className="flex-1 hidden sm:block"></div>
+          <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full sm:w-auto">
+            <select
+              className="h-11 px-4 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20 shadow-sm flex-1 sm:flex-none"
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
             >
@@ -199,8 +201,8 @@ export default function ManageUsersPage() {
               <option value="mentor">Mentor</option>
               <option value="user">Startup Founder / User</option>
             </select>
-            <select 
-              className="h-11 px-4 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+            <select
+              className="h-11 px-4 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20 shadow-sm flex-1 sm:flex-none"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
             >
@@ -219,29 +221,29 @@ export default function ManageUsersPage() {
           <div className="w-full overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50/50">
-              <TableRow className="hover:bg-transparent border-slate-100">
-                <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-slate-400">User Profile</TableHead>
-                <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-slate-400">Contact & ID</TableHead>
-                <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-slate-400">Institute</TableHead>
-                <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-slate-400">Role</TableHead>
-                <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-slate-400 text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i} className="animate-pulse">
-                    <TableCell colSpan={5} className="py-8"><div className="h-12 bg-slate-100 rounded-2xl w-full" /></TableCell>
-                  </TableRow>
-                ))
-              ) : filteredUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="py-20 text-center text-slate-400 font-medium">No users found matching your search.</TableCell>
+                <TableRow className="hover:bg-transparent border-slate-100">
+                  <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-slate-400">User Profile</TableHead>
+                  <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-slate-400">Contact & ID</TableHead>
+                  <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-slate-400">Institute</TableHead>
+                  <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-slate-400">Role</TableHead>
+                  <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-slate-400 text-right">Actions</TableHead>
                 </TableRow>
-              ) : (
-                filteredUsers.map((u) => (
-                  <TableRow key={u.uid} className="hover:bg-slate-50/50 transition-colors border-slate-100">
-                    <TableCell className="py-4">
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i} className="animate-pulse">
+                      <TableCell colSpan={5} className="py-8"><div className="h-12 bg-slate-100 rounded-2xl w-full" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-20 text-center text-slate-400 font-medium">No users found matching your search.</TableCell>
+                  </TableRow>
+                ) : (
+                  filteredUsers.map((u) => (
+                    <TableRow key={u.uid} className="hover:bg-slate-50/50 transition-colors border-slate-100">
+                      <TableCell className="py-4">
                         <Link href={`/dashboard/profile/${u.enrollmentNumber || u.uid}`} className="flex items-center space-x-4 group">
                           <Avatar className="h-11 w-11 ring-2 ring-white shadow-sm transition-transform group-hover:scale-110">
                             <AvatarImage src={u.photoURL} />
@@ -254,69 +256,69 @@ export default function ManageUsersPage() {
                             <p className="text-xs text-slate-400 font-medium">{u.category}</p>
                           </div>
                         </Link>
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center text-xs text-slate-500 font-medium">
-                          <Mail className="h-3 w-3 mr-2" /> {u.email}
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center text-xs text-slate-500 font-medium">
+                            <Mail className="h-3 w-3 mr-2" /> {u.email}
+                          </div>
+                          <div className="flex items-center text-xs text-slate-500 font-medium">
+                            <Phone className="h-3 w-3 mr-2" /> {u.contactNumber || 'N/A'}
+                          </div>
                         </div>
-                        <div className="flex items-center text-xs text-slate-500 font-medium">
-                          <Phone className="h-3 w-3 mr-2" /> {u.contactNumber || 'N/A'}
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="flex items-center text-xs text-slate-600 font-bold uppercase tracking-tight">
+                          <Building className="h-3 w-3 mr-2 text-slate-400" />
+                          {u.institute || 'External'}
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <div className="flex items-center text-xs text-slate-600 font-bold uppercase tracking-tight">
-                        <Building className="h-3 w-3 mr-2 text-slate-400" />
-                        {u.institute || 'External'}
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <Badge className={`${roleColors[u.role] || 'bg-slate-100'} border-none px-3 py-1 font-black text-[10px] uppercase tracking-widest`}>
-                        {u.role.replace('_', ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="py-4 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-xl p-2 text-slate-400 hover:bg-white hover:shadow-md transition-all outline-none">
-                          <MoreVertical className="h-4 w-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 rounded-2xl shadow-2xl border-none ring-1 ring-slate-100">
-                          <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-4 pb-2">Modify Access Level</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="p-3 cursor-pointer group" onClick={() => updateUserRole(u.uid, 'user')}>
-                            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center mr-3 group-hover:bg-primary/10 transition-colors">
-                              <UserPlus className="h-4 w-4 text-slate-600 group-hover:text-primary" />
-                            </div>
-                            <span className="font-bold text-sm">Regular User</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="p-3 cursor-pointer group" onClick={() => updateUserRole(u.uid, 'mentor')}>
-                            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center mr-3 group-hover:bg-amber-100 transition-colors">
-                              <Building className="h-4 w-4 text-amber-600" />
-                            </div>
-                            <span className="font-bold text-sm">Mentor Access</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="p-3 cursor-pointer group" onClick={() => updateUserRole(u.uid, 'admin')}>
-                            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center mr-3 group-hover:bg-blue-100 transition-colors">
-                              <ShieldCheck className="h-4 w-4 text-blue-600" />
-                            </div>
-                            <span className="font-bold text-sm">Admin Access</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="p-3 cursor-pointer group text-rose-600" onClick={() => updateUserRole(u.uid, 'super_admin')}>
-                            <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center mr-3 group-hover:bg-rose-100 transition-colors">
-                              <ShieldAlert className="h-4 w-4 text-rose-600" />
-                            </div>
-                            <span className="font-bold text-sm">Super Admin</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <Badge className={`${roleColors[u.role] || 'bg-slate-100'} border-none px-3 py-1 font-black text-[10px] uppercase tracking-widest`}>
+                          {u.role.replace('_', ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-4 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-xl p-2 text-slate-400 hover:bg-white hover:shadow-md transition-all outline-none">
+                            <MoreVertical className="h-4 w-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56 rounded-2xl shadow-2xl border-none ring-1 ring-slate-100">
+                            <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-4 pb-2">Modify Access Level</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="p-3 cursor-pointer group" onClick={() => updateUserRole(u.uid, 'user')}>
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center mr-3 group-hover:bg-primary/10 transition-colors">
+                                <UserPlus className="h-4 w-4 text-slate-600 group-hover:text-primary" />
+                              </div>
+                              <span className="font-bold text-sm">Regular User</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="p-3 cursor-pointer group" onClick={() => updateUserRole(u.uid, 'mentor')}>
+                              <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center mr-3 group-hover:bg-amber-100 transition-colors">
+                                <Building className="h-4 w-4 text-amber-600" />
+                              </div>
+                              <span className="font-bold text-sm">Mentor Access</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="p-3 cursor-pointer group" onClick={() => updateUserRole(u.uid, 'admin')}>
+                              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center mr-3 group-hover:bg-blue-100 transition-colors">
+                                <ShieldCheck className="h-4 w-4 text-blue-600" />
+                              </div>
+                              <span className="font-bold text-sm">Admin Access</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="p-3 cursor-pointer group text-rose-600" onClick={() => updateUserRole(u.uid, 'super_admin')}>
+                              <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center mr-3 group-hover:bg-rose-100 transition-colors">
+                                <ShieldAlert className="h-4 w-4 text-rose-600" />
+                              </div>
+                              <span className="font-bold text-sm">Super Admin</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>

@@ -49,18 +49,19 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 bg-white border-b flex items-center justify-between px-6 shrink-0">
-      <div className="flex items-center flex-1 max-w-md gap-3">
+    <header className="h-16 bg-white border-b flex items-center justify-between px-3 sm:px-6 shrink-0">
+      <div className="flex items-center flex-1 max-w-md gap-2 sm:gap-3 min-w-0">
         {onMenuClick && (
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-2 -ml-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+            className="lg:hidden p-2 -ml-1 sm:-ml-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors shrink-0"
+            aria-label="Open navigation menu"
           >
             <Menu className="h-6 w-6" />
           </button>
         )}
-        <Link href="/dashboard" className="lg:hidden flex items-center">
-          <img src="https://firebasestorage.googleapis.com/v0/b/pierc-portal-9bd82.firebasestorage.app/o/logo.svg?alt=media&token=52188887-32e9-4dcf-bec6-dde7175eaa86" alt="PIERC Logo" className="h-8 w-auto object-contain" />
+        <Link href="/dashboard" className="lg:hidden flex items-center shrink-0">
+          <img src="https://firebasestorage.googleapis.com/v0/b/pierc-portal-9bd82.firebasestorage.app/o/logo.svg?alt=media&token=52188887-32e9-4dcf-bec6-dde7175eaa86" alt="PIERC Logo" className="h-7 sm:h-8 w-auto object-contain" />
         </Link>
         <div className="relative w-full hidden md:block">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
@@ -72,7 +73,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
         </div>
       </div>
 
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-2 sm:space-x-4 shrink-0">
         <NotificationCenter />
 
         <DropdownMenu>

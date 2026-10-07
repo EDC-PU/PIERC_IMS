@@ -319,7 +319,7 @@ export default function EvaluatePage() {
   );
 
   return (
-    <div className="max-w-[1600px] mx-auto p-6 md:p-8 animate-in fade-in duration-700">
+    <div className="max-w-[1600px] mx-auto animate-in fade-in duration-700">
       {!selectedApp ? (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -335,16 +335,16 @@ export default function EvaluatePage() {
               <p className="text-slate-500 font-medium mt-1">Review startup submissions and manage your evaluation history.</p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4">
-              <Button variant="outline" onClick={handleExportEvaluations} className="rounded-2xl h-14 px-6 font-bold flex items-center gap-2 border-slate-200 shadow-sm bg-white hover:bg-slate-50">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full md:w-auto">
+              <Button variant="outline" onClick={handleExportEvaluations} className="rounded-2xl h-12 sm:h-14 px-5 sm:px-6 font-bold flex items-center justify-center gap-2 border-slate-200 shadow-sm bg-white hover:bg-slate-50 text-xs sm:text-sm">
                 <Download className="h-4 w-4" /> Export CSV
               </Button>
 
-              <div className="relative w-full md:w-80">
+              <div className="relative flex-1 md:w-80">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder="Search startups..."
-                  className="pl-12 rounded-2xl h-14 border-slate-200 bg-white shadow-sm focus:ring-primary/10 transition-all font-medium text-sm"
+                  className="pl-12 rounded-2xl h-12 sm:h-14 border-slate-200 bg-white shadow-sm focus:ring-primary/10 transition-all font-medium text-sm w-full"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -421,7 +421,7 @@ export default function EvaluatePage() {
                       className="group border-none shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden hover:shadow-2xl hover:ring-primary/20 transition-all duration-500 cursor-pointer h-full"
                       onClick={() => setSelectedApp(app)}
                     >
-                      <CardHeader className="bg-slate-50/50 p-8">
+                      <CardHeader className="bg-slate-50/50 p-5 sm:p-8">
                         <div className="flex justify-between items-start mb-4">
                           <Badge className="bg-white text-slate-900 border-slate-200 px-3 py-1 font-black text-[9px] uppercase tracking-widest rounded-full">
                             {getPhase(app.id)}
@@ -541,15 +541,15 @@ export default function EvaluatePage() {
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
             {/* Startup Data Panel */}
             <div className="xl:col-span-8 space-y-6">
-              <div className="bg-white ring-1 ring-slate-100 rounded-xl p-10 space-y-10 shadow-sm">
+              <div className="bg-white ring-1 ring-slate-100 rounded-xl p-5 sm:p-8 md:p-10 space-y-6 sm:space-y-10 shadow-sm">
                 {/* Header Information */}
                 <div className="border-b border-slate-50 pb-8 flex flex-col md:flex-row justify-between items-start gap-6">
                   <div>
                     <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Startup Name</Label>
-                    <h2 className="text-4xl font-black text-slate-900 mt-1 ">
+                    <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mt-1">
                       {selectedApp.data?.startupTitle || "Untitled Innovation"}
                     </h2>
-                    <div className="flex items-center space-x-3 mt-4">
+                    <div className="flex flex-wrap items-center gap-3 mt-4">
                       <Badge className="bg-primary text-white font-black px-4 py-1 rounded-full border-none text-[9px] uppercase tracking-widest">
                         {getPhase(selectedApp.id)} Evaluation
                       </Badge>
@@ -576,7 +576,7 @@ export default function EvaluatePage() {
                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 flex items-center">
                       <Users className="h-4 w-4 mr-2 text-primary" /> Team Members
                     </h3>
-                    <div className="p-6 bg-slate-50 rounded-3xl font-bold text-slate-700 leading-relaxed">
+                    <div className="p-4 sm:p-6 bg-slate-50 rounded-3xl font-bold text-slate-700 leading-relaxed">
                       {selectedApp.data?.teamDetails || selectedApp.data?.startupTitle || "Founder and Core Team"}
                     </div>
                   </div>
@@ -585,7 +585,7 @@ export default function EvaluatePage() {
                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 flex items-center">
                       <Target className="h-4 w-4 mr-2 text-primary" /> Detailed Description / Problem Statement
                     </h3>
-                    <div className="p-8 bg-slate-50 rounded-xl font-medium text-slate-600 leading-loose">
+                    <div className="p-5 sm:p-8 bg-slate-50 rounded-xl font-medium text-slate-600 leading-loose">
                       {selectedApp.data?.problemStatement || "No problem statement provided."}
                     </div>
                   </div>
@@ -594,7 +594,7 @@ export default function EvaluatePage() {
                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 flex items-center">
                       <BrainCircuit className="h-4 w-4 mr-2 text-primary" /> Solution
                     </h3>
-                    <div className="p-8 bg-slate-50 rounded-xl font-medium text-slate-600 leading-loose">
+                    <div className="p-5 sm:p-8 bg-slate-50 rounded-xl font-medium text-slate-600 leading-loose">
                       {selectedApp.data?.solutionStatement || "No solution statement provided."}
                     </div>
                   </div>
@@ -603,7 +603,7 @@ export default function EvaluatePage() {
                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 flex items-center">
                       <Lightbulb className="h-4 w-4 mr-2 text-primary" /> Uniqueness
                     </h3>
-                    <div className="p-6 bg-slate-50 rounded-3xl font-bold text-slate-700 leading-relaxed">
+                    <div className="p-4 sm:p-6 bg-slate-50 rounded-3xl font-bold text-slate-700 leading-relaxed">
                       {selectedApp.data?.uniqueness || "Innovation in core technology and implementation."}
                     </div>
                   </div>
@@ -671,10 +671,10 @@ export default function EvaluatePage() {
             {/* Sticky Score Sidebar */}
             <div className="xl:col-span-4">
               <Card className="border-none shadow-2xl ring-1 ring-slate-200 rounded-xl bg-white overflow-hidden sticky top-8">
-                <CardHeader className="bg-slate-50/50 border-b p-10 text-center">
+                <CardHeader className="bg-slate-50/50 border-b p-5 sm:p-10 text-center">
                   <CardTitle className="text-2xl font-black text-slate-900 uppercase tracking-tight">Evaluator Verdict</CardTitle>
                 </CardHeader>
-                <CardContent className="p-10 space-y-10">
+                <CardContent className="p-5 sm:p-10 space-y-6 sm:space-y-10">
                   {alreadyEvaluated ? (
                     <div className="py-12 text-center space-y-4 animate-in zoom-in duration-500">
                       <div className="h-24 w-24 bg-green-50 rounded-xl flex items-center justify-center mx-auto shadow-sm">

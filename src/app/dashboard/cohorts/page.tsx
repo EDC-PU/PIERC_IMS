@@ -264,14 +264,14 @@ export default function CohortsPage() {
           <h1 className="text-2xl font-bold text-slate-900">Cohort Management</h1>
           <p className="text-slate-500">Create cohorts and view assigned startups.</p>
         </div>
-        <div>
+        <div className="w-full sm:w-auto">
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="rounded-xl shadow-lg shadow-red-200/50 bg-[#D91A2A] text-white hover:bg-[#D91A2A]/90 font-bold border-none px-6">
+              <Button className="w-full sm:w-auto rounded-xl shadow-lg shadow-red-200/50 bg-[#D91A2A] text-white hover:bg-[#D91A2A]/90 font-bold border-none px-6">
                 <Plus className="mr-2 h-4 w-4" /> Create Cohort
               </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-xl border-none shadow-2xl bg-white max-w-md w-full p-6">
+            <DialogContent className="rounded-xl border-none shadow-2xl bg-white max-w-md w-[95vw] p-4 sm:p-6">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-black text-slate-900">Create New Cohort</DialogTitle>
                 <DialogDescription className="text-slate-500 font-medium pt-2">
@@ -289,7 +289,7 @@ export default function CohortsPage() {
                     onChange={(e) => setNewCohortName(e.target.value)}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Start Date</label>
                     <Input
@@ -438,7 +438,7 @@ export default function CohortsPage() {
 
       {/* Edit Cohort Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="rounded-xl border-none shadow-2xl bg-white max-w-md w-full p-6">
+        <DialogContent className="rounded-xl border-none shadow-2xl bg-white max-w-md w-[95vw] p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-2xl font-black text-slate-900">Edit Cohort Details</DialogTitle>
             <DialogDescription className="text-slate-500 font-medium pt-2">
@@ -456,7 +456,7 @@ export default function CohortsPage() {
                 onChange={(e) => setEditCohortName(e.target.value)}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Start Date</label>
                 <Input
@@ -499,7 +499,7 @@ export default function CohortsPage() {
 
       {/* Confirm Email Notification Dialog */}
       <Dialog open={showConfirmEmailDialog} onOpenChange={setShowConfirmEmailDialog}>
-        <DialogContent className="rounded-xl border-none shadow-2xl bg-white max-w-md w-full p-8 text-center space-y-6">
+        <DialogContent className="rounded-xl border-none shadow-2xl bg-white max-w-md w-[95vw] p-5 sm:p-8 text-center space-y-6">
           <DialogHeader className="space-y-3">
             <div className="mx-auto w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center text-red-600">
               <Calendar className="h-6 w-6" />

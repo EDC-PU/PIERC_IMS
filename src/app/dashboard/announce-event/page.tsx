@@ -565,11 +565,11 @@ export default function AnnounceEventPage() {
 
           <Dialog open={showAddDialog} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
-              <Button className="rounded-xl bg-[#D91A2A] text-white hover:bg-[#D91A2A]/90 font-black px-6 shadow-lg shadow-primary/20 h-12">
+              <Button className="rounded-xl bg-[#D91A2A] text-white hover:bg-[#D91A2A]/90 font-black px-6 shadow-lg shadow-primary/20 h-12 w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" /> Add New Event
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl p-8 bg-white shadow-2xl">
+            <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl p-4 sm:p-6 md:p-8 bg-white shadow-2xl">
               <DialogHeader>
                 <DialogTitle className="text-xl font-black text-slate-900">
                   {editingEvent ? 'Edit Event Details' : 'Add New Portal Event'}
@@ -951,13 +951,13 @@ export default function AnnounceEventPage() {
                 </div>
 
                 {/* Submit Options */}
-                <div className="flex justify-end gap-3 pt-4 border-t">
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t">
                   <Button
                     type="button"
                     variant="outline"
                     disabled={submitting || isUploading}
                     onClick={(e) => handleAnnounce(e, 'draft')}
-                    className="h-11 px-5 rounded-xl border-slate-200 font-bold text-xs uppercase"
+                    className="h-11 px-5 rounded-xl border-slate-200 font-bold text-xs uppercase w-full sm:w-auto"
                   >
                     {submitting ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null} 
                     {editingEvent ? 'Save as Draft' : 'Save as Draft'}
@@ -966,7 +966,7 @@ export default function AnnounceEventPage() {
                     type="button"
                     disabled={submitting || isUploading}
                     onClick={(e) => handleAnnounce(e, 'published')}
-                    className="h-11 px-6 rounded-xl bg-[#D91A2A] text-white hover:bg-[#D91A2A]/90 font-black text-xs uppercase tracking-wider"
+                    className="h-11 px-6 rounded-xl bg-[#D91A2A] text-white hover:bg-[#D91A2A]/90 font-black text-xs uppercase tracking-wider w-full sm:w-auto"
                   >
                     {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null} 
                     {editingEvent ? 'Update & Publish' : 'Announce & Publish'}
@@ -1172,7 +1172,7 @@ export default function AnnounceEventPage() {
 
               {/* Registration list registry */}
               <Card className="lg:col-span-2 border-none shadow-xl bg-white rounded-3xl overflow-hidden">
-                <CardHeader className="border-b bg-slate-50/50 p-6 flex flex-row items-center justify-between">
+                <CardHeader className="border-b bg-slate-50/50 p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <CardTitle className="text-base font-black text-slate-900 flex items-center gap-1.5">
                       <UserCheck className="h-5 w-5 text-[#D91A2A]" /> Registered Participants
@@ -1185,7 +1185,7 @@ export default function AnnounceEventPage() {
                     <Button
                       size="sm"
                       onClick={exportParticipantsCSV}
-                      className="rounded-xl border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 font-bold text-[10px] uppercase h-9 px-4 flex items-center gap-1.5 shadow-sm"
+                      className="rounded-xl border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 font-bold text-[10px] uppercase h-9 px-4 flex items-center gap-1.5 shadow-sm w-full sm:w-auto"
                     >
                       <FileSpreadsheet className="h-4 w-4" /> Export CSV
                     </Button>
@@ -1205,32 +1205,34 @@ export default function AnnounceEventPage() {
                       No users have registered for this event yet.
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="font-bold uppercase text-[10px] text-slate-400 tracking-wider">User</TableHead>
-                          <TableHead className="font-bold uppercase text-[10px] text-slate-400 tracking-wider">Email</TableHead>
-                          <TableHead className="font-bold uppercase text-[10px] text-slate-400 tracking-wider">Category</TableHead>
-                          <TableHead className="font-bold uppercase text-[10px] text-slate-400 tracking-wider">Contact</TableHead>
-                          <TableHead className="font-bold uppercase text-[10px] text-slate-400 tracking-wider">Institute</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {registeredParticipants.map((u) => (
-                          <TableRow key={u.uid}>
-                            <TableCell className="font-black text-slate-900 text-xs">{u.displayName}</TableCell>
-                            <TableCell className="text-xs font-mono">{u.email}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="text-[9px] font-black bg-slate-50 px-2 py-0.5">
-                                {u.category || 'User'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-xs text-slate-600">{u.contactNumber || u.phoneNumber || 'N/A'}</TableCell>
-                            <TableCell className="text-xs text-slate-600">{u.institute || 'N/A'}</TableCell>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="font-bold uppercase text-[10px] text-slate-400 tracking-wider">User</TableHead>
+                            <TableHead className="font-bold uppercase text-[10px] text-slate-400 tracking-wider">Email</TableHead>
+                            <TableHead className="font-bold uppercase text-[10px] text-slate-400 tracking-wider">Category</TableHead>
+                            <TableHead className="font-bold uppercase text-[10px] text-slate-400 tracking-wider">Contact</TableHead>
+                            <TableHead className="font-bold uppercase text-[10px] text-slate-400 tracking-wider">Institute</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {registeredParticipants.map((u) => (
+                            <TableRow key={u.uid}>
+                              <TableCell className="font-black text-slate-900 text-xs whitespace-nowrap">{u.displayName}</TableCell>
+                              <TableCell className="text-xs font-mono">{u.email}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="text-[9px] font-black bg-slate-50 px-2 py-0.5">
+                                  {u.category || 'User'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-xs text-slate-600 whitespace-nowrap">{u.contactNumber || u.phoneNumber || 'N/A'}</TableCell>
+                              <TableCell className="text-xs text-slate-600 min-w-[120px]">{u.institute || 'N/A'}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>

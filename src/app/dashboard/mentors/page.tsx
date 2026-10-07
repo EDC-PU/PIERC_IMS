@@ -160,21 +160,23 @@ export default function MentorsPage() {
   return (
     <RoleGuard allowedRoles={['admin', 'super_admin']} fallbackMessage="Only Administrators and Managers can access the Mentors Management page.">
       <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">PIERC Mentors</h1>
+          <h1 className="text-2xl font-bold text-slate-900">PIERC Mentors</h1>
           <p className="text-slate-500">Manage and assign expert mentors to startups.</p>
         </div>
         
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportMentors} className="rounded-xl font-bold flex items-center gap-2 border-slate-200 bg-white hover:bg-slate-50">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={handleExportMentors} className="flex-1 sm:flex-none rounded-xl font-bold flex items-center justify-center gap-2 border-slate-200 bg-white hover:bg-slate-50 text-xs sm:text-sm">
             <Download className="h-4 w-4" /> Export CSV
           </Button>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button><Plus className="mr-2 h-4 w-4" /> Add New Mentor</Button>
+              <Button className="flex-1 sm:flex-none rounded-xl font-bold flex items-center justify-center text-xs sm:text-sm">
+                <Plus className="mr-1.5 sm:mr-2 h-4 w-4" /> Add New Mentor
+              </Button>
             </DialogTrigger>
-          <DialogContent className="rounded-xl border-none shadow-2xl max-w-md">
+          <DialogContent className="rounded-xl border-none shadow-2xl max-w-md w-[95vw] p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle className="text-2xl font-black text-slate-900">Assign New Mentor</DialogTitle>
               <DialogDescription className="text-slate-500 font-medium">
@@ -226,7 +228,7 @@ export default function MentorsPage() {
       </div>
     </div>
 
-      <div className="relative max-w-sm">
+      <div className="relative max-w-sm w-full">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
         <Input
           placeholder="Search mentors by name or expertise..."

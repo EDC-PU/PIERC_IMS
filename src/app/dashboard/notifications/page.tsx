@@ -71,14 +71,14 @@ export default function NotificationsPage() {
   if (loading) return <div className="p-8 text-center animate-pulse">Loading Notifications...</div>;
 
   return (
-    <div className="max-w-[1000px] mx-auto p-6 md:p-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+    <div className="max-w-[1000px] mx-auto animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 mb-8 sm:mb-10">
         <div>
           <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest text-primary mb-2">
             <Bell className="h-4 w-4" />
             <span>Communication Center</span>
           </div>
-          <h1 className="text-4xl font-black tracking-tighter text-slate-900">Your Notifications</h1>
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-slate-900">Your Notifications</h1>
           <p className="text-slate-500 font-medium mt-1">Stay updated with your innovation pipeline and programme milestones.</p>
         </div>
         
@@ -86,7 +86,7 @@ export default function NotificationsPage() {
           <Button 
             onClick={markAllAsRead}
             variant="outline"
-            className="rounded-xl font-bold border-primary/10 text-primary hover:bg-primary hover:text-white transition-all"
+            className="w-full sm:w-auto rounded-xl font-bold border-primary/10 text-primary hover:bg-primary hover:text-white transition-all text-xs sm:text-sm"
           >
             <Check className="mr-2 h-4 w-4" /> Mark all as read
           </Button>

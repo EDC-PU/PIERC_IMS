@@ -254,20 +254,20 @@ export default function UserEventsPage() {
                     </Button>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-[10px] font-bold text-slate-500 uppercase">
+                  <div className="pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 text-[10px] font-bold text-slate-500 uppercase">
                     <div className="flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5 text-red-500" />
+                      <Calendar className="h-3.5 w-3.5 text-red-500 shrink-0" />
                       <span>{new Date(event.date).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5 text-blue-500" />
+                      <Clock className="h-3.5 w-3.5 text-blue-500 shrink-0" />
                       <span>{event.time || 'N/A'}</span>
                     </div>
-                    <div className="col-span-2 flex items-start gap-1.5 mt-1">
+                    <div className="sm:col-span-2 flex items-start gap-1.5 mt-0.5">
                       {event.mode === 'Online' ? (
-                        <Video className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                        <Video className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
                       ) : (
-                        <MapPin className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                        <MapPin className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
                       )}
                       <span className="truncate flex-1">
                         {event.mode === 'Online' ? (
@@ -284,14 +284,14 @@ export default function UserEventsPage() {
               </div>
 
               {!isPast && (
-                <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-4">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase">
+                <div className="p-4 sm:p-6 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase text-center sm:text-left">
                     {event.registeredUsers?.length || 0} Registered
                   </div>
                    <Button
                     onClick={() => handleRegister(event.id, isRegistered)}
                     disabled={registeringId === event.id || (isRegistered && event.allowCancellation === false)}
-                    className={`rounded-xl px-5 py-2 font-black text-xs uppercase tracking-wider transition-all duration-300 ${isRegistered
+                    className={`w-full sm:w-auto rounded-xl px-5 py-2 font-black text-xs uppercase tracking-wider transition-all duration-300 ${isRegistered
                         ? event.allowCancellation === false
                           ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
                           : 'border border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
@@ -332,7 +332,7 @@ export default function UserEventsPage() {
         <div className="space-y-6">
           {/* Search, Filter, and Sort Controls */}
           <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
-            <CardContent className="p-4 md:p-6 flex flex-col md:flex-row gap-4">
+            <CardContent className="p-4 md:p-6 flex flex-col md:flex-row gap-3 sm:gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input 
@@ -342,9 +342,9 @@ export default function UserEventsPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <div className="flex gap-2 shrink-0">
+              <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full md:w-auto">
                 <select 
-                  className="h-12 px-6 rounded-2xl border border-slate-100 bg-white text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20"
+                  className="h-12 px-4 sm:px-6 rounded-2xl border border-slate-100 bg-white text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20 flex-1 sm:flex-none"
                   value={modeFilter}
                   onChange={(e) => setModeFilter(e.target.value)}
                 >
@@ -353,7 +353,7 @@ export default function UserEventsPage() {
                   <option value="Offline">Offline</option>
                 </select>
                 <select 
-                  className="h-12 px-6 rounded-2xl border border-slate-100 bg-white text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20"
+                  className="h-12 px-4 sm:px-6 rounded-2xl border border-slate-100 bg-white text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20 flex-1 sm:flex-none"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                 >
@@ -398,7 +398,7 @@ export default function UserEventsPage() {
 
       {/* Learn More Details Dialog */}
       <Dialog open={detailEvent !== null} onOpenChange={(open) => { if (!open) setDetailEvent(null); }}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl p-8 bg-white shadow-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl p-4 sm:p-6 md:p-8 bg-white shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black text-slate-900">{detailEvent?.title}</DialogTitle>
             <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
@@ -413,7 +413,7 @@ export default function UserEventsPage() {
               dangerouslySetInnerHTML={{ __html: detailEvent?.description || '' }}
             />
 
-            <div className="pt-6 border-t border-slate-100 grid grid-cols-2 gap-4 text-xs font-bold text-slate-500 uppercase">
+            <div className="pt-6 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-bold text-slate-500 uppercase">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-red-500" />
                 <span>Date: {detailEvent ? new Date(detailEvent.date).toLocaleDateString(undefined, { dateStyle: 'long' }) : ''}</span>

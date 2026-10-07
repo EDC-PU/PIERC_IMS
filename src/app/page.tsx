@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
 import { AnimatedPillTabs } from '@/components/ui/animated';
-import { Rocket, Shield, Users, BarChart3, ChevronRight, CheckCircle2, Calendar, ArrowUpRight, LayoutDashboard, HelpCircle, ChevronDown, Sparkles } from 'lucide-react';
+import { Rocket, Shield, Users, BarChart3, ChevronRight, CheckCircle2, Calendar, ArrowUpRight, LayoutDashboard, HelpCircle, ChevronDown, Sparkles, Menu, X } from 'lucide-react';
 
 const Facebook = ({ className }: { className?: string }) => (
   <svg
@@ -92,19 +92,10 @@ const teamMembers = [
   },
   {
     id: 3,
-    name: "Hardik Kharva",
+    name: "Mr. Hardik Kharva",
     position: "Deputy Director",
     category: "Leadership",
     image: "https://i.ibb.co/0pSb7B8w/hardik.jpg",
-    facebook: "https://facebook.com",
-    linkedIn: "https://linkedin.com"
-  },
-  {
-    id: 4,
-    name: "Mr. Hutesh Baviskar",
-    position: "Incubation Manager",
-    category: "Incubation",
-    image: "https://i.ibb.co/zT49sqfY/DSC08987.jpg",
     facebook: "https://facebook.com",
     linkedIn: "https://linkedin.com"
   },
@@ -119,7 +110,7 @@ const teamMembers = [
   },
   {
     id: 6,
-    name: "Pancham Baria",
+    name: "Mr. Pancham Baria",
     position: "Centre Head, Surat Startup Studio",
     category: "Startup Studios",
     image: "https://i.ibb.co/twTnffw1/DSC08998.jpg",
@@ -128,7 +119,7 @@ const teamMembers = [
   },
   {
     id: 7,
-    name: "Juned Shaikh",
+    name: "Mr. Juned Shaikh",
     position: "Centre Head, Ahmedabad Startup Studio",
     category: "Startup Studios",
     image: "https://i.ibb.co/LzjZN9Jk/juned-sheikh.jpg",
@@ -137,7 +128,7 @@ const teamMembers = [
   },
   {
     id: 8,
-    name: "Anup Chaudhari",
+    name: "Mr. Anup Chaudhari",
     position: "Manager, Incubation Program",
     category: "Incubation",
     image: "https://i.ibb.co/JWn1khBV/anup.jpg",
@@ -146,7 +137,7 @@ const teamMembers = [
   },
   {
     id: 9,
-    name: "Prashant Khanna",
+    name: "Mr. Prashant Khanna",
     position: "Manager, Incubation Program",
     category: "Incubation",
     image: "https://i.ibb.co/BbqJKQs/DSC09001.jpg",
@@ -155,7 +146,7 @@ const teamMembers = [
   },
   {
     id: 10,
-    name: "Himanshu Das",
+    name: "Mr. Himanshu Das",
     position: "Fablab Engineer",
     category: "Tech & FabLab",
     image: "https://i.ibb.co/5gSbw7M3/himanshu.jpg",
@@ -164,7 +155,7 @@ const teamMembers = [
   },
   {
     id: 11,
-    name: "Tushar Thakur",
+    name: "Mr. Tushar Thakur",
     position: "Assistant Manager",
     category: "Incubation",
     image: "https://i.ibb.co/pjrgBqM3/DSC09006.jpg",
@@ -172,17 +163,8 @@ const teamMembers = [
     linkedIn: "https://linkedin.com"
   },
   {
-    id: 12,
-    name: "Paritosh Sharma",
-    position: "Assistant Manager",
-    category: "Incubation",
-    image: "https://i.ibb.co/jPJ0gtSs/paritosh.jpg",
-    facebook: "https://facebook.com",
-    linkedIn: "https://linkedin.com"
-  },
-  {
     id: 13,
-    name: "Shlok Solanki",
+    name: "Mr. Shlok Solanki",
     position: "Assistant Social Media Manager",
     category: "Tech & Media",
     image: "https://i.ibb.co/whJRV9rr/DSC09030.jpg",
@@ -191,7 +173,7 @@ const teamMembers = [
   },
   {
     id: 14,
-    name: "Soor Solanki",
+    name: "Mr. Soor Solanki",
     position: "Facility Manager, Vadodara Startup Studio",
     category: "Startup Studios",
     image: "https://i.ibb.co/1Y3YTM7B/DSC09023.jpg",
@@ -204,60 +186,127 @@ export default function LandingPage() {
   const { user } = useAuthStore();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [teamFilter, setTeamFilter] = useState('All');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const filteredTeam = teamFilter === 'All'
     ? teamMembers
     : teamMembers.filter((m) => m.category === teamFilter);
 
+  const navLinks = [
+    { href: '#about', label: 'About Us' },
+    { href: '#offerings', label: 'Offerings' },
+    { href: '#events', label: 'Events' },
+    { href: '#team', label: 'Team' },
+    { href: '#programs', label: 'Programs' },
+    { href: '#faq', label: 'FAQ' },
+    { href: '#contact', label: 'Contact' },
+  ];
+
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50/30">
+    <div className="flex flex-col min-h-screen bg-slate-50/30 overflow-x-hidden">
       {/* Navigation */}
-      <header className="px-6 lg:px-12 h-20 flex items-center justify-between sticky top-0 glass z-50">
+      <header className="px-4 sm:px-6 lg:px-12 h-20 flex items-center justify-between sticky top-0 glass z-50">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center">
             <img
               src="https://firebasestorage.googleapis.com/v0/b/pierc-portal-9bd82.firebasestorage.app/o/logo.svg?alt=media&token=52188887-32e9-4dcf-bec6-dde7175eaa86"
               alt="PIERC Logo"
-              className="h-10 w-auto object-contain"
+              className="h-9 sm:h-10 w-auto object-contain"
             />
           </Link>
         </div>
-        <nav className="hidden lg:flex gap-8 text-sm font-bold text-slate-600">
-          <Link href="#about" className="hover:text-primary transition-all">About Us</Link>
-          <Link href="#offerings" className="hover:text-primary transition-all">Offerings</Link>
-          <Link href="#events" className="hover:text-primary transition-all">Events</Link>
-          <Link href="#team" className="hover:text-primary transition-all">Team</Link>
-          <Link href="#programs" className="hover:text-primary transition-all">Programs</Link>
-          <Link href="#faq" className="hover:text-primary transition-all">FAQ</Link>
-          <Link href="#contact" className="hover:text-primary transition-all">Contact</Link>
-        </nav>
-        <div className="flex gap-4">
-          {user ? (
-            <Button variant="outline" className="rounded-xl border-primary/20 text-primary font-bold px-6 h-11" asChild>
-              <Link href="/dashboard"><LayoutDashboard className="h-4 w-4 mr-2" /> Dashboard</Link>
-            </Button>
-          ) : (
-            <>
-              <Button variant="ghost" className="font-bold text-slate-600" asChild>
-                <Link href="/login">Login</Link>
-              </Button>
-              <Button className="rounded-xl shadow-lg shadow-red-200/50 font-bold px-6 border-none text-white" style={{ backgroundColor: '#D91A2A', color: '#FFFFFF' }} asChild>
-                <Link href="/register">Apply Now</Link>
-              </Button>
-            </>
-          )}
-        </div>
-      </header>
 
-      <main className="flex-1 animate-page-entry">
-        {/* Hero Section */}
-        <section className="relative pt-24 pb-16 px-6 lg:px-12 text-center space-y-8 max-w-6xl mx-auto overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 opacity-40">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] animate-pulse" />
-            <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-rose-200/20 rounded-full blur-[150px] animate-pulse delay-700" />
+        {/* Desktop Navigation Links */}
+        <nav className="hidden lg:flex gap-8 text-sm font-bold text-slate-600">
+          {navLinks.map((link) => (
+            <Link key={link.href} href={link.href} className="hover:text-primary transition-all">
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Desktop Auth CTAs & Mobile Menu Button */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="hidden sm:flex items-center gap-3">
+            {user ? (
+              <Button variant="outline" className="rounded-xl border-primary/20 text-primary font-bold px-5 h-10" asChild>
+                <Link href="/dashboard"><LayoutDashboard className="h-4 w-4 mr-2" /> Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" className="font-bold text-slate-600" asChild>
+                  <Link href="/login">Login</Link>
+                </Button>
+                <Button className="rounded-xl shadow-lg shadow-red-200/50 font-bold px-5 h-10 border-none text-white" style={{ backgroundColor: '#D91A2A', color: '#FFFFFF' }} asChild>
+                  <Link href="/register">Apply Now</Link>
+                </Button>
+              </>
+            )}
           </div>
 
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
+          {/* Mobile hamburger trigger */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+            aria-label="Toggle Navigation Menu"
+          >
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 top-20 z-40 lg:hidden">
+            <div
+              className="fixed inset-0 top-20 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <div className="relative bg-white border-b shadow-2xl p-6 space-y-6 max-h-[calc(100vh-5rem)] overflow-y-auto animate-in slide-in-from-top-4 duration-300">
+              <nav className="flex flex-col space-y-3">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-4 py-3 rounded-xl text-base font-bold text-slate-700 hover:bg-slate-50 hover:text-primary transition-all"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+
+              <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">
+                {user ? (
+                  <Button className="w-full rounded-xl font-bold h-12" style={{ backgroundColor: '#D91A2A', color: '#FFFFFF' }} asChild>
+                    <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                      <LayoutDashboard className="h-4 w-4 mr-2" /> Go to Dashboard
+                    </Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" className="w-full rounded-xl font-bold h-12" asChild>
+                      <Link href="/login" onClick={() => setMobileMenuOpen(false)}>Login</Link>
+                    </Button>
+                    <Button className="w-full rounded-xl font-bold h-12 border-none text-white shadow-lg shadow-red-200/50" style={{ backgroundColor: '#D91A2A', color: '#FFFFFF' }} asChild>
+                      <Link href="/register" onClick={() => setMobileMenuOpen(false)}>Apply Now</Link>
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </header>
+
+      <main className="flex-1 animate-page-entry min-w-0">
+        {/* Hero Section */}
+        <section className="relative pt-16 sm:pt-24 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-12 text-center space-y-6 sm:space-y-8 max-w-6xl mx-auto overflow-hidden">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 opacity-40">
+            <div className="absolute top-1/4 left-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-primary/10 rounded-full blur-[100px] sm:blur-[120px] animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/4 w-[350px] sm:w-[500px] h-[350px] sm:h-[500px] bg-rose-200/20 rounded-full blur-[120px] sm:blur-[150px] animate-pulse delay-700" />
+          </div>
+
+          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white border border-slate-200 text-slate-600 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
@@ -265,23 +314,23 @@ export default function LandingPage() {
             Ideate • Innovate • Incubate
           </div>
 
-          <h1 className="text-5xl md:text-8xl font-black tracking-tight text-slate-900 leading-[0.95]">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tight text-slate-900 leading-[1.05] sm:leading-[0.95] break-words">
             Parul Innovation & <br />
             <span className="text-gradient-red">Entrepreneurship</span> <br />
             Research Centre
           </h1>
 
-          <p className="text-lg md:text-xl text-slate-500 max-w-3xl mx-auto leading-relaxed font-medium">
+          <p className="text-base sm:text-lg md:text-xl text-slate-500 max-w-3xl mx-auto leading-relaxed font-medium px-2">
             Empowering the next generation of job creators through a world-class startup support system at Parul University.
           </p>
 
-          <div className="flex flex-col sm:flex-row justify-center gap-4 pt-6">
+          <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 sm:gap-4 pt-4 sm:pt-6 max-w-sm sm:max-w-none mx-auto">
             {user ? (
-              <Button size="lg" className="h-16 px-10 text-lg shadow-2xl shadow-primary/30 rounded-2xl font-bold" asChild>
+              <Button size="lg" className="h-14 sm:h-16 px-8 sm:px-10 text-base sm:text-lg shadow-2xl shadow-primary/30 rounded-2xl font-bold w-full sm:w-auto" asChild>
                 <Link href="/dashboard">Return to Dashboard <LayoutDashboard className="ml-2 h-5 w-5" /></Link>
               </Button>
             ) : (
-              <Button size="lg" className="h-16 px-10 text-lg shadow-2xl shadow-red-200/50 rounded-2xl font-bold border-none text-white" style={{ backgroundColor: '#D91A2A', color: '#FFFFFF' }} asChild>
+              <Button size="lg" className="h-14 sm:h-16 px-8 sm:px-10 text-base sm:text-lg shadow-2xl shadow-red-200/50 rounded-2xl font-bold border-none text-white w-full sm:w-auto" style={{ backgroundColor: '#D91A2A', color: '#FFFFFF' }} asChild>
                 <Link href="/register">Apply for Startup Support <ChevronRight className="ml-2 h-5 w-5" /></Link>
               </Button>
             )}
@@ -289,8 +338,8 @@ export default function LandingPage() {
         </section>
 
         {/* Real Stats Section */}
-        <section className="py-12 px-6 lg:px-12">
-          <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <section className="py-8 sm:py-12 px-4 sm:px-6 lg:px-12">
+          <div className="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             {[
               { label: 'Startups Incubated', value: '212+' },
               { label: 'Funds to Support', value: '₹8 Cr+' },
@@ -299,8 +348,8 @@ export default function LandingPage() {
               { label: 'Startup Revenue', value: '₹28 Cr+' },
               { label: 'Networking Events', value: '84+' },
             ].map((stat, i) => (
-              <div key={i} className="glass-card p-6 text-center border-white/40 hover:scale-105 transition-all duration-500">
-                <p className="text-2xl md:text-3xl font-black text-slate-900 mb-1">{stat.value}</p>
+              <div key={i} className="glass-card p-4 sm:p-6 text-center border-white/40 hover:scale-105 transition-all duration-500">
+                <p className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 mb-1">{stat.value}</p>
                 <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest leading-tight">{stat.label}</p>
               </div>
             ))}
@@ -308,28 +357,28 @@ export default function LandingPage() {
         </section>
 
         {/* About Section */}
-        <section id="about" className="py-24 px-6 lg:px-12">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <h2 className="text-sm font-black text-primary uppercase tracking-[0.3em]">Established 2013</h2>
-                <h3 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 leading-tight">
+        <section id="about" className="py-12 sm:py-24 px-4 sm:px-6 lg:px-12">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="space-y-6 sm:space-y-8">
+              <div className="space-y-3 sm:space-y-4">
+                <h2 className="text-xs sm:text-sm font-black text-primary uppercase tracking-[0.3em]">Established 2013</h2>
+                <h3 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 leading-tight">
                   Driving the Hub of <br /><span className="text-gradient-red">Creative Entrepreneurship</span>
                 </h3>
               </div>
-              <p className="text-slate-500 leading-relaxed text-lg font-medium">
+              <p className="text-slate-500 leading-relaxed text-base sm:text-lg font-medium">
                 The Entrepreneurship Development Cell (EDC) is one of the creative hubs of Parul University formed to support students and aspiring entrepreneurs. In 2015, the university registered a Section 8 company, Parul Innovation and Entrepreneurship Research Center (PIERC) as an incubator to formally extend its services from Idea Stage to Growth Stage.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="glass-card p-8 space-y-3 bg-white/80">
-                  <h4 className="text-xl font-bold text-slate-900">Our Vision</h4>
-                  <p className="text-sm text-slate-500 leading-relaxed font-medium">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="glass-card p-5 sm:p-8 space-y-2 sm:space-y-3 bg-white/80">
+                  <h4 className="text-lg sm:text-xl font-bold text-slate-900">Our Vision</h4>
+                  <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
                     To create a Startup Support System that enables 5% of our students to follow an entrepreneurial career.
                   </p>
                 </div>
-                <div className="glass-card p-8 space-y-3 bg-white/80 border-primary/10">
-                  <h4 className="text-xl font-bold text-slate-900">Our Mission</h4>
-                  <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                <div className="glass-card p-5 sm:p-8 space-y-2 sm:space-y-3 bg-white/80 border-primary/10">
+                  <h4 className="text-lg sm:text-xl font-bold text-slate-900">Our Mission</h4>
+                  <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
                     To foster the culture of Research, Innovation and Entrepreneurship in students and faculty members.
                   </p>
                 </div>
@@ -337,7 +386,7 @@ export default function LandingPage() {
             </div>
             <div className="relative group">
               <div className="absolute -inset-4 bg-gradient-to-tr from-primary/20 to-rose-200/20 rounded-xl blur-2xl opacity-50 group-hover:opacity-80 transition-all" />
-              <div className="relative aspect-square rounded-xl overflow-hidden shadow-2xl border-8 border-white">
+              <div className="relative aspect-square rounded-xl overflow-hidden shadow-2xl border-4 sm:border-8 border-white">
                 <div className="absolute inset-0 bg-slate-200 animate-pulse" />
                 <img
                   src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1000"
@@ -350,13 +399,13 @@ export default function LandingPage() {
         </section>
 
         {/* Offerings Section */}
-        <section id="offerings" className="py-24 px-6 lg:px-12 bg-white/40 backdrop-blur-3xl">
+        <section id="offerings" className="py-12 sm:py-24 px-4 sm:px-6 lg:px-12 bg-white/40 backdrop-blur-3xl">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-20 space-y-4">
-              <h2 className="text-sm font-black text-primary uppercase tracking-[0.3em]">What We Do</h2>
-              <h3 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900">PIERC Ecosystem Offerings</h3>
+            <div className="text-center mb-12 sm:mb-20 space-y-3 sm:space-y-4">
+              <h2 className="text-xs sm:text-sm font-black text-primary uppercase tracking-[0.3em]">What We Do</h2>
+              <h3 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900">PIERC Ecosystem Offerings</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {[
                 { title: 'Counselling & Support', desc: 'Ensuring entrepreneurial ideas meet current global needs.', icon: Users },
                 { title: 'Grants & Funding', desc: 'Access to Pre-Seed, Seed, Angel, and VC opportunities.', icon: BarChart3 },
@@ -367,11 +416,11 @@ export default function LandingPage() {
                 { title: 'Community Connect', desc: 'Networking opportunities with ecosystem stakeholders.', icon: Users },
                 { title: 'Startup Events', desc: 'Festivals, Demo Days, Expos, Pitching, and E-Talks.', icon: Calendar },
               ].map((offering, i) => (
-                <div key={i} className="glass-card p-8 space-y-4 hover:border-primary/30 group transition-all duration-300 hover:-translate-y-2">
+                <div key={i} className="glass-card p-5 sm:p-8 space-y-3 sm:space-y-4 hover:border-primary/30 group transition-all duration-300 hover:-translate-y-2">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
                     <offering.icon className="h-6 w-6" />
                   </div>
-                  <h4 className="text-lg font-bold text-slate-900">{offering.title}</h4>
+                  <h4 className="text-base sm:text-lg font-bold text-slate-900">{offering.title}</h4>
                   <p className="text-xs text-slate-500 leading-relaxed font-medium">{offering.desc}</p>
                 </div>
               ))}
@@ -380,16 +429,16 @@ export default function LandingPage() {
         </section>
 
         {/* Events Section */}
-        <section id="events" className="py-24 px-6 lg:px-12">
+        <section id="events" className="py-12 sm:py-24 px-4 sm:px-6 lg:px-12">
           <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
-              <div className="space-y-4">
-                <h2 className="text-sm font-black text-primary uppercase tracking-[0.3em]">Flagship Events</h2>
-                <h3 className="text-4xl font-black tracking-tight text-slate-900">Ecosystem Catalysts</h3>
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 sm:mb-16 gap-4 sm:gap-6">
+              <div className="space-y-2 sm:space-y-4">
+                <h2 className="text-xs sm:text-sm font-black text-primary uppercase tracking-[0.3em]">Flagship Events</h2>
+                <h3 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">Ecosystem Catalysts</h3>
               </div>
-              <Button variant="outline" className="font-bold border-2 rounded-xl">View Gallery</Button>
+              <Button variant="outline" className="font-bold border-2 rounded-xl w-full sm:w-auto">View Gallery</Button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
               {[
                 { name: 'Vadodara Startup Festival', desc: 'Networking and learning platform for leading entrepreneurs.' },
                 { name: 'Vadodara Hackathon', desc: 'The largest regional technical problem-solving event.' },
@@ -402,9 +451,9 @@ export default function LandingPage() {
                     alt={event.name}
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 p-8 z-20 space-y-2">
-                    <h4 className="text-2xl font-black text-white">{event.name}</h4>
-                    <p className="text-sm text-white/80 font-medium line-clamp-2">{event.desc}</p>
+                  <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 z-20 space-y-2">
+                    <h4 className="text-xl sm:text-2xl font-black text-white">{event.name}</h4>
+                    <p className="text-xs sm:text-sm text-white/80 font-medium line-clamp-2">{event.desc}</p>
                   </div>
                 </div>
               ))}
@@ -413,16 +462,16 @@ export default function LandingPage() {
         </section>
 
         {/* Team Section */}
-        <section id="team" className="py-24 px-6 lg:px-12 bg-white/40 backdrop-blur-3xl">
+        <section id="team" className="py-12 sm:py-24 px-4 sm:px-6 lg:px-12 bg-white/40 backdrop-blur-3xl">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-10 space-y-4">
-              <h2 className="text-sm font-black text-primary uppercase tracking-[0.3em]">Our People</h2>
-              <h3 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900">Meet the PIERC Team</h3>
-              <p className="text-slate-500 max-w-2xl mx-auto font-medium">The dedicated professionals driving innovation and supporting entrepreneurial dreams at Parul University.</p>
+            <div className="text-center mb-8 sm:mb-10 space-y-3 sm:space-y-4">
+              <h2 className="text-xs sm:text-sm font-black text-primary uppercase tracking-[0.3em]">Our People</h2>
+              <h3 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900">Meet the PIERC Team</h3>
+              <p className="text-slate-500 max-w-2xl mx-auto font-medium text-sm sm:text-base px-2">The dedicated professionals driving innovation and supporting entrepreneurial dreams at Parul University.</p>
             </div>
 
             {/* Smooth Pill Filter Bar */}
-            <div className="flex justify-center mb-12 overflow-x-auto pb-2">
+            <div className="flex justify-start sm:justify-center mb-10 sm:mb-12 overflow-x-auto pb-2 px-2 max-w-full">
               <AnimatedPillTabs
                 options={[
                   { id: 'All', label: 'All Team', count: teamMembers.length },

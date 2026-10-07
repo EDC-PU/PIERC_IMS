@@ -87,18 +87,18 @@ export default function ProfilePage() {
   const canViewFullPII = currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.uid === profile.uid || currentUser?.role === 'mentor';
 
   return (
-    <div className="space-y-8 p-6 md:p-8 animate-in fade-in duration-700">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-700">
       {/* Header Card */}
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl -m-2 blur-2xl opacity-50"></div>
         <Card className="border-none shadow-2xl ring-1 ring-slate-100 rounded-xl overflow-hidden bg-white/80 backdrop-blur-xl relative">
-          <CardContent className="p-8 md:p-12">
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12">
+          <CardContent className="p-4 sm:p-8 md:p-12">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-6 sm:gap-8 md:gap-12">
               <div className="relative group">
                 <div className="absolute inset-0 bg-primary/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <Avatar className="h-40 w-40 ring-4 ring-white shadow-2xl rounded-xl relative transition-transform group-hover:scale-105 duration-500">
+                <Avatar className="h-28 w-28 sm:h-40 sm:w-40 ring-4 ring-white shadow-2xl rounded-xl relative transition-transform group-hover:scale-105 duration-500">
                   <AvatarImage src={profile.photoURL} />
-                  <AvatarFallback className="bg-primary text-white text-5xl font-black">{profile.displayName[0]}</AvatarFallback>
+                  <AvatarFallback className="bg-primary text-white text-3xl sm:text-5xl font-black">{profile.displayName[0]}</AvatarFallback>
                 </Avatar>
                 <div className="absolute -bottom-2 -right-2 bg-white p-3 rounded-2xl shadow-xl ring-1 ring-slate-100">
                   <ShieldCheck className="h-6 w-6 text-primary" />

@@ -45,9 +45,9 @@ export default function DashboardLayout({
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden relative">
       <Sidebar user={user} isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Header user={user} onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-3.5 sm:p-5 md:p-6 lg:p-8 min-w-0">
           {children}
         </main>
       </div>

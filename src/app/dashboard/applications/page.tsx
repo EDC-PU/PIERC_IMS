@@ -212,12 +212,12 @@ export default function ApplicationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">{isAdmin ? 'All Applications' : 'My Applications'}</h1>
           <p className="text-slate-500">{isAdmin ? 'Review and manage all programme submissions.' : 'Track the status of your programme applications.'}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           <Button variant="outline" onClick={handleExportApplications} className="rounded-xl font-bold flex items-center gap-2 border-slate-200">
             <Download className="h-4 w-4" /> Export CSV
           </Button>

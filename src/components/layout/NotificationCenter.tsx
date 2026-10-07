@@ -68,7 +68,7 @@ export default function NotificationCenter() {
           <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
         )}
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent className="w-[calc(100vw-2rem)] sm:w-80 max-w-sm p-0" align="end">
         <div className="p-4 border-b flex justify-between items-center">
           <h3 className="font-bold text-sm">Notifications</h3>
           {unreadCount > 0 && (

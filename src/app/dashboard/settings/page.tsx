@@ -255,10 +255,10 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
-      <div className="flex justify-between items-end">
+    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-3">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">Settings</h1>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">Settings</h1>
           <p className="text-slate-500 font-medium mt-1">Manage your account and profile preferences.</p>
         </div>
       </div>

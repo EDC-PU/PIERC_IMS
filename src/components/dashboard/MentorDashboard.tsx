@@ -141,14 +141,14 @@ export default function MentorDashboard({ user }: MentorDashboardProps) {
                 </div>
               ) : (
                 assignedApps.map((startup) => (
-                  <div key={startup.id} className="flex items-center justify-between p-4 bg-white border rounded-xl hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary font-bold">
+                  <div key={startup.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white border rounded-xl hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary font-bold shrink-0">
                         {(startup.data?.startupName || startup.data?.startupTitle || startup.programmeTitle || 'S').charAt(0)}
                       </div>
-                      <div>
-                        <p className="font-bold">{startup.data?.startupName || startup.data?.startupTitle || startup.programmeTitle}</p>
-                        <div className="flex items-center gap-2 mt-1">
+                      <div className="min-w-0">
+                        <p className="font-bold truncate">{startup.data?.startupName || startup.data?.startupTitle || startup.programmeTitle}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
                           <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
                             {startup.data?.sector || 'General'}
                           </Badge>
@@ -156,15 +156,15 @@ export default function MentorDashboard({ user }: MentorDashboardProps) {
                         </div>
                       </div>
                     </div>
-                    <div className="text-right hidden md:block">
+                    <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0">
                       <p className="text-xs text-slate-500 italic">Last met: {getLastMeetingTime(startup.id)}</p>
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="mt-1 text-primary hover:text-primary-focus"
+                        className="text-primary hover:text-primary-focus h-8 px-2 font-bold"
                         onClick={() => router.push(`/dashboard/applications/${startup.id}`)}
                       >
-                        View Details <ChevronRight className="ml-1 h-3 w-3" />
+                        Details <ChevronRight className="ml-1 h-3 w-3" />
                       </Button>
                     </div>
                   </div>
