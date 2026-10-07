@@ -34,6 +34,8 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { exportToCSV } from '@/lib/export';
 import { AnimatedNumber, AnimatedPillTabs, StaggerGrid, StaggerItem } from '@/components/ui/animated';
+import { Skeleton, CardGridSkeleton } from '@/components/ui/skeleton';
+import { RichEmptyState, EmptySearchState } from '@/components/ui/empty-state';
 
 export default function StartupsDirectory() {
   const [startups, setStartups] = useState<Application[]>([]);
@@ -112,9 +114,25 @@ export default function StartupsDirectory() {
   };
 
   if (loading) return (
-    <div className="p-8 flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-      <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-      <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Assembling Startup Ecosystem...</p>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-60 rounded-xl" />
+          <Skeleton className="h-4 w-80 rounded-md" />
+        </div>
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-11 w-32 rounded-xl" />
+          <Skeleton className="h-11 w-20 rounded-xl" />
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-4">
+        <Skeleton className="h-12 flex-1 rounded-xl" />
+        <Skeleton className="h-12 w-full md:w-56 rounded-xl" />
+        <Skeleton className="h-12 w-full md:w-48 rounded-xl" />
+      </div>
+
+      <CardGridSkeleton count={6} columns={3} />
     </div>
   );
 
@@ -317,13 +335,14 @@ export default function StartupsDirectory() {
       )}
 
       {filteredStartups.length === 0 && (
-        <div className="py-20 text-center space-y-4">
-          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
-            <Search className="h-8 w-8 text-slate-200" />
-          </div>
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">No ventures found matching your criteria.</p>
-          <Button variant="link" onClick={() => { setSearchQuery(''); setSelectedSector('All Sectors'); }}>Clear all filters</Button>
-        </div>
+        <EmptySearchState
+          query={searchQuery}
+          onReset={() => {
+            setSearchQuery('');
+            setSelectedSector('All Sectors');
+          }}
+          className="my-12"
+        />
       )}
     </div>
   );

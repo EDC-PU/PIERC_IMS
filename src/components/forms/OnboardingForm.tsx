@@ -117,7 +117,7 @@ export default function OnboardingForm() {
         const slugSnap = await getDoc(slugDocRef);
 
         if (slugSnap.exists() && slugSnap.data()?.uid !== user.uid) {
-          toast.error('This Enrollment Number is already registered with another account.');
+          toast.error('This Enrollment Number/ PUMIS ID is already registered with another account.');
           setLoading(false);
           return;
         }
@@ -230,7 +230,7 @@ export default function OnboardingForm() {
                   name="enrollmentNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Enrollment Number</FormLabel>
+                      <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Enrollment Number/ PUMIS ID</FormLabel>
                       <FormControl>
                         <Input placeholder="Enter your enrollment number" {...field} className="h-12 rounded-xl" />
                       </FormControl>

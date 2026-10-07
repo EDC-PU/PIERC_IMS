@@ -21,6 +21,8 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { Skeleton } from '@/components/ui/skeleton';
+import { RichEmptyState } from '@/components/ui/empty-state';
 
 export default function NotificationsPage() {
   const { user } = useAuthStore();
@@ -68,7 +70,34 @@ export default function NotificationsPage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center animate-pulse">Loading Notifications...</div>;
+  if (loading) return (
+    <div className="max-w-[1000px] mx-auto space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-36 rounded-md" />
+          <Skeleton className="h-9 w-60 rounded-xl" />
+          <Skeleton className="h-4 w-80 rounded-md" />
+        </div>
+        <Skeleton className="h-11 w-32 rounded-xl" />
+      </div>
+
+      <div className="space-y-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="p-6 rounded-2xl bg-white border border-slate-100 shadow-xs flex gap-4">
+            <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="flex justify-between">
+                <Skeleton className="h-4 w-48 rounded-md" />
+                <Skeleton className="h-3 w-20 rounded-md" />
+              </div>
+              <Skeleton className="h-3.5 w-full rounded-md" />
+              <Skeleton className="h-3.5 w-2/3 rounded-md" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="max-w-[1000px] mx-auto animate-in fade-in duration-700">
@@ -95,10 +124,13 @@ export default function NotificationsPage() {
 
       <div className="space-y-4">
         {notifications.length === 0 ? (
-          <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-xl p-20 text-center bg-slate-50/50">
-            <Bell className="h-12 w-12 text-slate-200 mx-auto mb-4" />
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No notifications yet</p>
-          </Card>
+          <RichEmptyState
+            icon={<Bell className="h-8 w-8 text-primary" />}
+            badge="All Caught Up"
+            title="No unread notifications"
+            description="You are completely up to date. Application status alerts, meeting invites, and evaluation requests will appear here in real-time."
+            className="my-6"
+          />
         ) : (
           notifications.map((n) => (
             <Card 

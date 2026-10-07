@@ -4,30 +4,30 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
   FormMessage,
   FormDescription
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogDescription,
   DialogFooter,
   DialogTrigger
@@ -43,12 +43,12 @@ import { useAuthStore } from '@/store/authStore';
 import { institutes } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { programmeDefaults } from '@/lib/programmes';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Building2, 
-  Globe, 
+import {
+  User,
+  Mail,
+  Phone,
+  Building2,
+  Globe,
   ExternalLink,
   ShieldCheck,
   Bell,
@@ -314,10 +314,10 @@ export default function SettingsPage() {
                     />
                     <FormItem>
                       <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Email Address</label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                          <Input value={user?.email || ""} disabled className="pl-10 h-11 rounded-xl bg-slate-50 border-slate-200 text-slate-400" />
-                        </div>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                        <Input value={user?.email || ""} disabled className="pl-10 h-11 rounded-xl bg-slate-50 border-slate-200 text-slate-400" />
+                      </div>
                       <p className="text-[10px] text-slate-500 mt-1">Email cannot be changed.</p>
                     </FormItem>
                   </div>
@@ -348,7 +348,7 @@ export default function SettingsPage() {
                         name="enrollmentNumber"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Enrollment Number</FormLabel>
+                            <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Enrollment Number/ PUMIS ID</FormLabel>
                             <FormControl>
                               <div className="relative">
                                 <GraduationCap className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
@@ -583,9 +583,9 @@ export default function SettingsPage() {
                         { id: 'marketing', label: 'Newsletter & Events', desc: 'Weekly updates on PIERC ecosystem events.' },
                       ].map((pref) => (
                         <div key={pref.id} className="flex items-start space-x-3 p-3 rounded-2xl hover:bg-slate-50 transition-colors">
-                          <Checkbox 
-                            id={pref.id} 
-                            checked={(notifPrefs as any)[pref.id]} 
+                          <Checkbox
+                            id={pref.id}
+                            checked={(notifPrefs as any)[pref.id]}
                             onCheckedChange={(checked) => setNotifPrefs(prev => ({ ...prev, [pref.id]: checked }))}
                           />
                           <div className="space-y-1 cursor-pointer" onClick={() => setNotifPrefs(prev => ({ ...prev, [pref.id]: !(prev as any)[pref.id] }))}>

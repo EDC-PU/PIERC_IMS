@@ -30,6 +30,8 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { AnimatedNumber, AnimatedPillTabs, CardHoverEffect } from '@/components/ui/animated';
+import { Skeleton, StatsGridSkeleton, TableSkeleton } from '@/components/ui/skeleton';
+import { RichEmptyState, EmptySearchState } from '@/components/ui/empty-state';
 
 export default function ApplicationsPage() {
   const { user } = useAuthStore();
@@ -207,7 +209,30 @@ export default function ApplicationsPage() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center">Loading applications...</div>;
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48 rounded-xl" />
+            <Skeleton className="h-4 w-72 rounded-md" />
+          </div>
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-11 w-32 rounded-xl" />
+            <Skeleton className="h-11 w-32 rounded-xl" />
+          </div>
+        </div>
+
+        <StatsGridSkeleton count={3} />
+
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <Skeleton className="h-11 w-full sm:w-80 rounded-xl" />
+          <Skeleton className="h-11 w-full sm:w-48 rounded-xl" />
+          <Skeleton className="h-11 w-full sm:w-44 rounded-xl" />
+        </div>
+
+        <TableSkeleton rows={6} columns={7} />
+      </div>
+    );
   }
 
   return (
@@ -349,44 +374,38 @@ export default function ApplicationsPage() {
       )}
 
       {applications.length === 0 ? (
-        <Card className="p-12 text-center border-dashed rounded-xl bg-slate-50/50">
-          <CardContent className="space-y-4">
-            <div className="mx-auto w-16 h-16 bg-white rounded-3xl shadow-sm flex items-center justify-center text-primary">
-              <Rocket className="h-8 w-8" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-black text-xl text-slate-900 tracking-tight">No Applications Yet</h3>
-              <p className="text-slate-500 max-w-sm mx-auto font-medium">
-                {isAdmin ? 'No startup applications have been submitted to the portal yet.' : 'You have not submitted any applications yet. Select a programme to get started.'}
-              </p>
-              {!isAdmin && (
-                <div className="pt-4 flex justify-center">
-                  <Link
-                    href="/dashboard/programmes"
-                    style={{ backgroundColor: '#d40924', color: '#ffffff' }}
-                    className="font-bold shadow-lg shadow-red-200/50 rounded-xl h-11 px-6 flex items-center justify-center transition-all hover:opacity-90"
-                  >
-                    Apply Now
-                  </Link>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <RichEmptyState
+          icon={<Rocket className="h-8 w-8 text-primary" />}
+          badge="Zero Applications"
+          title="No Applications Submitted Yet"
+          description={
+            isAdmin
+              ? 'No startup applications have been submitted to the portal yet. Submissions from incubation and seed cohorts will appear here.'
+              : 'You have not submitted any applications yet. Select one of our active incubation cohorts or grant tracks to kickstart your journey.'
+          }
+          primaryAction={
+            !isAdmin
+              ? {
+                  label: "Apply to Programme",
+                  href: "/dashboard/programmes",
+                  icon: <Rocket className="h-4 w-4" />,
+                }
+              : undefined
+          }
+          className="my-8"
+        />
       ) : filteredApplications.length === 0 ? (
-        <Card className="p-12 text-center border-dashed rounded-xl bg-slate-50/50">
-          <CardContent className="space-y-4">
-            <div className="mx-auto w-16 h-16 bg-white rounded-3xl shadow-sm flex items-center justify-center text-slate-300">
-              <Search className="h-8 w-8" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-black text-xl text-slate-900 tracking-tight">No matching results</h3>
-              <p className="text-slate-500 max-w-sm mx-auto font-medium">
-                We couldn't find any applications matching "<strong>{searchQuery}</strong>". Try adjusting your search criteria.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <EmptySearchState
+          query={searchQuery}
+          onReset={() => {
+            setSearchQuery('');
+            setSelectedStatusTab('All');
+            setDateRangeOption('all');
+            setCustomStartDate('');
+            setCustomEndDate('');
+          }}
+          className="my-8"
+        />
       ) : (
         <Card className="border-none shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden">
           <div className="w-full overflow-x-auto">

@@ -54,6 +54,8 @@ import {
 import { toast } from 'sonner';
 import { UserProfile, UserRole } from '@/types';
 import { exportToCSV } from '@/lib/export';
+import { Skeleton } from '@/components/ui/skeleton';
+import { EmptySearchState, RichEmptyState } from '@/components/ui/empty-state';
 
 export default function ManageUsersPage() {
   const { user: currentUser } = useAuthStore();
@@ -131,7 +133,7 @@ export default function ManageUsersPage() {
       'Phone',
       'Institute',
       'Role',
-      'Enrollment Number',
+      'Enrollment Number/ PUMIS ID',
       'Joined Date'
     ];
     const keys = [
@@ -241,14 +243,46 @@ export default function ManageUsersPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i} className="animate-pulse">
-                      <TableCell colSpan={5} className="py-8"><div className="h-12 bg-slate-100 rounded-2xl w-full" /></TableCell>
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <TableRow key={i} className="border-slate-100">
+                      <TableCell className="py-4">
+                        <div className="flex items-center space-x-3.5">
+                          <Skeleton className="h-11 w-11 rounded-full shrink-0" />
+                          <div className="space-y-1.5 flex-1">
+                            <Skeleton className="h-4 w-32 rounded-md" />
+                            <Skeleton className="h-3 w-20 rounded-md" />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="space-y-1.5">
+                          <Skeleton className="h-3.5 w-40 rounded-md" />
+                          <Skeleton className="h-3 w-28 rounded-md" />
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <Skeleton className="h-4 w-36 rounded-md" />
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                      </TableCell>
+                      <TableCell className="py-4 text-right">
+                        <Skeleton className="h-8 w-8 rounded-lg ml-auto" />
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-20 text-center text-slate-400 font-medium">No users found matching your search.</TableCell>
+                    <TableCell colSpan={5} className="p-8">
+                      <EmptySearchState
+                        query={search}
+                        onReset={() => {
+                          setSearch('');
+                          setRoleFilter('all');
+                        }}
+                        className="py-12 border-none bg-transparent"
+                      />
+                    </TableCell>
                   </TableRow>
                 ) : (
                   filteredUsers.map((u) => (

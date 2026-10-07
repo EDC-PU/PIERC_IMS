@@ -52,12 +52,16 @@ import {
   Lightbulb,
   FileDown,
   History as HistoryIcon,
-  Sparkles
+  Sparkles,
+  Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { exportToCSV } from '@/lib/export';
+import SplitPitchDeckViewer from '@/components/dashboard/SplitPitchDeckViewer';
+import { Skeleton, StatsGridSkeleton, CardGridSkeleton } from '@/components/ui/skeleton';
+import { EmptySearchState, EmptyEvaluationsState } from '@/components/ui/empty-state';
 
 export default function EvaluatePage() {
   const { user: currentUser } = useAuthStore();
@@ -65,6 +69,7 @@ export default function EvaluatePage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [userEvaluations, setUserEvaluations] = useState<Record<string, any>>({});
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [evalViewMode, setEvalViewMode] = useState<'split-deck' | 'details'>('split-deck');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('pipeline');
@@ -73,6 +78,15 @@ export default function EvaluatePage() {
   const [marks, setMarks] = useState<number | ''>('');
   const [remarks, setRemarks] = useState('');
   const [recommendation, setRecommendation] = useState<string>('');
+
+  const handleSelectApp = (app: Application) => {
+    setSelectedApp(app);
+    if (app.documents?.pitchDeck || app.documents?.phase2PPT) {
+      setEvalViewMode('split-deck');
+    } else {
+      setEvalViewMode('details');
+    }
+  };
 
   useEffect(() => {
     if (!currentUser) return;
@@ -312,9 +326,31 @@ export default function EvaluatePage() {
   };
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center min-h-[600px] space-y-4">
-      <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      <p className="font-black text-[10px] uppercase tracking-[0.3em] text-slate-400">Loading Pipeline...</p>
+    <div className="max-w-[1600px] mx-auto space-y-10 animate-in fade-in duration-500">
+      {/* Header Skeleton */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-36 rounded-md" />
+          <Skeleton className="h-10 w-64 rounded-xl" />
+          <Skeleton className="h-4 w-80 rounded-md" />
+        </div>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <Skeleton className="h-11 w-full sm:w-72 rounded-xl" />
+          <Skeleton className="h-11 w-32 rounded-xl" />
+        </div>
+      </div>
+
+      {/* Stats Cards Skeleton */}
+      <StatsGridSkeleton count={3} />
+
+      {/* Pill tabs placeholder */}
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-10 w-44 rounded-full" />
+        <Skeleton className="h-10 w-36 rounded-full" />
+      </div>
+
+      {/* Card Grid Skeleton */}
+      <CardGridSkeleton count={6} columns={3} />
     </div>
   );
 
@@ -410,16 +446,21 @@ export default function EvaluatePage() {
           <TabsContent value="pipeline" className="mt-0 outline-none">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredApps.length === 0 ? (
-                <div className="col-span-full py-20 text-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-                  <AlertCircle className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                  <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">No pending evaluations</p>
-                </div>
+                search ? (
+                  <EmptySearchState
+                    query={search}
+                    onReset={() => setSearch('')}
+                    className="col-span-full py-16"
+                  />
+                ) : (
+                  <EmptyEvaluationsState className="col-span-full py-16" />
+                )
               ) : (
                 filteredApps.map((app, index) => (
                   <CardHoverEffect key={app.id} delay={index * 0.04}>
                     <Card
                       className="group border-none shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden hover:shadow-2xl hover:ring-primary/20 transition-all duration-500 cursor-pointer h-full"
-                      onClick={() => setSelectedApp(app)}
+                      onClick={() => handleSelectApp(app)}
                     >
                       <CardHeader className="bg-slate-50/50 p-5 sm:p-8">
                         <div className="flex justify-between items-start mb-4">
@@ -467,7 +508,9 @@ export default function EvaluatePage() {
                   <TableBody>
                     {evaluatedApps.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">No evaluation history found</TableCell>
+                        <TableCell colSpan={6} className="p-8">
+                          <EmptyEvaluationsState isHistory className="py-12 border-none bg-transparent" />
+                        </TableCell>
                       </TableRow>
                     ) : (
                       evaluatedApps.map((app) => (
@@ -529,143 +572,285 @@ export default function EvaluatePage() {
           </TabsContent>
         </Tabs>
       ) : (
-        <div className="space-y-8 animate-in slide-in-from-bottom-6 duration-700">
-          <Button
-            variant="ghost"
-            onClick={() => setSelectedApp(null)}
-            className="group hover:bg-transparent -ml-4 text-slate-500 hover:text-primary font-black uppercase text-[10px] tracking-widest"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Back to Pipeline
-          </Button>
+        <div className="space-y-6 animate-in slide-in-from-bottom-6 duration-700">
+          {/* Top evaluation navigation & view mode switcher toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <Button
+              variant="ghost"
+              onClick={() => setSelectedApp(null)}
+              className="group hover:bg-transparent -ml-2 text-slate-500 hover:text-primary font-black uppercase text-[10px] tracking-widest w-fit"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Back to Pipeline
+            </Button>
 
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-            {/* Startup Data Panel */}
-            <div className="xl:col-span-8 space-y-6">
-              <div className="bg-white ring-1 ring-slate-100 rounded-xl p-5 sm:p-8 md:p-10 space-y-6 sm:space-y-10 shadow-sm">
-                {/* Header Information */}
-                <div className="border-b border-slate-50 pb-8 flex flex-col md:flex-row justify-between items-start gap-6">
-                  <div>
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Startup Name</Label>
-                    <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mt-1">
-                      {selectedApp.data?.startupTitle || "Untitled Innovation"}
-                    </h2>
-                    <div className="flex flex-wrap items-center gap-3 mt-4">
-                      <Badge className="bg-primary text-white font-black px-4 py-1 rounded-full border-none text-[9px] uppercase tracking-widest">
-                        {getPhase(selectedApp.id)} Evaluation
-                      </Badge>
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                        Submitted by{' '}
-                        <Link 
-                          href={`/dashboard/profile/${selectedApp.userId}`}
-                          className="hover:underline hover:text-primary transition-colors font-black text-slate-600"
-                        >
-                          {selectedApp.userName}
-                        </Link>
-                      </span>
-                    </div>
-                  </div>
-                  <div className="bg-slate-50 p-6 rounded-3xl min-w-[200px]">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Stage</Label>
-                    <p className="text-xl font-black text-primary mt-1 uppercase">{selectedApp.data?.currentStage || "Idea"}</p>
-                  </div>
-                </div>
+            {/* View Mode Switcher */}
+            {(selectedApp.documents?.pitchDeck || selectedApp.documents?.phase2PPT) && (
+              <div className="flex items-center bg-slate-100 p-1 rounded-2xl gap-1 self-start sm:self-auto">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEvalViewMode('split-deck')}
+                  className={cn(
+                    "rounded-xl text-xs font-black transition-all gap-2 px-3.5 py-1.5 h-auto",
+                    evalViewMode === 'split-deck' 
+                      ? "bg-white text-slate-900 shadow-sm" 
+                      : "text-slate-500 hover:text-slate-900"
+                  )}
+                >
+                  <Eye className="h-3.5 w-3.5 text-primary" />
+                  <span>Split-Screen Pitch Deck</span>
+                  <Badge className="bg-primary/10 text-primary border-none text-[8px] font-mono px-1 py-0 ml-0.5">
+                    Live
+                  </Badge>
+                </Button>
 
-                {/* Core Details Grid */}
-                <div className="grid grid-cols-1 gap-10">
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 flex items-center">
-                      <Users className="h-4 w-4 mr-2 text-primary" /> Team Members
-                    </h3>
-                    <div className="p-4 sm:p-6 bg-slate-50 rounded-3xl font-bold text-slate-700 leading-relaxed">
-                      {selectedApp.data?.teamDetails || selectedApp.data?.startupTitle || "Founder and Core Team"}
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 flex items-center">
-                      <Target className="h-4 w-4 mr-2 text-primary" /> Detailed Description / Problem Statement
-                    </h3>
-                    <div className="p-5 sm:p-8 bg-slate-50 rounded-xl font-medium text-slate-600 leading-loose">
-                      {selectedApp.data?.problemStatement || "No problem statement provided."}
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 flex items-center">
-                      <BrainCircuit className="h-4 w-4 mr-2 text-primary" /> Solution
-                    </h3>
-                    <div className="p-5 sm:p-8 bg-slate-50 rounded-xl font-medium text-slate-600 leading-loose">
-                      {selectedApp.data?.solutionStatement || "No solution statement provided."}
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 flex items-center">
-                      <Lightbulb className="h-4 w-4 mr-2 text-primary" /> Uniqueness
-                    </h3>
-                    <div className="p-4 sm:p-6 bg-slate-50 rounded-3xl font-bold text-slate-700 leading-relaxed">
-                      {selectedApp.data?.uniqueness || "Innovation in core technology and implementation."}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Documents Section */}
-                <div className="pt-8 border-t border-slate-50 space-y-6">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900">Submitted Documents</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedApp.documents?.pitchDeck && (
-                      <div
-                        className="flex items-center justify-between p-6 bg-slate-900 rounded-3xl text-white cursor-pointer hover:bg-slate-800 transition-all"
-                        onClick={() => window.open(selectedApp.documents.pitchDeck, '_blank')}
-                      >
-                        <div className="flex items-center space-x-4">
-                          <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center">
-                            <FileText className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <p className="font-black text-sm">Pitch Deck.pdf</p>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Phase 1 Submission</p>
-                          </div>
-                        </div>
-                        <ExternalLink className="h-5 w-5 text-slate-400" />
-                      </div>
-                    )}
-
-                    {selectedApp.documents?.phase2PPT && (
-                      <div
-                        className={cn(
-                          "flex items-center justify-between p-6 rounded-3xl text-white cursor-pointer transition-all shadow-lg",
-                          getPhase(selectedApp.id) === 'Phase 2'
-                            ? "bg-primary scale-[1.02] shadow-primary/30 ring-4 ring-primary/10"
-                            : "bg-orange-600 hover:bg-orange-700 shadow-orange-200"
-                        )}
-                        onClick={() => window.open(selectedApp.documents.phase2PPT, '_blank')}
-                      >
-                        <div className="flex items-center space-x-4">
-                          <div className="h-12 w-12 bg-white/20 rounded-2xl flex items-center justify-center">
-                            <Sparkles className="h-6 w-6" />
-                          </div>
-                          <div>
-                            <p className="font-black text-sm">Phase 2 PPT</p>
-                            <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest">
-                              {getPhase(selectedApp.id) === 'Phase 2' ? 'Primary Resource for this Phase' : 'Phase 2 Presentation'}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="bg-white/20 p-2 rounded-xl">
-                          <ExternalLink className="h-5 w-5 text-white" />
-                        </div>
-                      </div>
-                    )}
-
-                    {!selectedApp.documents?.pitchDeck && !selectedApp.documents?.phase2PPT && (
-                      <div className="col-span-full p-8 text-center bg-slate-50 rounded-2xl border border-dashed text-slate-400 font-medium">
-                        No documents uploaded for this application.
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEvalViewMode('details')}
+                  className={cn(
+                    "rounded-xl text-xs font-black transition-all gap-2 px-3.5 py-1.5 h-auto",
+                    evalViewMode === 'details' 
+                      ? "bg-white text-slate-900 shadow-sm" 
+                      : "text-slate-500 hover:text-slate-900"
+                  )}
+                >
+                  <FileText className="h-3.5 w-3.5 text-slate-500" />
+                  <span>Full Application Data</span>
+                </Button>
               </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+            {/* Startup Data or Split Pitch Deck Panel */}
+            <div className="xl:col-span-8 space-y-6">
+              {evalViewMode === 'split-deck' && (selectedApp.documents?.pitchDeck || selectedApp.documents?.phase2PPT) ? (
+                <div className="space-y-6">
+                  {/* Compact Header Bar for Split Screen */}
+                  <div className="bg-white ring-1 ring-slate-100 rounded-3xl p-6 shadow-xs flex flex-wrap items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-primary text-white font-black px-3 py-0.5 rounded-full border-none text-[9px] uppercase tracking-wider">
+                          {getPhase(selectedApp.id)} Evaluation
+                        </Badge>
+                        <Badge variant="outline" className="text-slate-600 font-bold text-[9px] uppercase border-slate-200">
+                          Stage: {selectedApp.data?.currentStage || "Idea"}
+                        </Badge>
+                      </div>
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                        {selectedApp.data?.startupTitle || "Untitled Innovation"}
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        Submitted by <Link href={`/dashboard/profile/${selectedApp.userId}`} className="font-bold text-slate-700 hover:text-primary transition-colors underline">{selectedApp.userName}</Link>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEvalViewMode('details')}
+                        className="rounded-2xl text-xs font-bold ring-1 ring-slate-200 hover:bg-slate-50"
+                      >
+                        <FileText className="h-3.5 w-3.5 mr-1.5 text-slate-500" />
+                        Full Written Responses
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Split Pitch Deck Viewer Embedded Component */}
+                  <SplitPitchDeckViewer
+                    documents={selectedApp.documents || {}}
+                    startupTitle={selectedApp.data?.startupTitle || selectedApp.programmeTitle}
+                    applicantName={selectedApp.userName}
+                    className="h-[740px] shadow-xl"
+                    onClose={() => setEvalViewMode('details')}
+                  />
+
+                  {/* Quick Reference Summary for Evaluators */}
+                  <Card className="border-none ring-1 ring-slate-100 shadow-xs rounded-3xl bg-white overflow-hidden">
+                    <CardHeader className="bg-slate-50/60 py-3.5 px-6 border-b flex flex-row items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                        <BrainCircuit className="h-3.5 w-3.5 text-primary" /> Quick Pitch Reference
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEvalViewMode('details')}
+                        className="text-[10px] font-black uppercase tracking-wider text-primary hover:bg-primary/5 h-auto py-1 px-2.5 rounded-lg"
+                      >
+                        View All Details →
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-4">
+                      {selectedApp.data?.problemStatement && (
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Problem Statement</p>
+                          <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            {selectedApp.data.problemStatement}
+                          </p>
+                        </div>
+                      )}
+                      {selectedApp.data?.solutionStatement && (
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Solution</p>
+                          <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            {selectedApp.data.solutionStatement}
+                          </p>
+                        </div>
+                      )}
+                      {selectedApp.data?.uniqueness && (
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Uniqueness / Innovation</p>
+                          <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            {selectedApp.data.uniqueness}
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <div className="bg-white ring-1 ring-slate-100 rounded-xl p-5 sm:p-8 md:p-10 space-y-6 sm:space-y-10 shadow-sm">
+                  {/* Header Information */}
+                  <div className="border-b border-slate-50 pb-8 flex flex-col md:flex-row justify-between items-start gap-6">
+                    <div>
+                      <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Startup Name</Label>
+                      <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mt-1">
+                        {selectedApp.data?.startupTitle || "Untitled Innovation"}
+                      </h2>
+                      <div className="flex flex-wrap items-center gap-3 mt-4">
+                        <Badge className="bg-primary text-white font-black px-4 py-1 rounded-full border-none text-[9px] uppercase tracking-widest">
+                          {getPhase(selectedApp.id)} Evaluation
+                        </Badge>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                          Submitted by{' '}
+                          <Link 
+                            href={`/dashboard/profile/${selectedApp.userId}`}
+                            className="hover:underline hover:text-primary transition-colors font-black text-slate-600"
+                          >
+                            {selectedApp.userName}
+                          </Link>
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-slate-50 p-6 rounded-3xl min-w-[200px]">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Stage</Label>
+                      <p className="text-xl font-black text-primary mt-1 uppercase">{selectedApp.data?.currentStage || "Idea"}</p>
+                    </div>
+                  </div>
+
+                  {/* Core Details Grid */}
+                  <div className="grid grid-cols-1 gap-10">
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 flex items-center">
+                        <Users className="h-4 w-4 mr-2 text-primary" /> Team Members
+                      </h3>
+                      <div className="p-4 sm:p-6 bg-slate-50 rounded-3xl font-bold text-slate-700 leading-relaxed">
+                        {selectedApp.data?.teamDetails || selectedApp.data?.startupTitle || "Founder and Core Team"}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 flex items-center">
+                        <Target className="h-4 w-4 mr-2 text-primary" /> Detailed Description / Problem Statement
+                      </h3>
+                      <div className="p-5 sm:p-8 bg-slate-50 rounded-xl font-medium text-slate-600 leading-loose">
+                        {selectedApp.data?.problemStatement || "No problem statement provided."}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 flex items-center">
+                        <BrainCircuit className="h-4 w-4 mr-2 text-primary" /> Solution
+                      </h3>
+                      <div className="p-5 sm:p-8 bg-slate-50 rounded-xl font-medium text-slate-600 leading-loose">
+                        {selectedApp.data?.solutionStatement || "No solution statement provided."}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 flex items-center">
+                        <Lightbulb className="h-4 w-4 mr-2 text-primary" /> Uniqueness
+                      </h3>
+                      <div className="p-4 sm:p-6 bg-slate-50 rounded-3xl font-bold text-slate-700 leading-relaxed">
+                        {selectedApp.data?.uniqueness || "Innovation in core technology and implementation."}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Documents Section */}
+                  <div className="pt-8 border-t border-slate-50 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900">Submitted Documents</h3>
+                      {(selectedApp.documents?.pitchDeck || selectedApp.documents?.phase2PPT) && (
+                        <Button
+                          size="sm"
+                          onClick={() => setEvalViewMode('split-deck')}
+                          className="bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-black gap-1.5"
+                        >
+                          <Eye className="h-3.5 w-3.5" /> Open in Split-Screen Mode
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedApp.documents?.pitchDeck && (
+                        <div
+                          className="flex items-center justify-between p-6 bg-slate-900 rounded-3xl text-white cursor-pointer hover:bg-slate-800 transition-all group"
+                          onClick={() => setEvalViewMode('split-deck')}
+                        >
+                          <div className="flex items-center space-x-4">
+                            <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center group-hover:bg-primary transition-colors">
+                              <FileText className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <p className="font-black text-sm">Pitch Deck.pdf</p>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Phase 1 Submission • Click to Preview</p>
+                            </div>
+                          </div>
+                          <Eye className="h-5 w-5 text-slate-400 group-hover:text-white transition-colors" />
+                        </div>
+                      )}
+
+                      {selectedApp.documents?.phase2PPT && (
+                        <div
+                          className={cn(
+                            "flex items-center justify-between p-6 rounded-3xl text-white cursor-pointer transition-all shadow-lg group",
+                            getPhase(selectedApp.id) === 'Phase 2'
+                              ? "bg-primary scale-[1.02] shadow-primary/30 ring-4 ring-primary/10"
+                              : "bg-orange-600 hover:bg-orange-700 shadow-orange-200"
+                          )}
+                          onClick={() => setEvalViewMode('split-deck')}
+                        >
+                          <div className="flex items-center space-x-4">
+                            <div className="h-12 w-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                              <Sparkles className="h-6 w-6" />
+                            </div>
+                            <div>
+                              <p className="font-black text-sm">Phase 2 PPT</p>
+                              <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest">
+                                {getPhase(selectedApp.id) === 'Phase 2' ? 'Primary Resource • Click to Preview' : 'Phase 2 Presentation'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="bg-white/20 p-2 rounded-xl group-hover:bg-white/30 transition-colors">
+                            <Eye className="h-5 w-5 text-white" />
+                          </div>
+                        </div>
+                      )}
+
+                      {!selectedApp.documents?.pitchDeck && !selectedApp.documents?.phase2PPT && (
+                        <div className="col-span-full p-8 text-center bg-slate-50 rounded-2xl border border-dashed text-slate-400 font-medium">
+                          No documents uploaded for this application.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Sticky Score Sidebar */}

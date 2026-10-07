@@ -5,6 +5,7 @@ import { UserProfile, Meeting, Application } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import EventsWidget from './EventsWidget';
+import FounderMilestoneTracker from './FounderMilestoneTracker';
 import { Badge } from '@/components/ui/badge';
 import { 
   Rocket, 
@@ -175,6 +176,14 @@ export default function UserDashboard({ user }: UserDashboardProps) {
           </Button>
         </Link>
       </div>
+
+      {/* Founder Milestone Journey Pipeline Tracker */}
+      <FounderMilestoneTracker
+        user={user}
+        latestApp={latestApp}
+        meetings={meetings}
+        evaluations={appEvaluations}
+      />
 
       {/* Hero Stats */}
       <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-6", user.role === 'user' ? "lg:grid-cols-3" : "lg:grid-cols-4")}>

@@ -24,6 +24,8 @@ import {
   ClipboardList
 } from 'lucide-react';
 import Link from 'next/link';
+import { Skeleton } from '@/components/ui/skeleton';
+import { RichEmptyState } from '@/components/ui/empty-state';
 
 export default function ProfilePage() {
   const params = useParams();
@@ -80,8 +82,53 @@ export default function ProfilePage() {
     fetchUserAndApps();
   }, [id, currentUser]);
 
-  if (loading) return <div className="p-8 text-center animate-pulse text-slate-400 font-bold">Loading Identity...</div>;
-  if (!profile) return <div className="p-8 text-center text-slate-500 font-bold">Profile not found.</div>;
+  if (loading) return (
+    <div className="space-y-8 max-w-6xl mx-auto animate-in fade-in duration-500 py-6">
+      {/* Profile Header Skeleton */}
+      <div className="p-8 sm:p-12 rounded-3xl bg-white border border-slate-100 shadow-xs flex flex-col md:flex-row items-center md:items-start gap-8">
+        <Skeleton className="w-28 h-28 sm:w-36 sm:h-36 rounded-full shrink-0" />
+        <div className="space-y-3 flex-1 text-center md:text-left w-full">
+          <Skeleton className="h-6 w-24 rounded-full mx-auto md:mx-0" />
+          <Skeleton className="h-9 w-64 rounded-xl mx-auto md:mx-0" />
+          <Skeleton className="h-4 w-48 rounded-md mx-auto md:mx-0" />
+          <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-3">
+            <Skeleton className="h-8 w-44 rounded-xl" />
+            <Skeleton className="h-8 w-36 rounded-xl" />
+          </div>
+        </div>
+      </div>
+
+      {/* Grid Content Skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-4">
+          <Skeleton className="h-6 w-48 rounded-lg" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Skeleton className="h-48 rounded-2xl" />
+            <Skeleton className="h-48 rounded-2xl" />
+          </div>
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-6 w-36 rounded-lg" />
+          <Skeleton className="h-64 rounded-2xl" />
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!profile) return (
+    <div className="max-w-md mx-auto py-20">
+      <RichEmptyState
+        badge="404"
+        title="Profile Not Found"
+        description="The requested user profile does not exist or may have been deleted from the portal."
+        primaryAction={{
+          label: "Back to Users",
+          href: "/dashboard/manage-users",
+          icon: <ChevronRight className="h-4 w-4" />
+        }}
+      />
+    </div>
+  );
 
   const isInternal = profile.institute && (profile.uid.length < 20 || profile.displayName.toLowerCase().includes('staff') || profile.displayName.toLowerCase().includes('student'));
   const canViewFullPII = currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.uid === profile.uid || currentUser?.role === 'mentor';
@@ -169,9 +216,13 @@ export default function ProfilePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {userApps.length === 0 ? (
-              <Card className="md:col-span-2 border-dashed border-2 bg-slate-50/50 p-12 text-center rounded-xl">
-                <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">No startups found for this user.</p>
-              </Card>
+              <RichEmptyState
+                compact
+                badge="No Startups"
+                title="No startups found for this founder"
+                description="This user has not submitted any venture applications to the PIERC incubation portal yet."
+                className="md:col-span-2 py-12"
+              />
             ) : (
               userApps.map(app => (
                 <Link key={app.id} href={`/dashboard/applications/${app.id}`}>

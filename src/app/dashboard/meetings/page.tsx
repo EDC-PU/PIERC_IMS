@@ -58,6 +58,8 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMont
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { exportToCSV } from '@/lib/export';
+import { Skeleton, StatsGridSkeleton, TableSkeleton } from '@/components/ui/skeleton';
+import { RichEmptyState } from '@/components/ui/empty-state';
 
 export default function MeetingsPage() {
   const { user: currentUser } = useAuthStore();
@@ -425,7 +427,21 @@ export default function MeetingsPage() {
         { id: 'history', label: 'History' },
       ];
 
-  if (loading) return <div className="p-8 text-center animate-pulse text-slate-400 font-bold">Loading Evaluation Pipeline...</div>;
+  if (loading) return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-72 rounded-xl" />
+          <Skeleton className="h-4 w-96 rounded-md" />
+        </div>
+        <Skeleton className="h-12 w-36 rounded-2xl" />
+      </div>
+
+      <StatsGridSkeleton count={4} />
+
+      <TableSkeleton rows={5} columns={4} />
+    </div>
+  );
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-700">
@@ -557,7 +573,15 @@ export default function MeetingsPage() {
                         <TableBody>
                           {getCurrentList().length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={4} className="h-40 text-center text-slate-400 font-medium italic">No projects pending in this phase.</TableCell>
+                              <TableCell colSpan={4} className="p-8">
+                                <RichEmptyState
+                                  compact
+                                  badge="No Pending Items"
+                                  title="No projects in this stage"
+                                  description="There are currently no startup projects assigned or pending review in this evaluation phase."
+                                  className="border-none bg-transparent"
+                                />
+                              </TableCell>
                             </TableRow>
                           ) : (
                             getCurrentList().map((app) => (

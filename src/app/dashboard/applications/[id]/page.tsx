@@ -23,6 +23,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { AnimatedProgressRing, LivePulseBadge, CardHoverEffect } from '@/components/ui/animated';
+import SplitPitchDeckViewer from '@/components/dashboard/SplitPitchDeckViewer';
+import { DetailViewSkeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -131,6 +133,10 @@ export default function ApplicationDetailsPage() {
   const [showRevisionDialog, setShowRevisionDialog] = useState(false);
   const [phase2PPT, setPhase2PPT] = useState<File | null>(null);
   const [isUploadingPPT, setIsUploadingPPT] = useState(false);
+
+  // Pitch Deck In-App Viewer Modal
+  const [showPitchDeckModal, setShowPitchDeckModal] = useState(false);
+  const [modalDocKey, setModalDocKey] = useState<'pitchDeck' | 'phase2PPT'>('pitchDeck');
 
   // Access control & confidential credentials
   const [accessDenied, setAccessDenied] = useState(false);
@@ -1046,9 +1052,8 @@ export default function ApplicationDetailsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 space-y-3">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-sm font-semibold text-slate-500">Loading Application Details...</p>
+      <div className="max-w-7xl mx-auto py-6">
+        <DetailViewSkeleton />
       </div>
     );
   }
@@ -3065,7 +3070,7 @@ export default function ApplicationDetailsPage() {
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               {application.documents?.pitchDeck && (
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group transition-all hover:bg-white hover:shadow-md">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 group transition-all hover:bg-white hover:shadow-md">
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-white rounded-xl shadow-sm text-primary">
                       <FileText className="h-6 w-6" />
@@ -3075,25 +3080,52 @@ export default function ApplicationDetailsPage() {
                       <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Phase 1 Submission</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="rounded-xl" onClick={() => window.open(application.documents.pitchDeck, '_blank')}>
-                    <Download className="mr-2 h-4 w-4" /> View / Download
-                  </Button>
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <Button 
+                      variant="default" 
+                      className="rounded-xl font-bold text-xs gap-1.5" 
+                      onClick={() => { setModalDocKey('pitchDeck'); setShowPitchDeckModal(true); }}
+                    >
+                      <Eye className="h-4 w-4" /> Preview In-App
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="rounded-xl font-bold text-xs gap-1.5" 
+                      onClick={() => window.open(application.documents.pitchDeck, '_blank')}
+                    >
+                      <Download className="h-4 w-4" /> Download
+                    </Button>
+                  </div>
                 </div>
               )}
 
               {application.documents?.phase2PPT && (
-                <div className="flex items-center justify-between p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 group transition-all hover:bg-white hover:shadow-md">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 group transition-all hover:bg-white hover:shadow-md">
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-white rounded-xl shadow-sm text-emerald-600">
                       <Sparkles className="h-6 w-6" />
                     </div>
                     <div>
                       <p className="text-sm font-black text-slate-900">Phase 2 Presentation</p>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Phase 2 Submission</p>
                     </div>
                   </div>
-                  <Button variant="default" className="rounded-xl bg-emerald-600 hover:bg-emerald-700" onClick={() => window.open(application.documents.phase2PPT, '_blank')}>
-                    <Download className="mr-2 h-4 w-4" /> View / Download
-                  </Button>
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <Button 
+                      variant="default" 
+                      className="rounded-xl bg-emerald-600 hover:bg-emerald-700 font-bold text-xs gap-1.5 text-white" 
+                      onClick={() => { setModalDocKey('phase2PPT'); setShowPitchDeckModal(true); }}
+                    >
+                      <Eye className="h-4 w-4" /> Preview In-App
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="rounded-xl font-bold text-xs gap-1.5" 
+                      onClick={() => window.open(application.documents.phase2PPT, '_blank')}
+                    >
+                      <Download className="h-4 w-4" /> Download
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -3767,6 +3799,22 @@ export default function ApplicationDetailsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Split In-App Pitch Deck Modal Viewer */}
+      {application?.documents && (
+        <Dialog open={showPitchDeckModal} onOpenChange={setShowPitchDeckModal}>
+          <DialogContent className="max-w-6xl w-[95vw] h-[90vh] p-0 overflow-hidden bg-slate-950 border-slate-800">
+            <SplitPitchDeckViewer
+              documents={application.documents}
+              startupTitle={application.data?.startupTitle || application.programmeTitle || 'Application Pitch Deck'}
+              applicantName={application.userName}
+              defaultDocument={modalDocKey}
+              className="h-full border-none rounded-none min-h-[500px]"
+              onClose={() => setShowPitchDeckModal(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
