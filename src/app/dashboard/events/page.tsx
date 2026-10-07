@@ -9,6 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -342,26 +349,29 @@ export default function UserEventsPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full md:w-auto">
-                <select 
-                  className="h-12 px-4 sm:px-6 rounded-2xl border border-slate-100 bg-white text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20 flex-1 sm:flex-none"
-                  value={modeFilter}
-                  onChange={(e) => setModeFilter(e.target.value)}
-                >
-                  <option value="all">All Modes</option>
-                  <option value="Online">Online</option>
-                  <option value="Offline">Offline</option>
-                </select>
-                <select 
-                  className="h-12 px-4 sm:px-6 rounded-2xl border border-slate-100 bg-white text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20 flex-1 sm:flex-none"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                >
-                  <option value="date-desc">Date (Newest)</option>
-                  <option value="date-asc">Date (Oldest)</option>
-                  <option value="title-asc">Title (A-Z)</option>
-                  <option value="title-desc">Title (Z-A)</option>
-                </select>
+              <div className="flex flex-col sm:flex-row gap-2.5 shrink-0 w-full md:w-auto">
+                <Select value={modeFilter} onValueChange={(val) => setModeFilter(val || 'all')}>
+                  <SelectTrigger className="w-full sm:w-[150px] h-12 rounded-2xl border-slate-100 bg-white text-sm font-bold text-slate-700 shadow-xs">
+                    <SelectValue placeholder="All Modes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Modes</SelectItem>
+                    <SelectItem value="Online">Online</SelectItem>
+                    <SelectItem value="Offline">Offline</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={sortBy} onValueChange={(val) => setSortBy(val || 'date-desc')}>
+                  <SelectTrigger className="w-full sm:w-[170px] h-12 rounded-2xl border-slate-100 bg-white text-sm font-bold text-slate-700 shadow-xs">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date-desc">Date (Newest)</SelectItem>
+                    <SelectItem value="date-asc">Date (Oldest)</SelectItem>
+                    <SelectItem value="title-asc">Title (A-Z)</SelectItem>
+                    <SelectItem value="title-desc">Title (Z-A)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>

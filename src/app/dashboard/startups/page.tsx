@@ -8,6 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { 
   Rocket, 
   Search, 
@@ -171,18 +178,19 @@ export default function StartupsDirectory() {
             />
           </div>
           <div className="flex gap-2">
-            <select 
-              className="h-12 px-6 rounded-2xl border border-slate-100 bg-white text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-            >
-              <option value="name-asc">Sort by: Name (A-Z)</option>
-              <option value="name-desc">Sort by: Name (Z-A)</option>
-              <option value="sector-asc">Sort by: Sector (A-Z)</option>
-              <option value="sector-desc">Sort by: Sector (Z-A)</option>
-              <option value="status-asc">Sort by: Status (A-Z)</option>
-              <option value="status-desc">Sort by: Status (Z-A)</option>
-            </select>
+            <Select value={sortBy} onValueChange={(val) => setSortBy(val || 'name-asc')}>
+              <SelectTrigger className="w-[200px] h-12 rounded-2xl border-slate-100 bg-white text-sm font-bold text-slate-700 shadow-xs">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name-asc">Sort by: Name (A-Z)</SelectItem>
+                <SelectItem value="name-desc">Sort by: Name (Z-A)</SelectItem>
+                <SelectItem value="sector-asc">Sort by: Sector (A-Z)</SelectItem>
+                <SelectItem value="sector-desc">Sort by: Sector (Z-A)</SelectItem>
+                <SelectItem value="status-asc">Sort by: Status (A-Z)</SelectItem>
+                <SelectItem value="status-desc">Sort by: Status (Z-A)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

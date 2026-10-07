@@ -18,7 +18,7 @@ export default function ApplyPage() {
   const title = programmeTitles[id] || 'Programme';
 
   return (
-    <div className="container py-8">
+    <div className="max-w-6xl mx-auto py-2 sm:py-6 px-1 sm:px-4">
       <ApplicationForm programmeId={id} programmeTitle={title} />
     </div>
   );

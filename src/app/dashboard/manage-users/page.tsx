@@ -28,6 +28,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -189,29 +196,32 @@ export default function ManageUsersPage() {
       <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl overflow-hidden bg-slate-50/50">
         <CardContent className="p-3 sm:p-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex-1 hidden sm:block"></div>
-          <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full sm:w-auto">
-            <select
-              className="h-11 px-4 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20 shadow-sm flex-1 sm:flex-none"
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-            >
-              <option value="all">All Roles</option>
-              <option value="super_admin">Super Admin</option>
-              <option value="admin">Admin</option>
-              <option value="mentor">Mentor</option>
-              <option value="user">Startup Founder / User</option>
-            </select>
-            <select
-              className="h-11 px-4 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-primary/20 shadow-sm flex-1 sm:flex-none"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-            >
-              <option value="name-asc">Sort by: Name (A-Z)</option>
-              <option value="name-desc">Sort by: Name (Z-A)</option>
-              <option value="email-asc">Sort by: Email (A-Z)</option>
-              <option value="role-asc">Sort by: Role</option>
-              <option value="date-desc">Sort by: Joined Date</option>
-            </select>
+          <div className="flex flex-col sm:flex-row gap-2.5 shrink-0 w-full sm:w-auto">
+            <Select value={roleFilter} onValueChange={(val) => setRoleFilter(val || 'all')}>
+              <SelectTrigger className="w-full sm:w-[180px] h-11 rounded-xl bg-white border-slate-200/90 text-xs font-bold text-slate-700 shadow-xs">
+                <SelectValue placeholder="All Roles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="super_admin">Super Admin</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="mentor">Mentor</SelectItem>
+                <SelectItem value="user">Startup Founder / User</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={(val) => setSortBy(val || 'name-asc')}>
+              <SelectTrigger className="w-full sm:w-[190px] h-11 rounded-xl bg-white border-slate-200/90 text-xs font-bold text-slate-700 shadow-xs">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name-asc">Sort by: Name (A-Z)</SelectItem>
+                <SelectItem value="name-desc">Sort by: Name (Z-A)</SelectItem>
+                <SelectItem value="email-asc">Sort by: Email (A-Z)</SelectItem>
+                <SelectItem value="role-asc">Sort by: Role</SelectItem>
+                <SelectItem value="date-desc">Sort by: Joined Date</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
